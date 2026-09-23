@@ -141,3 +141,14 @@ Acceptance:
 - [x] The dashboard speed readout exceeds 30 during the run and returns to 0
 - [x] Power off returns the badge to Off and brings back the Start-here card
 Notes: The E2E flow uses keyboard brake and accelerator plus the on-screen brake and gear controls. It passed in 19.5 s under the full Playwright suite.
+
+## T-012: Procedural car stage smoke test fails intermittently
+
+Status: open
+Blocked by: T-009
+Slice: Investigate why the procedural car browser smoke test sometimes cannot find `stage-canvas` within five seconds during the full Playwright suite, and make the stage or test reliable without weakening its assertion.
+Test seam: `e2e/car.spec.ts` via Playwright Chromium
+Acceptance:
+- [ ] The procedural car stage renders without browser errors in the full Playwright suite
+- [ ] All Feedback commands pass
+Notes: On 2026-09-23, `npm run e2e` failed in `e2e/car.spec.ts:10` because `getByTestId('stage-canvas')` was not found after 5000 ms. The other five Playwright tests passed; typecheck, lint, unit tests and build passed.
