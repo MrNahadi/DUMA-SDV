@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { vehicleParams as p } from '../vehicle';
-import { LFP_CELL_OCV, cellOcvV, createHvCircuit, packOcvV } from './index';
+import {
+  LFP_CELL_OCV,
+  cellOcvV,
+  createHvCircuit,
+  createPack,
+  packCurrentForPowerA,
+  packOcvV,
+  usableChargeC,
+} from './index';
 
 const TICK_S = 0.01;
 
@@ -21,6 +29,37 @@ describe('LFP open-circuit voltage', () => {
 
   it('scales to the 172-cell pack', () => {
     expect(packOcvV(p, 0.5)).toBeCloseTo(172 * 3.3, 6);
+  });
+});
+
+describe('pack state of charge', () => {
+  it('counts coulombs against the usable charge: 150 Ah from 82.5 kWh at 550 V', () => {
+    expect(usableChargeC(p) / 3600).toBeCloseTo(150, 9);
+    const pack = createPack(p, TICK_S, 0.8);
+    // 150 A for one hour of ticks takes 150 Ah, the whole usable charge.
+    for (let i = 0; i < 360_000; i++) pack.step(150);
+    expect(pack.soc).toBeCloseTo(-0.2, 6);
+    expect(pack.ocvV).toBe(packOcvV(p, 0));
+  });
+
+  it('follows the OCV curve as it discharges and charges', () => {
+    const pack = createPack(p, TICK_S, 0.95);
+    expect(pack.ocvV).toBe(packOcvV(p, 0.95));
+    for (let i = 0; i < 1000; i++) pack.step(300);
+    expect(pack.soc).toBeLessThan(0.95);
+    expect(pack.ocvV).toBe(packOcvV(p, pack.soc));
+    for (let i = 0; i < 1000; i++) pack.step(-300);
+    expect(pack.soc).toBeCloseTo(0.95, 9);
+  });
+});
+
+describe('pack current for a load power', () => {
+  it('solves P = (OCV − I·R)·I for the smaller root', () => {
+    const i = packCurrentForPowerA(550, 0.08, 230_000);
+    expect((550 - i * 0.08) * i).toBeCloseTo(230_000, 6);
+    expect(i).toBeLessThan(550 / (2 * 0.08));
+    expect(packCurrentForPowerA(550, 0.08, 0)).toBe(0);
+    expect(packCurrentForPowerA(550, 0, 55_000)).toBe(100);
   });
 });
 
@@ -74,6 +113,22 @@ describe('HV circuit', () => {
     stepFor(hv, 0.1);
     expect(hv.weldingEvents).toBe(0);
     expect(hv.dcLinkV).toBeCloseTo(ocv, 6);
+  });
+
+  it('draws the load power from the pack through its internal resistance once the main path is closed', () => {
+    const hv = createHvCircuit(p, TICK_S, ocv);
+    hv.coil.mainNeg = true;
+    hv.coil.precharge = true;
+    stepFor(hv, 1);
+    hv.step(ocv, 100_000);
+    expect(hv.packCurrentA).toBeLessThan(1); // pre-charge path only: no load current
+    hv.coil.mainPos = true;
+    stepFor(hv, 0.1);
+    hv.step(ocv, 100_000);
+    const i = hv.packCurrentA;
+    expect(hv.packTerminalV).toBeCloseTo(ocv - i * p.packInternalResistanceOhm, 9);
+    expect(hv.packTerminalV * i).toBeCloseTo(100_000, 6);
+    expect(hv.dcLinkV).toBe(hv.packTerminalV);
   });
 
   it('discharges the DC-link once the contactors open', () => {

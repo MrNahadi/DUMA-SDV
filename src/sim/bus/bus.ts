@@ -67,6 +67,11 @@ export interface Bus {
    * Every sender starts active.
    */
   setSenderActive(sender: string, active: boolean): void;
+  /**
+   * Drop every frame of one message on the wire (a lost message, as in a comms
+   * fault): subscribers stop receiving it and the trace does not record it.
+   */
+  setMessageDropped(message: string, dropped: boolean): void;
   /** Start of tick: frames sent in the previous tick reach their subscribers. */
   deliver(): void;
   /** End of tick: send due periodic and raised event messages, in catalogue order. */
@@ -162,6 +167,7 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
   // Per-message state.
   const raised = new Uint8Array(messages.length);
   const senderActive = new Uint8Array(messages.length).fill(1);
+  const dropped = new Uint8Array(messages.length);
   const onWire = new Uint8Array(messages.length);
   const wireT = new Float64Array(messages.length);
   const deliveredT = new Float64Array(messages.length).fill(Number.NaN);
@@ -255,6 +261,10 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
       if (!found) throw new Error(`Bus: unknown sender ${sender}`);
     },
 
+    setMessageDropped(name, drop) {
+      dropped[lookup(name)] = drop ? 1 : 0;
+    },
+
     deliver() {
       for (let i = 0; i < messages.length; i++) {
         if (onWire[i] === 0) continue;
@@ -273,7 +283,7 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
         const msg = messages[i]!;
         const due = msg.periodTicks === 0 ? raised[i] === 1 : tick % msg.periodTicks === 0;
         raised[i] = 0;
-        if (!due || senderActive[i] === 0) continue;
+        if (!due || senderActive[i] === 0 || dropped[i] === 1) continue;
         onWire[i] = 1;
         wireT[i] = t;
         const n = msg.def.signals.length;

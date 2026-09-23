@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { jToKwh, kmhToMs, kwhToJ, msToKmh, radsToRpm, rpmToRads, wToKw } from './units';
+import {
+  jPerMToWhPerKm,
+  jToKwh,
+  kmhToMs,
+  kwhToJ,
+  msToKmh,
+  radsToRpm,
+  rpmToRads,
+  wToKw,
+  whPerKmToJPerM,
+} from './units';
 
 describe('unit conversions', () => {
   it('converts speed both ways', () => {
@@ -11,6 +21,12 @@ describe('unit conversions', () => {
     expect(jToKwh(3.6e6)).toBe(1);
     expect(kwhToJ(jToKwh(123_456))).toBeCloseTo(123_456, 6);
     expect(wToKw(230_000)).toBe(230);
+  });
+
+  it('converts consumption both ways', () => {
+    // 181 Wh/km = 181 × 3,600 J / 1,000 m.
+    expect(whPerKmToJPerM(181)).toBeCloseTo(651.6, 9);
+    expect(jPerMToWhPerKm(whPerKmToJPerM(166))).toBeCloseTo(166, 10);
   });
 
   it('converts rotational speed both ways', () => {

@@ -1,11 +1,11 @@
 /**
  * Vehicle parameters, SI units. Official and measured figures come from
- * ADR 0001 (rows 1-22, 26-27); estimates this model adds are recorded in ADR 0004.
+ * ADR 0001 (rows 1-22, 24, 26-27); estimates this model adds are recorded in ADR 0004.
  * The loss terms (Crr, frontal area, motor losses) are the calibration knobs of
  * ADR 0003: tune those before any official row, and record changes in a new ADR.
  */
 
-import { kmhToMs, kwhToJ, rpmToRads } from '../units';
+import { kmhToMs, kwhToJ, rpmToRads, whPerKmToJPerM } from '../units';
 
 /** Standard gravity, m/s². */
 export const GRAVITY_MS2 = 9.81;
@@ -66,6 +66,8 @@ export interface VehicleParams {
   widthM: number;
   heightM: number;
   topSpeedMs: number;
+  /** Official WLTP consumption, J/m: the range estimate's starting point. */
+  wltpConsumptionJPerM: number;
 
   obcMaxPowerW: number;
   dcPeakPowerW: number;
@@ -122,6 +124,7 @@ export const vehicleParams: Readonly<VehicleParams> = Object.freeze({
   widthM: 1.875, // ADR 0001 row 21
   heightM: 1.46, // ADR 0001 row 21
   topSpeedMs: kmhToMs(180), // ADR 0001 row 22 (limited)
+  wltpConsumptionJPerM: whPerKmToJPerM(166), // ADR 0001 row 24 (16.6 kWh/100 km)
 
   obcMaxPowerW: 11_000, // ADR 0001 row 26
   dcPeakPowerW: 150_000, // ADR 0001 row 27

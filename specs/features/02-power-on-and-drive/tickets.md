@@ -54,17 +54,17 @@ Notes: 0–100 in 5.97 s, top speed settles at 179.5 km/h, reverse at 19.96 km/h
 
 ## T-005: Energy: pack current, SOC, range estimate and the steady-100 range test
 
-Status: open
+Status: done
 Blocked by: T-004
 Slice: Electrical power from motor power through the loss model plus the auxiliary load, pack current and terminal voltage, coulomb-counted SOC, the VCU range estimate, and the IC dashboard model built only from bus frames. Includes a cruise helper scenario and the steady-100 km/h range reference test.
 Test seam: `src/sim/index.ts` public API. Scenarios in `src/sim/scenarios/`
 Acceptance:
-- [ ] Steady-100 range is 459–561 km under ADR 0003 conditions (the test cites ADR 0003). It runs in under about 60 s of wall time
-- [ ] Steady-110 consumption is 172–190 Wh/km at the battery (ADR 0003 calibration anchor)
-- [ ] Energy balance: pack energy out = wheel work + losses + auxiliary, within 1% over a 0–100 run
-- [ ] The IC dashboard SOC goes stale when `BMS_Status` is suppressed (proves it reads the bus, not the plant)
-- [ ] The range estimate starts from WLTP consumption and moves toward the trip average after 5 km
-Notes:
+- [x] Steady-100 range is 459–561 km under ADR 0003 conditions (the test cites ADR 0003). It runs in under about 60 s of wall time
+- [x] Steady-110 consumption is 172–190 Wh/km at the battery (ADR 0003 calibration anchor)
+- [x] Energy balance: pack energy out = wheel work + losses + auxiliary, within 1% over a 0–100 run
+- [x] The IC dashboard SOC goes stale when `BMS_Status` is suppressed (proves it reads the bus, not the plant)
+- [x] The range estimate starts from WLTP consumption and moves toward the trip average after 5 km
+Notes: Steady 100 km/h range 498.1 km; steady 110 km/h 180.1 Wh/km. Decisions and measured values are in ADR 0008.
 
 ## T-006: App loop: Power on from the UI and a live power state
 

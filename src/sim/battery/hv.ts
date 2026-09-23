@@ -27,8 +27,22 @@ export interface HvCircuit {
   readonly packTerminalV: number;
   /** Times main+ closed onto an under-charged DC-link. */
   readonly weldingEvents: number;
-  /** Advance by one tick with the pack at open-circuit voltage `ocvV`. */
-  step(ocvV: number): void;
+  /**
+   * Advance by one tick with the pack at open-circuit voltage `ocvV`. `loadW` is the
+   * power the loads on the HV bus (inverter, DC-DC) draw at the terminals, positive
+   * for discharge; it flows only while the main path is closed.
+   */
+  step(ocvV: number, loadW?: number): void;
+}
+
+/**
+ * Pack current, A, that delivers `powerW` at the terminals: P = (OCV − I·R)·I,
+ * the smaller root. Above the maximum power point (OCV²/4R) it gives that point.
+ */
+export function packCurrentForPowerA(ocvV: number, resistanceOhm: number, powerW: number): number {
+  if (resistanceOhm === 0) return powerW / ocvV;
+  const discriminant = Math.max(0, ocvV * ocvV - 4 * resistanceOhm * powerW);
+  return (ocvV - Math.sqrt(discriminant)) / (2 * resistanceOhm);
 }
 
 export function createHvCircuit(p: Readonly<VehicleParams>, tickS: number, ocvV: number): HvCircuit {
@@ -46,7 +60,7 @@ export function createHvCircuit(p: Readonly<VehicleParams>, tickS: number, ocvV:
     packCurrentA: 0,
     packTerminalV: ocvV,
     weldingEvents: 0,
-    step(ocv: number) {
+    step(ocv: number, loadW = 0) {
       for (const id of CONTACTORS) {
         if (coil[id] === closed[id]) {
           timer[id] = 0;
@@ -62,10 +76,10 @@ export function createHvCircuit(p: Readonly<VehicleParams>, tickS: number, ocvV:
       }
 
       if (closed.mainNeg && closed.mainPos) {
-        // Load current arrives with the drivetrain (T-005); with no load the link sits at OCV.
-        hv.packCurrentA = 0;
-        hv.packTerminalV = ocv;
-        hv.dcLinkV = ocv;
+        // The link sits at the terminal voltage; contactor and cable resistance are neglected.
+        hv.packCurrentA = packCurrentForPowerA(ocv, p.packInternalResistanceOhm, loadW);
+        hv.packTerminalV = ocv - hv.packCurrentA * p.packInternalResistanceOhm;
+        hv.dcLinkV = hv.packTerminalV;
       } else if (closed.mainNeg && closed.precharge) {
         // RC charge through the pre-charge resistor and the pack's internal resistance.
         const next = ocv + (hv.dcLinkV - ocv) * prechargeDecay;

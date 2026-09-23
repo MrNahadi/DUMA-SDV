@@ -12,6 +12,8 @@ export type EcuId = 'VCU' | 'BMS' | 'MCU' | 'IC';
 
 export const POWER_STATES = ['OFF', 'ACCESSORY', 'STARTING', 'READY', 'CHARGING', 'FAULT'] as const;
 export const GEARS = ['P', 'R', 'N', 'D'] as const;
+/** The VCU's startup steps, in order (requirements R4). */
+export const STARTUP_STEPS = ['wake', 'selfCheck', 'precharge', 'contactors', 'ready'] as const;
 
 /** Encode a firmware version for the `swVersion` signal: major·10000 + minor·100 + patch. */
 export function swVersionCode(major: number, minor: number, patch: number): number {
@@ -62,6 +64,8 @@ export const busCatalogue: Catalogue = Object.freeze([
       { name: 'gear', values: GEARS },
       { name: 'ready', values: ['no', 'yes'] },
       { name: 'speedLimitKmh', unit: 'km/h', scale: 1 },
+      // The step in progress, for the instrument cluster; `none` outside a startup.
+      { name: 'startupStep', values: ['none', ...STARTUP_STEPS] },
     ],
   },
   {

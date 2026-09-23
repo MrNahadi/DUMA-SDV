@@ -2,15 +2,16 @@
  * VCU (requirements R4): the supervisor. It senses the power button and the
  * driver's pedals and gear selector directly, owns the switched 12 V supply (KL15)
  * of the other ECUs, and runs the power state machine, the startup sequence, the
- * gear interlocks and the pedal map. It learns everything about the other ECUs
- * from the bus. Timings are in ADR 0005, gear rules in ADR 0006, and the pedal map
- * and speed limiter in ADR 0007.
+ * gear interlocks, the pedal map and the range estimate. It learns everything
+ * about the other ECUs from the bus. Timings are in ADR 0005, gear rules in
+ * ADR 0006, the pedal map and speed limiter in ADR 0007, and the range estimate
+ * in ADR 0008.
  */
 
-import { GEARS, POWER_STATES, type Bus } from '../bus';
+import { GEARS, POWER_STATES, STARTUP_STEPS, type Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
 import { motorMaxTorqueNm } from '../vehicle';
-import { msToKmh, rpmToRads } from '../units';
+import { jPerMToWhPerKm, kmhToMs, msToKmh, rpmToRads } from '../units';
 import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ecu';
 
 export type PowerState = (typeof POWER_STATES)[number];
@@ -28,7 +29,7 @@ export interface DriverInputs {
   gearRequest: Gear | null;
 }
 
-export const STARTUP_STEPS = ['wake', 'selfCheck', 'precharge', 'contactors', 'ready'] as const;
+export { STARTUP_STEPS };
 export type StartupStepId = (typeof STARTUP_STEPS)[number];
 export type StartupStepStatus = 'pending' | 'active' | 'done' | 'failed';
 export type StartupFailReason =
@@ -74,6 +75,14 @@ const SHIFT_BRAKE_MIN = 0.1;
 const REVERSE_SPEED_LIMIT_KMH = 20;
 /** The limiter fades torque out over this band below the limit (ADR 0007). */
 const LIMITER_BAND_KMH = 2;
+/** BMS_Status (100 ms) older than this counts as lost for the trip energy. */
+const BMS_LIVE_S = 0.2;
+/** The range estimate uses WLTP consumption until the trip passes this distance (R4)... */
+const TRIP_BLEND_START_M = 5_000;
+/** ... then blends linearly to the trip average over this distance (ADR 0008). */
+const TRIP_BLEND_SPAN_M = 20_000;
+/** Floor on the consumption behind the estimate, as a fraction of WLTP: guards the division. */
+const MIN_CONSUMPTION_RATIO = 0.5;
 
 export interface Vcu {
   readonly powerState: PowerState;
@@ -90,11 +99,12 @@ export interface Vcu {
   step(t: number, powerButtonPressed: boolean, driver: Readonly<DriverInputs>): void;
 }
 
-export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
+export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): Vcu {
   const boot = createBootTracker(VCU_WAKE_S);
   const bootFrame = bus.writer('VCU', 'VCU_Boot');
   const command = bus.writer('VCU', 'VCU_Command');
   const status = bus.writer('VCU', 'VCU_Status');
+  const rangeFrame = bus.writer('VCU', 'VCU_Range');
   const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'MCU_Status', 'MCU_Vehicle']);
   bus.setSenderActive('VCU', false);
 
@@ -119,6 +129,9 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
   let bmsValidFrames = 0;
   /** The last of P, D or R selected. N keeps it, so shifting through N can't skip an interlock. */
   let lastEngaged: Gear = 'P';
+  // Trip totals, from BMS_Status and MCU_Vehicle. The VCU is always powered, so they survive power cycles.
+  let tripEnergyJ = 0;
+  let tripDistanceM = 0;
 
   const vcu = {
     powerState: 'OFF' as PowerState,
@@ -372,7 +385,29 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
     return direction * accelerator * availableNm * limiter;
   }
 
+  /** Add this tick's pack energy (V × I from BMS_Status) and distance (MCU_Vehicle) to the trip. */
+  function accumulateTrip(t: number) {
+    if (isFresh(inbox, 'BMS_Status', Math.max(wakeAtS, t - BMS_LIVE_S))) {
+      const powerW = (inbox.read('BMS_Status', 'packVoltage') as number) * (inbox.read('BMS_Status', 'packCurrent') as number);
+      tripEnergyJ += powerW * tickS;
+    }
+    const speedKmh = vehicleSpeedKmh(Math.max(wakeAtS, t - LIVE_S));
+    if (!Number.isNaN(speedKmh)) tripDistanceM += kmhToMs(Math.abs(speedKmh)) * tickS;
+  }
+
+  /**
+   * Consumption behind the range estimate, J/m (R4, ADR 0008): WLTP for the first
+   * 5 km of the trip, then a linear blend to the trip average over the next 20 km.
+   */
+  function consumptionJPerM(): number {
+    const wltp = p.wltpConsumptionJPerM;
+    const weight = Math.min(Math.max((tripDistanceM - TRIP_BLEND_START_M) / TRIP_BLEND_SPAN_M, 0), 1);
+    const blended = weight === 0 ? wltp : wltp + weight * (tripEnergyJ / tripDistanceM - wltp);
+    return Math.max(blended, MIN_CONSUMPTION_RATIO * wltp);
+  }
+
   function publish(t: number, accelerator: number) {
+    accumulateTrip(t);
     command
       .set('torqueRequest', torqueRequestNm(t, accelerator))
       .set('contactorRequest', contactorRequest)
@@ -381,7 +416,15 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
       .set('powerState', vcu.powerState)
       .set('gear', vcu.gear)
       .set('ready', vcu.powerState === 'READY' ? 'yes' : 'no')
-      .set('speedLimitKmh', vcu.gear === 'R' ? REVERSE_SPEED_LIMIT_KMH : speedLimitKmh);
+      .set('speedLimitKmh', vcu.gear === 'R' ? REVERSE_SPEED_LIMIT_KMH : speedLimitKmh)
+      .set('startupStep', current >= 0 ? STARTUP_STEPS[current]! : 'none');
+
+    // Remaining usable energy from the SOC the BMS reports, over the consumption.
+    const socPct = isFresh(inbox, 'BMS_Status', wakeAtS) ? (inbox.read('BMS_Status', 'soc') as number) : 0;
+    const consumption = consumptionJPerM();
+    rangeFrame
+      .set('rangeKm', (Math.max(socPct, 0) / 100) * p.usableEnergyJ / consumption / 1000)
+      .set('avgConsumptionWhKm', jPerMToWhPerKm(consumption));
   }
 
   return vcu;

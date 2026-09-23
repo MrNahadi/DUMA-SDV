@@ -197,6 +197,24 @@ describe('catalogue validation', () => {
   });
 });
 
+describe('dropped messages', () => {
+  it('sends nothing for a dropped message until it is restored, and leaves the others alone', () => {
+    const bus = createBus(testCatalogue);
+    const inbox = bus.subscribe('B', ['A_Fast', 'A_Slow']);
+    bus.writer('A', 'A_Fast').set('torque', 5);
+    runTicks(bus, 0, 3);
+    bus.setMessageDropped('A_Fast', true);
+    runTicks(bus, 3, 5);
+    expect(inbox.frameTimeS('A_Fast')).toBeCloseTo(0.02, 9);
+    expect(bus.trace().filter((f) => f.name === 'A_Fast')).toHaveLength(3);
+    bus.setMessageDropped('A_Fast', false);
+    runTicks(bus, 8, 2);
+    expect(inbox.frameTimeS('A_Fast')).toBeCloseTo(0.08, 9);
+    expect(bus.trace().filter((f) => f.name === 'A_Fast')).toHaveLength(5);
+    expect(() => bus.setMessageDropped('Nope', true)).toThrow(/unknown message/);
+  });
+});
+
 describe('feature catalogue', () => {
   const byName = new Map(busCatalogue.map((m) => [m.name, m]));
 
@@ -211,7 +229,7 @@ describe('feature catalogue', () => {
       ['MCU_Boot', 'event', ['selfCheck', 'swVersion']],
       ['IC_Boot', 'event', ['selfCheck', 'swVersion']],
       ['VCU_Command', 10, ['torqueRequest', 'contactorRequest', 'powerState']],
-      ['VCU_Status', 100, ['powerState', 'gear', 'ready', 'speedLimitKmh']],
+      ['VCU_Status', 100, ['powerState', 'gear', 'ready', 'speedLimitKmh', 'startupStep']],
       ['VCU_Range', 1000, ['rangeKm', 'avgConsumptionWhKm']],
       ['BMS_Status', 100, ['packVoltage', 'packCurrent', 'soc', 'contactorState', 'prechargeState']],
       ['BMS_Limits', 100, ['maxDischargeKw', 'maxChargeKw']],

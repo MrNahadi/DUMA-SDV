@@ -3,7 +3,7 @@
  * sequence of calls always yields the same snapshots (tech-stack.md, Simulation).
  */
 
-import { createHvCircuit, packOcvV, type ContactorStates } from './battery';
+import { createHvCircuit, createPack, type ContactorStates } from './battery';
 import { GEARS, busCatalogue, createBus, type Frame } from './bus';
 import {
   STARTUP_STEPS,
@@ -11,6 +11,7 @@ import {
   createIc,
   createMcu,
   createVcu,
+  type DashboardModel,
   type DriverInputs,
   type Gear,
   type GearRefusal,
@@ -20,10 +21,10 @@ import {
   type StartupStepStatus,
 } from './ecus';
 import { radsToRpm } from './units';
-import { createLongitudinalDynamics, vehicleParams, type VehicleParams } from './vehicle';
+import { createLongitudinalDynamics, motorLossW, vehicleParams, type VehicleParams } from './vehicle';
 
 export type { Frame } from './bus';
-export type { Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
+export type { DashboardModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
 
 /** Fixed simulation step: 10 ms (100 Hz). */
 export const TICK_S = 0.01;
@@ -84,14 +85,18 @@ export interface SimSnapshot {
   };
   /** Distance travelled since creation, m. */
   odometerM: number;
+  /** Net energy delivered at the pack terminals since creation, J (discharge positive). */
+  tripEnergyJ: number;
   pack: {
     /** Terminal voltage, V. */
     voltageV: number;
     /** Current, A, positive for discharge. */
     currentA: number;
-    /** State of charge, 0..1. */
+    /** True state of charge, 0..1 of the usable charge (the plant, not the BMS estimate). */
     soc: number;
   };
+  /** The instrument cluster's dashboard model, built only from bus frames (R4). */
+  dashboard: DashboardModel;
   dcLinkVoltageV: number;
   contactors: ContactorStates;
   /** Times main+ closed onto an under-charged DC-link (R2). Always 0 in a normal startup. */
@@ -117,6 +122,8 @@ export interface Sim {
   snapshot(): Readonly<SimSnapshot>;
   /** Bus frames recorded so far, oldest first (last 5,000). */
   trace(): Frame[];
+  /** Drop every frame of a bus message from the next tick on (a lost message), or restore it. */
+  setMessageDropped(message: string, dropped: boolean): void;
 }
 
 function nullIfNaN(value: number): number | null {
@@ -133,22 +140,34 @@ export function createSim(options: SimOptions = {}): Sim {
   if (!(soc >= 0 && soc <= 1)) throw new RangeError(`initialSoc must be within 0..1, got ${soc}`);
 
   // The world: pack, HV circuit, 12 V battery and the car's motion.
-  const ocvV = packOcvV(p, soc);
-  const hv = createHvCircuit(p, TICK_S, ocvV);
+  const pack = createPack(p, TICK_S, soc);
+  const hv = createHvCircuit(p, TICK_S, pack.ocvV);
   const dynamics = createLongitudinalDynamics(p, TICK_S);
-  const bmsSensors = { hv, soc };
+  const bmsSensors = { hv };
   const mcuSensors = { dcLinkV: 0, motorSpeedRadS: 0 };
 
   // The ECUs, talking over the bus.
   const bus = createBus(busCatalogue, { tickMs: TICK_MS });
-  const vcu = createVcu(bus, p);
-  const bms = createBms(bus, p);
+  const vcu = createVcu(bus, p, TICK_S);
+  const bms = createBms(bus, p, { tickS: TICK_S, initialSoc: soc });
   const mcu = createMcu(bus, p);
   const ic = createIc(bus);
 
   let tick = 0;
   let powerButton = false;
+  let tripEnergyJ = 0;
   const driver: DriverInputs = { accelerator: 0, brake: 0, gearRequest: null };
+
+  /**
+   * Power the HV loads draw at the pack terminals, W (R2): the inverter's DC power
+   * (shaft power plus motor + inverter losses, ADR 0004) while it switches, plus
+   * the auxiliary load through the DC-DC. `omega` is the mean shaft speed over the
+   * tick, so the shaft work matches the dynamics' kinetic-energy change exactly.
+   */
+  function hvLoadW(torqueNm: number, omega: number): number {
+    const inverterW = mcu.running ? torqueNm * omega + motorLossW(p, torqueNm, omega) : 0;
+    return inverterW + p.auxLoadW;
+  }
 
   function runTick() {
     // Integer ms first, so t is exact for whole ticks (matches the bus trace).
@@ -165,8 +184,11 @@ export function createSim(options: SimOptions = {}): Sim {
     ic.step(t, vcu.kl15);
 
     // Friction brakes are hydraulic: the pedal acts on the plant directly.
+    const omegaBefore = dynamics.motorSpeedRadS;
     dynamics.step(mcu.torqueNm, driver.brake);
-    hv.step(ocvV);
+    hv.step(pack.ocvV, hvLoadW(mcu.torqueNm, (omegaBefore + dynamics.motorSpeedRadS) / 2));
+    pack.step(hv.packCurrentA);
+    tripEnergyJ += hv.packTerminalV * hv.packCurrentA * TICK_S;
     bus.transmit(tick);
     tick++;
   }
@@ -210,7 +232,9 @@ export function createSim(options: SimOptions = {}): Sim {
         accelMs2: dynamics.accelMs2,
         motor: { speedRpm: radsToRpm(dynamics.motorSpeedRadS), torqueNm: mcu.torqueNm },
         odometerM: dynamics.odometerM,
-        pack: { voltageV: hv.packTerminalV, currentA: hv.packCurrentA, soc },
+        tripEnergyJ,
+        pack: { voltageV: hv.packTerminalV, currentA: hv.packCurrentA, soc: pack.soc },
+        dashboard: { ...ic.dashboard },
         dcLinkVoltageV: hv.dcLinkV,
         contactors: { ...hv.closed },
         weldingEvents: hv.weldingEvents,
@@ -224,6 +248,9 @@ export function createSim(options: SimOptions = {}): Sim {
     },
     trace() {
       return bus.trace();
+    },
+    setMessageDropped(message, dropped) {
+      bus.setMessageDropped(message, dropped);
     },
   };
 }

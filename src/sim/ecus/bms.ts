@@ -1,10 +1,11 @@
 /**
  * BMS (requirements R4): executes the VCU's contactor requests with the pre-charge
- * sequence, and reports what it measures on the pack. It learns the DC-link
- * voltage only from MCU_Status. Timings are in ADR 0005.
+ * sequence, coulomb-counts SOC from the current it measures, and reports what it
+ * measures on the pack. It learns the DC-link voltage only from MCU_Status.
+ * Timings are in ADR 0005, SOC counting in ADR 0008.
  */
 
-import type { HvCircuit } from '../battery';
+import { usableChargeC, type HvCircuit } from '../battery';
 import type { Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
 import { motorBaseSpeedRadS, motorLossW } from '../vehicle';
@@ -24,14 +25,22 @@ type PrechargeState = 'idle' | 'active' | 'done' | 'failed';
 
 export interface BmsSensors {
   hv: HvCircuit;
-  soc: number;
+}
+
+export interface BmsOptions {
+  /** Sim tick, s: the coulomb counter's integration step. */
+  tickS: number;
+  /** SOC the counter holds in non-volatile memory at creation, 0..1. */
+  initialSoc: number;
 }
 
 export interface Bms {
+  /** The BMS's SOC estimate, 0..1. It survives power cycles (non-volatile memory). */
+  readonly soc: number;
   step(t: number, powered: boolean, sensors: BmsSensors): void;
 }
 
-export function createBms(bus: Bus, p: Readonly<VehicleParams>): Bms {
+export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOptions): Bms {
   const boot = createBootTracker(BOOT_S);
   const bootFrame = bus.writer('BMS', 'BMS_Boot');
   const status = bus.writer('BMS', 'BMS_Status');
@@ -42,6 +51,8 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>): Bms {
   // Peak electrical demand of the drive: peak power plus the losses at peak torque and base speed.
   const baseSpeed = motorBaseSpeedRadS(p);
   const maxDischargeKw = (p.motorPeakPowerW + motorLossW(p, p.motorPeakTorqueNm, baseSpeed)) / 1000;
+
+  const socPerAmpTick = options.tickS / usableChargeC(p);
 
   let phase: Phase = 'open';
   let phaseStartS = 0;
@@ -138,8 +149,9 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>): Bms {
     return 'precharge';
   }
 
-  return {
-    step(t, powered, { hv, soc }) {
+  const bms = {
+    soc: options.initialSoc,
+    step(t: number, powered: boolean, { hv }: BmsSensors) {
       const edge = boot.update(powered, t);
       if (edge === 'lost') {
         // Supply lost: the coils drop out and the ECU forgets its sequence.
@@ -156,15 +168,18 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>): Bms {
         bootFrame.set('selfCheck', 'pass').set('swVersion', INITIAL_SW_VERSION).raise();
       }
 
+      // The pack only carries current while the BMS is running: it opens the contactors before it sleeps.
+      bms.soc -= hv.packCurrentA * socPerAmpTick;
       run(t, hv);
 
       status
         .set('packVoltage', hv.packTerminalV)
         .set('packCurrent', hv.packCurrentA)
-        .set('soc', soc * 100)
+        .set('soc', bms.soc * 100)
         .set('contactorState', contactorState(hv))
         .set('prechargeState', prechargeState);
       limits.set('maxDischargeKw', maxDischargeKw).set('maxChargeKw', 0);
     },
   };
+  return bms;
 }

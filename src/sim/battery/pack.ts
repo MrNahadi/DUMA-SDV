@@ -1,4 +1,4 @@
-/** Traction pack open-circuit voltage (requirements R2). */
+/** Traction pack: open-circuit voltage and coulomb-counted state of charge (requirements R2). */
 
 import type { VehicleParams } from '../vehicle';
 
@@ -35,4 +35,32 @@ export function cellOcvV(soc: number): number {
 /** Pack OCV: the series string of identical cells. */
 export function packOcvV(p: Readonly<VehicleParams>, soc: number): number {
   return p.seriesCells * cellOcvV(soc);
+}
+
+/** Usable charge, C: the usable energy (ADR 0001 row 13) at the nominal pack voltage (row 10). ADR 0008. */
+export function usableChargeC(p: Readonly<VehicleParams>): number {
+  return p.usableEnergyJ / p.packNominalVoltageV;
+}
+
+export interface Pack {
+  /** State of charge, 0..1 of the usable charge. Not clamped: it is what the cells hold. */
+  readonly soc: number;
+  /** Open-circuit voltage at the current SOC, V. */
+  readonly ocvV: number;
+  /** Advance one tick carrying `currentA` (positive for discharge). */
+  step(currentA: number): void;
+}
+
+export function createPack(p: Readonly<VehicleParams>, tickS: number, initialSoc: number): Pack {
+  const socPerAmpTick = tickS / usableChargeC(p);
+  const pack = {
+    soc: initialSoc,
+    ocvV: packOcvV(p, initialSoc),
+    step(currentA: number) {
+      if (currentA === 0) return;
+      pack.soc -= currentA * socPerAmpTick;
+      pack.ocvV = packOcvV(p, pack.soc);
+    },
+  };
+  return pack;
 }

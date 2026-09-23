@@ -34,6 +34,8 @@ export interface McuSensors {
 export interface Mcu {
   /** Torque the inverter makes the motor produce, N·m (the plant's input). */
   readonly torqueNm: number;
+  /** True while the inverter bridge is switching (`run`): it then draws its losses from the HV bus. */
+  readonly running: boolean;
   step(t: number, powered: boolean, sensors: McuSensors): void;
 }
 
@@ -56,11 +58,13 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>): Mcu {
 
   const mcu = {
     torqueNm: 0,
+    running: false,
     step(t: number, powered: boolean, { dcLinkV, motorSpeedRadS }: McuSensors) {
       const edge = boot.update(powered, t);
       if (edge === 'lost') bus.setSenderActive('MCU', false);
       if (!boot.running) {
         mcu.torqueNm = 0;
+        mcu.running = false;
         return;
       }
       if (edge === 'booted') {
@@ -70,6 +74,7 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>): Mcu {
 
       const calibrated = t - boot.bootedAtS >= CALIBRATION_S - TIME_EPS_S;
       const run = calibrated && enabled(t, dcLinkV);
+      mcu.running = run;
       if (run) {
         const request = inbox.read('VCU_Command', 'torqueRequest') as number;
         const limit = motorMaxTorqueNm(p, motorSpeedRadS);
