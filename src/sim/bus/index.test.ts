@@ -78,6 +78,26 @@ describe('bus scheduling', () => {
   });
 });
 
+describe('bus sender activity', () => {
+  it('keeps an inactive sender silent, drops its raised events, and resumes when active', () => {
+    const bus = createBus(testCatalogue);
+    const boot = bus.writer('A', 'A_Boot');
+    bus.setSenderActive('A', false);
+    runTicks(bus, 0, 5, (tick) => {
+      if (tick === 2) boot.raise();
+    });
+    expect(bus.trace()).toHaveLength(0);
+    bus.setSenderActive('A', true);
+    runTicks(bus, 5, 1);
+    expect(bus.trace().map((f) => f.name)).toEqual(['A_Fast']);
+  });
+
+  it('rejects an unknown sender', () => {
+    const bus = createBus(testCatalogue);
+    expect(() => bus.setSenderActive('Z', false)).toThrow(/sender/);
+  });
+});
+
 describe('bus delivery', () => {
   it('shows a subscriber the value one tick after it is sent, never in the same tick', () => {
     const bus = createBus(testCatalogue);

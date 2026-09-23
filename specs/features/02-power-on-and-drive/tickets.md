@@ -28,16 +28,16 @@ Notes: Also added the R3 feature catalogue (`busCatalogue`) with value tables fo
 
 ## T-003: Power on: startup sequence to READY
 
-Status: open
+Status: done
 Blocked by: T-001, T-002
 Slice: `createSim` wires the plant (pack, contactors, DC-link RC, 12 V) with VCU, BMS and MCU over the bus. A Power on press runs 12 V wake → self-checks → pre-charge → contactors → READY, and the snapshot shows each step's status and timestamp.
 Test seam: `createSim()` / `setInputs({ powerButton })` / `snapshot()` / `trace()` in `src/sim/index.ts`
 Acceptance:
-- [ ] READY is reached within 1.5–3 s of sim time. Steps complete in order and main+ closes only at ≥ 95% DC-link voltage (no welding event)
-- [ ] The trace contains each ECU's `_Boot` frame and periodic `VCU_Command`, `BMS_Status` and `MCU_Status` frames
-- [ ] Power off from READY opens the contactors and returns to OFF
-- [ ] Two sims with identical inputs have identical snapshots and traces after 10,000 ticks
-Notes:
+- [x] READY is reached within 1.5–3 s of sim time. Steps complete in order and main+ closes only at ≥ 95% DC-link voltage (no welding event)
+- [x] The trace contains each ECU's `_Boot` frame and periodic `VCU_Command`, `BMS_Status` and `MCU_Status` frames
+- [x] Power off from READY opens the contactors and returns to OFF
+- [x] Two sims with identical inputs have identical snapshots and traces after 10,000 ticks
+Notes: READY at 1.62 s. Timings, the LFP OCV curve, contactor actuation time and DC-link discharge are recorded in ADR 0005. The IC boots and sends `IC_Boot` too. Its dashboard model is T-005.
 
 ## T-004: Drive: gears, pedals and the 0–100 reference test
 

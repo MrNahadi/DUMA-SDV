@@ -39,6 +39,10 @@ export interface VehicleParams {
   packInternalResistanceOhm: number;
   dcLinkCapacitanceF: number;
   prechargeResistanceOhm: number;
+  /** Time constant of the inverter's DC-link active discharge while the contactors are open, s. */
+  dcLinkDischargeTauS: number;
+  /** Time from coil command to the contacts changing state, s. */
+  contactorActuationS: number;
   lvBatteryNominalV: number;
   auxLoadW: number;
 
@@ -93,6 +97,8 @@ export const vehicleParams: Readonly<VehicleParams> = Object.freeze({
   packInternalResistanceOhm: 0.08, // estimate: 172 × ~0.4 mΩ LFP prismatic cell DCIR plus busbars, ADR 0004
   dcLinkCapacitanceF: 1.0e-3, // estimate: typical 150-250 kW traction inverter DC-link film capacitor, ADR 0004
   prechargeResistanceOhm: 200, // estimate: gives τ = RC = 0.2 s, ADR 0004
+  dcLinkDischargeTauS: 0.4, // estimate: active discharge, 550 V to below 60 V in about 0.9 s, ADR 0005
+  contactorActuationS: 0.03, // estimate: typical HV contactor operate/release time, ADR 0005
   lvBatteryNominalV: 12.7, // estimate: rested 12 V battery, 12.6-12.8 V (requirements R2), ADR 0004
   auxLoadW: 400, // estimate: 12 V auxiliary load, HVAC off (ADR 0003 test conditions), ADR 0004
 

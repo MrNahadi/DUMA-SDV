@@ -61,6 +61,12 @@ export interface Bus {
   readonly catalogue: Catalogue;
   writer(sender: string, message: string): MessageWriter;
   subscribe(ecu: string, messages: readonly string[]): Inbox;
+  /**
+   * Power a sender's transceiver on or off. An inactive sender sends nothing:
+   * its periodic messages skip their slots and raised events are dropped.
+   * Every sender starts active.
+   */
+  setSenderActive(sender: string, active: boolean): void;
   /** Start of tick: frames sent in the previous tick reach their subscribers. */
   deliver(): void;
   /** End of tick: send due periodic and raised event messages, in catalogue order. */
@@ -155,6 +161,7 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
   const deliveredValues = new Float64Array(signalCount);
   // Per-message state.
   const raised = new Uint8Array(messages.length);
+  const senderActive = new Uint8Array(messages.length).fill(1);
   const onWire = new Uint8Array(messages.length);
   const wireT = new Float64Array(messages.length);
   const deliveredT = new Float64Array(messages.length).fill(Number.NaN);
@@ -237,6 +244,17 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
       };
     },
 
+    setSenderActive(sender, active) {
+      let found = false;
+      for (let i = 0; i < messages.length; i++) {
+        if (messages[i]!.def.sender !== sender) continue;
+        found = true;
+        senderActive[i] = active ? 1 : 0;
+        if (!active) raised[i] = 0;
+      }
+      if (!found) throw new Error(`Bus: unknown sender ${sender}`);
+    },
+
     deliver() {
       for (let i = 0; i < messages.length; i++) {
         if (onWire[i] === 0) continue;
@@ -254,8 +272,8 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
       for (let i = 0; i < messages.length; i++) {
         const msg = messages[i]!;
         const due = msg.periodTicks === 0 ? raised[i] === 1 : tick % msg.periodTicks === 0;
-        if (!due) continue;
         raised[i] = 0;
+        if (!due || senderActive[i] === 0) continue;
         onWire[i] = 1;
         wireT[i] = t;
         const n = msg.def.signals.length;
