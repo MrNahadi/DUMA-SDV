@@ -55,3 +55,30 @@
   height: var(--icon-nav);
   stroke-width: 1.5;
 }
+
+.startCard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin: var(--s-5);
+  padding: var(--s-4);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+}
+
+.startCard h2,
+.startCard p {
+  margin: 0;
+}
+
+.startCard h2 {
+  font: var(--text-h2);
+}
+
+.startCard p {
+  font: var(--text-small);
+  color: var(--ink-2);
+}

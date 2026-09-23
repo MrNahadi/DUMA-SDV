@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
+import { useAppStore } from './store';
+import { useSimStore } from './simStore';
 import { VIEW_IDS, VIEWS } from './views';
 
 // WebGL isn't available in jsdom; the stage is covered by the e2e smoke test.
@@ -22,5 +24,24 @@ describe('app shell', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Diagnostics');
     expect(screen.getByText(VIEWS.diagnostics.question)).toBeTruthy();
     expect(location.hash).toBe('#/diagnostics');
+  });
+
+  it('powers on from the Start here card and updates the top bar to READY', () => {
+    vi.useFakeTimers();
+    try {
+      useAppStore.getState().setView('drive');
+      render(<App />);
+
+      expect(screen.getByText('Start here')).toBeTruthy();
+      screen.getByRole('button', { name: 'Power on' }).click();
+      expect(useSimStore.getState().snapshot.powerState).toBe('ACCESSORY');
+      vi.advanceTimersByTime(2_500);
+      useSimStore.getState().advance(250);
+
+      expect(screen.getByRole('status', { name: 'Power state' }).textContent).toContain('READY');
+      expect(screen.queryByText('Start here')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
