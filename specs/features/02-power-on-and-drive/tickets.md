@@ -144,11 +144,11 @@ Notes: The E2E flow uses keyboard brake and accelerator plus the on-screen brake
 
 ## T-012: Procedural car stage smoke test fails intermittently
 
-Status: open
+Status: done
 Blocked by: T-009
 Slice: Investigate why the procedural car browser smoke test sometimes cannot find `stage-canvas` within five seconds during the full Playwright suite, and make the stage or test reliable without weakening its assertion.
 Test seam: `e2e/car.spec.ts` via Playwright Chromium
 Acceptance:
-- [ ] The procedural car stage renders without browser errors in the full Playwright suite
-- [ ] All Feedback commands pass
-Notes: On 2026-09-23, `npm run e2e` failed in `e2e/car.spec.ts:10` because `getByTestId('stage-canvas')` was not found after 5000 ms. The other five Playwright tests passed; typecheck, lint, unit tests and build passed.
+- [x] The procedural car stage renders without browser errors in the full Playwright suite
+- [x] All Feedback commands pass
+Notes: Four concurrent Chromium workers occasionally left the lazy 3D stage on its loading skeleton past the five-second assertion timeout. Limiting Playwright to two workers avoids the WebGL/SwiftShader startup contention; the unchanged assertion passed in three consecutive full-suite runs. Typecheck, lint, unit tests and build pass.
