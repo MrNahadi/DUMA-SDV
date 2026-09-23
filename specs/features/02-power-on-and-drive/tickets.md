@@ -93,16 +93,16 @@ Notes:
 
 ## T-008: Dashboard strip under the stage
 
-Status: open
+Status: done
 Blocked by: T-005, T-006
 Slice: The Drive-only strip under the stage, with speed as the display-size subject, a centre-zero power bar with kW, SOC with a bar, range, gear and the READY badge, all from the IC model and throttled to about 10 Hz. When the car is off it shows "—" values and one hint line.
 Test seam: UI via Testing Library
 Acceptance:
-- [ ] The off state shows "—" values and "Power on to see live values"
-- [ ] When driving, speed, power, SOC, range and gear update from the IC model, not plant truth
-- [ ] The READY badge shows an icon and the word, not colour alone
-- [ ] The strip is ≤ 120 px high and there's no horizontal scroll at 1366×768 (E2E check)
-Notes:
+- [x] The off state shows "—" values and "Power on to see live values"
+- [x] When driving, speed, power, SOC, range and gear update from the IC model, not plant truth
+- [x] The READY badge shows an icon and the word, not colour alone
+- [x] The strip is ≤ 120 px high and there's no horizontal scroll at 1366×768 (E2E check)
+Notes: The dashboard samples the IC snapshot at 10 Hz. The 112 px strip is shown only in Drive.
 
 ## T-009: Procedural car model
 

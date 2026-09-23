@@ -16,3 +16,14 @@ test('Power on reaches READY from a fresh load without console errors', async ({
   await expect(page.getByText('Start here')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('Drive dashboard fits at 1366×768 without horizontal scroll', async ({ page }) => {
+  await page.goto('/');
+  const dashboard = page.getByRole('region', { name: 'Driver dashboard' });
+  await expect(dashboard).toBeVisible();
+  expect((await dashboard.boundingBox())?.height).toBeLessThanOrEqual(120);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1366);
+  await page.getByRole('button', { name: 'Power on' }).click();
+  await expect(dashboard.getByTestId('dashboard-ready')).toContainText('READY');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(1366);
+});

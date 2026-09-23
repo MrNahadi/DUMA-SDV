@@ -23,6 +23,41 @@ describe('app shell', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Drive');
   });
 
+  it('shows the off dashboard and live values from the IC model', () => {
+    render(<App />);
+    const strip = screen.getByRole('region', { name: 'Driver dashboard' });
+    expect(strip.textContent).toContain('Power on to see live values');
+    expect(strip.querySelectorAll('[data-value="—"]')).toHaveLength(5);
+
+    const previous = useSimStore.getState().snapshot;
+    act(() => useSimStore.setState({ snapshot: {
+      ...previous,
+      timeS: 1,
+      powerState: 'READY',
+      speedMs: 0,
+      gear: 'P',
+      pack: { ...previous.pack, soc: 0.9 },
+      dashboard: {
+        speedMs: 20,
+        powerW: 42_000,
+        soc: 0.62,
+        rangeM: 314_000,
+        gear: 'D',
+        powerState: 'READY',
+        ready: true,
+        startupStep: 'none',
+      },
+    } }));
+
+    expect(screen.getByTestId('dashboard-speed').textContent).toContain('72');
+    expect(screen.getByTestId('dashboard-power').textContent).toContain('42');
+    expect(screen.getByTestId('dashboard-soc').textContent).toContain('62');
+    expect(screen.getByTestId('dashboard-range').textContent).toContain('314');
+    expect(screen.getByTestId('dashboard-gear').textContent).toContain('D');
+    expect(screen.getByTestId('dashboard-ready').textContent).toContain('READY');
+    expect(screen.getByTestId('dashboard-ready').querySelector('svg')).toBeTruthy();
+  });
+
   it('switches the panel when a view is chosen and mirrors it to the hash', async () => {
     render(<App />);
     await userEvent.click(screen.getByRole('button', { name: 'Diagnostics' }));

@@ -6,6 +6,8 @@ import { StageSkeleton } from '../three/StageSkeleton';
 import styles from './App.module.css';
 import { useSimLoop } from './useSimLoop';
 import { useDriveInput } from './useDriveInput';
+import { useAppStore } from './store';
+import { DashboardStrip } from './DashboardStrip';
 
 // The 3D stage is split out so the shell paints before three.js loads.
 const Stage = lazy(() => import('../three/Stage'));
@@ -13,9 +15,10 @@ const Stage = lazy(() => import('../three/Stage'));
 export function App() {
   useSimLoop();
   useDriveInput();
+  const view = useAppStore((s) => s.view);
 
   return (
-    <div className={styles.shell}>
+    <div className={`${styles.shell} ${view === 'drive' ? styles.withDashboard : ''}`}>
       <TopBar />
       <NavRail />
       <main className={styles.stage} aria-label="3D view of the car">
@@ -23,6 +26,7 @@ export function App() {
           <Stage />
         </Suspense>
       </main>
+      {view === 'drive' && <DashboardStrip />}
       <ViewPanel />
     </div>
   );
