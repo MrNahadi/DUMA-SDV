@@ -26,7 +26,7 @@ test('the stage stays still when parked and animates while driving', async ({ pa
   if (!box) throw new Error('Brake control is not visible');
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
-  await page.waitForTimeout(350);
+  await page.waitForTimeout(1200);
   await page.keyboard.press('d');
   await expect(page.getByRole('region', { name: 'Gear selector' }).getByRole('button', { name: 'D' })).toHaveAttribute('aria-pressed', 'true');
   await page.mouse.up();

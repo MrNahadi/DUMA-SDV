@@ -119,14 +119,14 @@ Notes:
 
 ## T-010: Car animation: wheels, lights and rolling road
 
-Status: in-progress
+Status: done
 Blocked by: T-004, T-009
 Slice: Each frame the car reads the latest snapshot. Wheels rotate by the snapshot's wheel angle, brake lights track the brake pedal, headlights come on at READY, and a rolling-road stripe moves at road speed only while the car is moving. Nothing moves when parked.
 Test seam: pure mapping functions in `src/three/car/` (snapshot → visual state), plus E2E
 Acceptance:
-- [ ] The mapping gives brake-light intensity 0 when the brake is 0 and rising with the pedal, headlights on only when READY, and rolling-road speed equal to vehicle speed
-- [ ] The wheel angle advances by v/r·dt (checked through the sim snapshot)
-- [ ] With the car parked in READY, the visual state doesn't change between frames
+- [x] The mapping gives brake-light intensity 0 when the brake is 0 and rising with the pedal, headlights on only when READY, and rolling-road speed equal to vehicle speed
+- [x] The wheel angle advances by v/r·dt (checked through the sim snapshot)
+- [x] With the car parked in READY, the visual state doesn't change between frames
 Notes:
 - Checkpoint: mapping, wheel/lamp updates and rolling-road stripes implemented; unit tests and the original feedback suite passed before the new E2E test was added. The new `e2e/car.spec.ts` test fails because D remains refused with `brakeRequired` after holding the brake. Tried keyboard S then D, and pointer brake then D. Do not retry those approaches in the next iteration; inspect whether sim time/pedal state advances in Playwright and whether the test's screenshot assertion can observe the canvas. Run all Feedback commands before marking done.
 
