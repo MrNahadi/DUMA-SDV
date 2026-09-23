@@ -15,16 +15,16 @@ Notes: Estimates recorded in ADR 0004. Also added the motor + inverter loss mode
 
 ## T-002: Simulated CAN bus with catalogue, scheduling and trace
 
-Status: open
+Status: done
 Blocked by:
 Slice: A bus that sends catalogue-declared periodic and event messages at deterministic tick boundaries, delivers the latest value to subscribers one tick later, and records every frame in a 5,000-frame ring buffer.
 Test seam: `src/sim/bus/index.ts` (`createBus`, catalogue types)
 Acceptance:
-- [ ] A 10 ms message appears 100 times per simulated second, and a 1000 ms one appears once
-- [ ] A subscriber sees a value one tick after it's sent, never in the same tick
-- [ ] The trace keeps the last 5,000 frames in order, and older frames drop off
-- [ ] Duplicate IDs in a catalogue throw at creation
-Notes:
+- [x] A 10 ms message appears 100 times per simulated second, and a 1000 ms one appears once
+- [x] A subscriber sees a value one tick after it's sent, never in the same tick
+- [x] The trace keeps the last 5,000 frames in order, and older frames drop off
+- [x] Duplicate IDs in a catalogue throw at creation
+Notes: Also added the R3 feature catalogue (`busCatalogue`) with value tables for enums and wire resolution (`scale`) for numbers. The per-tick path is allocation-free (typed arrays).
 
 ## T-003: Power on: startup sequence to READY
 
