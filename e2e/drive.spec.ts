@@ -36,7 +36,7 @@ test('judge can start, drive, stop and power off', async ({ page }) => {
   await gears.getByRole('button', { name: 'P' }).click();
   await expect(gears.getByRole('button', { name: 'P' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Power off', exact: true }).click();
-  await expect(page.getByRole('status', { name: 'Power state' })).toContainText('OFF');
+  await expect(page.getByRole('status', { name: 'Power state' })).toContainText('Off');
   await expect(page.getByText('Start here')).toBeVisible();
   expect(errors).toEqual([]);
 });

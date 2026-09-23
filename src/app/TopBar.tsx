@@ -12,7 +12,7 @@ export function TopBar() {
       </div>
       <div className={styles.state} role="status" aria-label="Power state">
         <Power aria-hidden="true" />
-        <span>{powerState === 'ACCESSORY' ? 'Starting' : powerState}</span>
+        <span>{powerState === 'OFF' ? 'Off' : powerState === 'ACCESSORY' ? 'Starting' : powerState}</span>
       </div>
       <div className={styles.author}>FNM</div>
     </header>
