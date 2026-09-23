@@ -187,6 +187,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     vcu.kl15 = true;
     vcu.powerState = 'ACCESSORY';
     vcu.failReason = null;
+    vcu.gearRefusal = null;
     hvRequested = false;
     contactorRequest = 'open';
     lastBmsFrameS = Number.NaN;
@@ -237,6 +238,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     const speedKmh = vehicleSpeedKmh(wakeAtS);
     if (!Number.isNaN(speedKmh)) selectGear(Math.abs(speedKmh) < STANDSTILL_KMH ? 'P' : 'N');
     vcu.powerState = 'OFF';
+    vcu.gearRefusal = null;
     shuttingDown = true;
     shutdownAtS = t;
     contactorRequest = 'open';
@@ -420,11 +422,14 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
       .set('startupStep', current >= 0 ? STARTUP_STEPS[current]! : 'none');
 
     // Remaining usable energy from the SOC the BMS reports, over the consumption.
-    const socPct = isFresh(inbox, 'BMS_Status', wakeAtS) ? (inbox.read('BMS_Status', 'soc') as number) : 0;
+    // Until a BMS_Status has arrived since waking there is no SOC, so the range is flagged invalid.
+    const socValid = isFresh(inbox, 'BMS_Status', wakeAtS);
+    const socPct = socValid ? (inbox.read('BMS_Status', 'soc') as number) : 0;
     const consumption = consumptionJPerM();
     rangeFrame
       .set('rangeKm', (Math.max(socPct, 0) / 100) * p.usableEnergyJ / consumption / 1000)
-      .set('avgConsumptionWhKm', jPerMToWhPerKm(consumption));
+      .set('avgConsumptionWhKm', jPerMToWhPerKm(consumption))
+      .set('rangeValid', socValid ? 'yes' : 'no');
   }
 
   return vcu;

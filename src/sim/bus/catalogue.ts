@@ -76,6 +76,8 @@ export const busCatalogue: Catalogue = Object.freeze([
     signals: [
       { name: 'rangeKm', unit: 'km', scale: 1 },
       { name: 'avgConsumptionWhKm', unit: 'Wh/km', scale: 0.1 },
+      // Validity flag: 'no' until the VCU has a fresh SOC from the BMS since waking.
+      { name: 'rangeValid', values: ['no', 'yes'] },
     ],
   },
   {

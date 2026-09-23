@@ -230,7 +230,7 @@ describe('feature catalogue', () => {
       ['IC_Boot', 'event', ['selfCheck', 'swVersion']],
       ['VCU_Command', 10, ['torqueRequest', 'contactorRequest', 'powerState']],
       ['VCU_Status', 100, ['powerState', 'gear', 'ready', 'speedLimitKmh', 'startupStep']],
-      ['VCU_Range', 1000, ['rangeKm', 'avgConsumptionWhKm']],
+      ['VCU_Range', 1000, ['rangeKm', 'avgConsumptionWhKm', 'rangeValid']],
       ['BMS_Status', 100, ['packVoltage', 'packCurrent', 'soc', 'contactorState', 'prechargeState']],
       ['BMS_Limits', 100, ['maxDischargeKw', 'maxChargeKw']],
       ['MCU_Status', 10, ['motorSpeedRpm', 'torqueActual', 'dcLinkVoltage', 'inverterState']],

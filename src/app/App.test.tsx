@@ -30,24 +30,28 @@ describe('app shell', () => {
     expect(strip.querySelectorAll('[data-value="—"]')).toHaveLength(5);
 
     const previous = useSimStore.getState().snapshot;
-    act(() => useSimStore.setState({ snapshot: {
-      ...previous,
-      timeS: 1,
-      powerState: 'READY',
-      speedMs: 0,
-      gear: 'P',
-      pack: { ...previous.pack, soc: 0.9 },
-      dashboard: {
-        speedMs: 20,
-        powerW: 42_000,
-        soc: 0.62,
-        rangeM: 314_000,
-        gear: 'D',
-        powerState: 'READY',
-        ready: true,
-        startupStep: 'none',
-      },
-    } }));
+    act(() =>
+      useSimStore.setState({
+        snapshot: {
+          ...previous,
+          timeS: 1,
+          powerState: 'READY',
+          speedMs: 0,
+          gear: 'P',
+          pack: { ...previous.pack, soc: 0.9 },
+          dashboard: {
+            speedMs: 20,
+            powerW: 42_000,
+            soc: 0.62,
+            rangeM: 314_000,
+            gear: 'D',
+            powerState: 'READY',
+            ready: true,
+            startupStep: 'none',
+          },
+        },
+      }),
+    );
 
     expect(screen.getByTestId('dashboard-speed').textContent).toContain('72');
     expect(screen.getByTestId('dashboard-power').textContent).toContain('42');
@@ -145,5 +149,54 @@ describe('app shell', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+  it('keeps a failed startup visible after the car falls back to OFF', () => {
+    render(<App />);
+    const previous = useSimStore.getState().snapshot;
+    act(() =>
+      useSimStore.setState({
+        snapshot: {
+          ...previous,
+          powerState: 'OFF',
+          startup: {
+            failReason: 'prechargeTimeout',
+            steps: previous.startup.steps.map((step) =>
+              step.id === 'wake' || step.id === 'selfCheck'
+                ? { ...step, status: 'done', startedS: 0, doneS: 0.5 }
+                : step.id === 'precharge'
+                  ? { ...step, status: 'failed', startedS: 0.5, doneS: 3.5 }
+                  : step,
+            ),
+          },
+        },
+      }),
+    );
+    expect(screen.getByRole('alert').textContent).toContain('Pre-charge took too long.');
+    const checklist = screen.getByRole('region', { name: 'Startup checklist' });
+    expect(checklist.querySelector('[data-status="failed"]')?.textContent).toContain('Failed');
+    expect(screen.getByRole('button', { name: 'Power on' })).toBeTruthy();
+  });
+
+  it('asks before powering off while reversing', () => {
+    render(<App />);
+    const previous = useSimStore.getState().snapshot;
+    act(() =>
+      useSimStore.setState({
+        snapshot: { ...previous, powerState: 'READY', gear: 'R', speedMs: -4 },
+      }),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Power off' }));
+    expect(screen.getByRole('dialog', { name: 'Power off while driving?' })).toBeTruthy();
+  });
+
+  it('explains a refused direction change without mentioning P', () => {
+    render(<App />);
+    const previous = useSimStore.getState().snapshot;
+    act(() =>
+      useSimStore.setState({
+        snapshot: { ...previous, powerState: 'READY', gear: 'D', gearRefusal: 'brakeRequired' },
+      }),
+    );
+    expect(screen.getByText('Press the brake to change direction')).toBeTruthy();
   });
 });

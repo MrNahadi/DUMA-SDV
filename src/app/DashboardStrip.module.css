@@ -24,4 +24,4 @@
 .powerFill, .socBar span { display: block; position: absolute; height: 100%; background: var(--ink); }
 .socBar span { left: 0; background: var(--ok); }
 .ready { display: flex; align-items: center; gap: var(--s-1); color: var(--ok); font: var(--text-label); white-space: nowrap; }
-.hint { position: absolute; bottom: var(--s-1); left: 50%; transform: translateX(-50%); margin: 0; color: var(--ink-3); font: var(--text-small); white-space: nowrap; }
+.hint { margin: 0; max-width: 120px; color: var(--ink-2); font: var(--text-small); white-space: normal; }

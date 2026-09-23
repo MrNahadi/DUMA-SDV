@@ -1,9 +1,11 @@
 import { useState } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { Check, Circle, CircleAlert, LoaderCircle, TriangleAlert } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Kbd } from '../ui/Kbd';
 import { Modal } from '../ui/Modal';
 import { Toast } from '../ui/Toast';
-import type { Gear, GearRefusal, SimSnapshot } from '../sim';
+import type { Gear, GearRefusal, SimSnapshot, StartupFailReason, StartupStepStatus } from '../sim';
 import { useSimStore } from './simStore';
 import { setPedalHeld } from './useDriveInput';
 import styles from './DrivePanel.module.css';
@@ -15,29 +17,90 @@ const stepNames: Record<SimSnapshot['startup']['steps'][number]['id'], string> =
   contactors: 'Contactors',
   ready: 'READY',
 };
-const refusalHints: Record<GearRefusal, string> = {
-  brakeRequired: 'Press the brake to shift out of P',
-  speedTooHigh: 'Slow down before shifting',
-  notReady: 'Power on the car before shifting',
+
+const statusWords: Record<StartupStepStatus, string> = {
+  pending: 'Pending',
+  active: 'Active',
+  done: 'Done',
+  failed: 'Failed',
 };
 
+const failReasons: Record<StartupFailReason, string> = {
+  wakeTimeout: 'A module did not wake up in time.',
+  selfCheckFailed: 'A module failed its self-check.',
+  selfCheckTimeout: 'A module did not finish its self-check in time.',
+  prechargeFailed: 'Pre-charge failed.',
+  prechargeTimeout: 'Pre-charge took too long.',
+  contactorTimeout: 'The contactors did not close in time.',
+  readyTimeout: 'The car did not reach READY in time.',
+};
+
+function refusalHint(refusal: GearRefusal, gear: Gear): string {
+  switch (refusal) {
+    case 'brakeRequired':
+      return gear === 'P'
+        ? 'Press the brake to shift out of P'
+        : 'Press the brake to change direction';
+    case 'speedTooHigh':
+      return 'Slow down before shifting';
+    case 'notReady':
+      return 'Power on the car before shifting';
+  }
+}
+
+function StepIcon({ status }: { status: StartupStepStatus }) {
+  switch (status) {
+    case 'done':
+      return <Check className={styles.stepDone} aria-hidden="true" />;
+    case 'failed':
+      return <CircleAlert className={styles.stepFailed} aria-hidden="true" />;
+    case 'active':
+      return <LoaderCircle className={styles.stepActive} aria-hidden="true" />;
+    case 'pending':
+      return <Circle className={styles.stepPending} aria-hidden="true" />;
+  }
+}
+
+/** Changes only when a startup step changes, so the panel doesn't re-render every frame (R7). */
+const stepsKey = (s: SimSnapshot) =>
+  s.startup.steps.map((step) => `${step.status}:${step.startedS}:${step.doneS}`).join('|');
+
 export function DrivePanel() {
-  const snapshot = useSimStore((s) => s.snapshot);
+  const { powerState, gear, gearRefusal, failReason } = useSimStore(
+    useShallow((s) => ({
+      powerState: s.snapshot.powerState,
+      gear: s.snapshot.gear,
+      gearRefusal: s.snapshot.gearRefusal,
+      failReason: s.snapshot.startup.failReason,
+    })),
+  );
+  // Subscribe to step changes only; read the steps themselves from the latest snapshot.
+  useSimStore((s) => stepsKey(s.snapshot));
+  const steps = useSimStore.getState().snapshot.startup.steps;
   const powerOff = useSimStore((s) => s.powerOff);
   const requestGear = useSimStore((s) => s.requestGear);
   const [expanded, setExpanded] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [toast, setToast] = useState(false);
-  const ready = snapshot.powerState === 'READY';
-  const steps = snapshot.startup.steps;
+
+  const ready = powerState === 'READY';
+  const failed = failReason !== null;
   const completed = steps.every((step) => step.status === 'done');
   const duration = completed ? (steps.at(-1)!.doneS! - steps[0]!.startedS!).toFixed(1) : null;
+
   const turnOff = () => {
     powerOff();
     setConfirming(false);
     setToast(true);
     window.setTimeout(() => setToast(false), 4000);
   };
+  const requestPowerOff = () => {
+    // Speed is read at click time; reversing counts as moving too.
+    const speedKmh = Math.abs(useSimStore.getState().snapshot.speedMs) * 3.6;
+    if (speedKmh > 5) setConfirming(true);
+    else turnOff();
+  };
+
   const pedal = (name: 'accelerator' | 'brake', label: string, hint: string) => (
     <button
       type="button"
@@ -57,59 +120,62 @@ export function DrivePanel() {
     </button>
   );
 
+  const checklist = (
+    <section aria-label="Startup checklist" className={styles.section}>
+      <button
+        type="button"
+        className={styles.checklistToggle}
+        onClick={() => setExpanded(!expanded)}
+        aria-expanded={expanded}
+      >
+        {completed ? `Startup complete in ${duration} s` : 'Startup checklist'}
+      </button>
+      {failed && (
+        <p role="alert" className={styles.failure}>
+          <TriangleAlert aria-hidden="true" />
+          <span>Startup stopped. {failReasons[failReason]} Power on to try again.</span>
+        </p>
+      )}
+      {(!completed || expanded) && (
+        <ol className={styles.steps}>
+          {steps.map((step) => (
+            <li key={step.id} data-status={step.status}>
+              <StepIcon status={step.status} />
+              <span>{stepNames[step.id]}</span>
+              <small>
+                {statusWords[step.status]}
+                {step.doneS === null ? '' : ` · ${step.doneS.toFixed(1)} s`}
+              </small>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+
   return (
     <div className={styles.content}>
-      {snapshot.powerState !== 'OFF' && (
+      {powerState === 'OFF' && failed && checklist}
+      {powerState !== 'OFF' && (
         <>
-          <section aria-label="Startup checklist" className={styles.section}>
-            <button
-              type="button"
-              className={styles.checklistToggle}
-              onClick={() => setExpanded(!expanded)}
-              aria-expanded={expanded}
-            >
-              {completed ? `Startup complete in ${duration} s` : 'Startup checklist'}
-            </button>
-            {(!completed || expanded) && (
-              <ol className={styles.steps}>
-                {steps.map((step) => (
-                  <li key={step.id}>
-                    <span aria-hidden="true">
-                      {step.status === 'done'
-                        ? '✓'
-                        : step.status === 'failed'
-                          ? '!'
-                          : step.status === 'active'
-                            ? '◌'
-                            : '○'}
-                    </span>
-                    <span>{stepNames[step.id]}</span>
-                    <small>
-                      {step.status}
-                      {step.doneS === null ? '' : ` · ${step.doneS.toFixed(1)} s`}
-                    </small>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </section>
+          {checklist}
           <section aria-label="Gear selector" className={styles.section}>
             <h2>Gear</h2>
             <div className={styles.gears}>
-              {(['P', 'R', 'N', 'D'] as Gear[]).map((gear) => (
+              {(['P', 'R', 'N', 'D'] as Gear[]).map((g) => (
                 <button
-                  key={gear}
+                  key={g}
                   type="button"
-                  aria-pressed={snapshot.gear === gear}
-                  onClick={() => requestGear(gear)}
+                  aria-pressed={gear === g}
+                  onClick={() => requestGear(g)}
                 >
-                  {gear}
+                  {g}
                 </button>
               ))}
             </div>
-            {snapshot.gearRefusal && (
+            {gearRefusal && (
               <small role="status" className={styles.hint}>
-                {refusalHints[snapshot.gearRefusal]}
+                {refusalHint(gearRefusal, gear)}
               </small>
             )}
           </section>
@@ -121,10 +187,7 @@ export function DrivePanel() {
             </div>
             {!ready && <small>Power on the car to drive</small>}
           </section>
-          <Button
-            variant="secondary"
-            onClick={() => (snapshot.speedMs * 3.6 > 5 ? setConfirming(true) : turnOff())}
-          >
+          <Button variant="secondary" onClick={requestPowerOff}>
             Power off
           </Button>
           {confirming && (

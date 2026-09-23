@@ -188,6 +188,20 @@ describe('power off and the gear (T-004, ADR 0006)', () => {
     expect(powerOnToReady(sim)).toBe(true);
     expect(sim.snapshot().gear).toBe('N');
   });
+
+  it('forgets a gear refusal from the last drive when the car powers on again', () => {
+    const sim = createSim();
+    expect(powerOnToReady(sim)).toBe(true);
+    sim.setInputs({ gearRequest: 'D' });
+    sim.step(1);
+    expect(sim.snapshot().gearRefusal).toBe('brakeRequired');
+    sim.setInputs({ powerButton: true });
+    sim.step(200);
+    expect(sim.snapshot().gearRefusal).toBeNull();
+    sim.setInputs({ powerButton: true });
+    sim.step(1);
+    expect(sim.snapshot().gearRefusal).toBeNull();
+  });
 });
 
 describe('torque and motion (T-004, R2, R4)', () => {

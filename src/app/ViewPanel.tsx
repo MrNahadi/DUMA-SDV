@@ -1,3 +1,4 @@
+import { Power } from 'lucide-react';
 import { useAppStore } from './store';
 import { VIEWS } from './views';
 import styles from './ViewPanel.module.css';
@@ -23,7 +24,7 @@ export function ViewPanel() {
         <section className={styles.startCard} aria-labelledby="start-here-title">
           <h2 id="start-here-title">Start here</h2>
           <p>Power on to run the startup sequence.</p>
-          <Button variant="primary" large icon={<Icon />} onClick={powerOn}>
+          <Button variant="primary" large icon={<Power />} onClick={powerOn}>
             Power on
           </Button>
         </section>

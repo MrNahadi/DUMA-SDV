@@ -35,7 +35,9 @@ export function DashboardStrip() {
     </div>
     <div className={styles.metric} data-testid="dashboard-range"><span className={styles.label}>Range</span><span className={styles.value} data-value={range}>{range} <small>km</small></span></div>
     <div className={styles.gear} data-testid="dashboard-gear"><span className={styles.label}>Gear</span><span className={styles.value} data-value={gear}>{gear}</span></div>
-    <div className={styles.ready} data-testid="dashboard-ready">{ready && <><Check aria-hidden="true" size={16} /> READY</>}</div>
-    {off && <p className={styles.hint}>Power on to see live values</p>}
+    <div className={styles.ready} data-testid="dashboard-ready">
+      {ready && <><Check aria-hidden="true" size={16} /> READY</>}
+      {off && <p className={styles.hint}>Power on to see live values</p>}
+    </div>
   </section>;
 }

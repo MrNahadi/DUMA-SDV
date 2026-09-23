@@ -16,7 +16,8 @@ function Car() {
     const visual = visualStateFromSnapshot(useSimStore.getState().snapshot);
     for (const name of wheelNames) {
       const wheel = model.getObjectByName(name);
-      if (wheel) wheel.rotation.z = visual.wheelAngleRad;
+      // Forward is +X and Z points left, so rolling forward is a negative rotation about Z.
+      if (wheel) wheel.rotation.z = -visual.wheelAngleRad;
     }
     const brake = model.getObjectByName('brake-lights') as Mesh;
     const head = model.getObjectByName('headlights') as Mesh;
@@ -35,13 +36,16 @@ function RollingRoad() {
     const visual = visualStateFromSnapshot(snapshot);
     const elapsedS = lastTimeS.current === null ? 0 : Math.max(0, snapshot.timeS - lastTimeS.current);
     lastTimeS.current = snapshot.timeS;
-    if (visual.roadSpeedMs !== 0) {
+    const moving = visual.roadSpeedMs !== 0;
+    // R10: the rolling road is shown only while the car moves.
+    if (stripes.current) stripes.current.visible = moving;
+    if (moving) {
       phaseM.current = ((phaseM.current - visual.roadSpeedMs * elapsedS) % stripeSpacingM + stripeSpacingM) % stripeSpacingM;
       if (stripes.current) stripes.current.position.x = phaseM.current;
     }
   });
   return (
-    <group ref={stripes} position-y={0.004}>
+    <group ref={stripes} position-y={0.004} visible={false}>
       {[-2, -1, 0, 1, 2].map((index) => (
         <mesh key={index} rotation-x={-Math.PI / 2} position-x={index * stripeSpacingM}>
           <planeGeometry args={[0.025, 2.5]} />

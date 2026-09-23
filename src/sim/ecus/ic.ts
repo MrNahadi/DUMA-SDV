@@ -102,7 +102,10 @@ export function createIc(bus: Bus): Ic {
       dashboard.soc = null;
     }
 
-    dashboard.rangeM = live(t, 'VCU_Range') ? (inbox.read('VCU_Range', 'rangeKm') as number) * 1000 : null;
+    dashboard.rangeM =
+      live(t, 'VCU_Range') && inbox.read('VCU_Range', 'rangeValid') === 'yes'
+        ? (inbox.read('VCU_Range', 'rangeKm') as number) * 1000
+        : null;
 
     if (live(t, 'VCU_Status')) {
       dashboard.gear = inbox.read('VCU_Status', 'gear') as Gear;

@@ -224,6 +224,24 @@ describe('VCU range estimate (T-005, R4)', () => {
   });
 });
 
+describe('range during startup (review fix)', () => {
+  it('never shows 0 km of range while the car wakes up, whenever Power on is pressed', () => {
+    // The 1000 ms VCU_Range slot can land before the first BMS_Status arrives,
+    // depending on when Power on is pressed within the second.
+    for (let offset = 0; offset < 100; offset++) {
+      const sim = createSim({ initialSoc: 0.8 });
+      sim.step(offset);
+      sim.setInputs({ powerButton: true });
+      for (let i = 0; i < 400; i++) {
+        sim.step(1);
+        const rangeM = sim.snapshot().dashboard.rangeM;
+        if (rangeM !== null) expect(rangeM, `Power on at tick ${offset}`).toBeGreaterThan(100_000);
+      }
+      expect(sim.snapshot().dashboard.rangeM).not.toBeNull();
+    }
+  });
+});
+
 describe('determinism with energy (T-005)', () => {
   it('gives identical snapshots after identical driving', () => {
     const drive = () => {

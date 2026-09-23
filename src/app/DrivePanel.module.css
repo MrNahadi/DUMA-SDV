@@ -94,3 +94,39 @@
 .faultButton {
   background: var(--fault) !important;
 }
+.steps svg {
+  width: var(--icon);
+  height: var(--icon);
+  stroke-width: 1.5;
+}
+.stepDone {
+  color: var(--ok);
+}
+.stepFailed {
+  color: var(--fault);
+}
+.stepActive {
+  color: var(--accent);
+}
+.stepPending {
+  color: var(--ink-3);
+}
+.failure {
+  display: flex;
+  gap: var(--s-2);
+  margin: 0;
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--fault);
+  border-radius: var(--radius);
+  background: var(--fault-soft);
+  font: var(--text-small);
+  color: var(--ink);
+}
+.failure svg {
+  flex: none;
+  width: var(--icon);
+  height: var(--icon);
+  margin-top: 1px;
+  stroke-width: 1.5;
+  color: var(--fault);
+}
