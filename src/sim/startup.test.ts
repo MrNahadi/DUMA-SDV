@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { TICK_S, createSim, type Sim } from './index';
+import { TICK_S, createSim } from './index';
+import { powerOnToReady } from './scenarios';
 import { vehicleParams } from './vehicle';
-
-/** Press the power button and step until the power state is READY or `maxTicks` pass. */
-function powerOnToReady(sim: Sim, maxTicks = 500): void {
-  sim.setInputs({ powerButton: true });
-  for (let i = 0; i < maxTicks && sim.snapshot().powerState !== 'READY'; i++) sim.step(1);
-}
 
 describe('startup sequence (T-003)', () => {
   it('stays OFF and silent until Power on is pressed', () => {

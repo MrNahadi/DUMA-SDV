@@ -1,0 +1,4 @@
+/** Scripted input sequences, shared by tests, the guided demo and e2e. */
+
+export { powerOnToReady } from './startup';
+export { shiftWithBrake, zeroTo100 } from './drive';

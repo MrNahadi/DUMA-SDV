@@ -41,16 +41,16 @@ Notes: READY at 1.62 s. Timings, the LFP OCV curve, contactor actuation time and
 
 ## T-004: Drive: gears, pedals and the 0–100 reference test
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: The VCU gear logic with interlocks and the pedal map produce torque requests. The MCU follows them within its envelope. Dynamics move the car, and friction brakes stop it. Includes the 0–100 and top-speed reference tests, plus a startup scenario and a 0–100 scenario in `src/sim/scenarios/`.
 Test seam: `src/sim/index.ts` public API. Scenarios in `src/sim/scenarios/`
 Acceptance:
-- [ ] 0–100 km/h in 5.31–6.49 s under ADR 0001 conditions (the test cites ADR 0001 row 23)
-- [ ] Full accelerator in D settles at 180 ± 1 km/h. Reverse is limited to 20 km/h
-- [ ] Shifting out of P without the brake is refused with a reason code. A direction change above 1 km/h is refused
-- [ ] No torque unless READY and in D or R. The car doesn't creep or roll on flat ground
-Notes:
+- [x] 0–100 km/h in 5.31–6.49 s under ADR 0001 conditions (the test cites ADR 0001 row 23)
+- [x] Full accelerator in D settles at 180 ± 1 km/h. Reverse is limited to 20 km/h
+- [x] Shifting out of P without the brake is refused with a reason code. A direction change above 1 km/h is refused
+- [x] No torque unless READY and in D or R. The car doesn't creep or roll on flat ground
+Notes: 0–100 in 5.97 s, top speed settles at 179.5 km/h, reverse at 19.96 km/h. Gear rules outside the spec (P while moving, gears before READY, gear after Power off) are in ADR 0006 (answerer). Pedal map, limiter, brakes and MCU torque gating are in ADR 0007.
 
 ## T-005: Energy: pack current, SOC, range estimate and the steady-100 range test
 

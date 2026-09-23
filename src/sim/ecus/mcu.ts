@@ -1,27 +1,39 @@
 /**
- * MCU (requirements R4): the inverter controller. In this ticket it boots,
- * calibrates its current sensors, and reports the DC-link voltage and motor speed
- * it measures. Torque control arrives with driving (T-004). Timings: ADR 0005.
+ * MCU (requirements R4): the inverter controller. It boots, calibrates its current
+ * sensors, then follows the VCU's torque request within the motor envelope. It
+ * makes torque only while the VCU commands READY, the BMS reports the contactors
+ * closed and the DC-link it measures is at least 90% of pack voltage. It reports
+ * the motor speed, actual torque and DC-link voltage it measures, and the vehicle
+ * speed derived from motor speed. Timings: ADR 0005.
  */
 
 import type { Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
+import { motorMaxTorqueNm } from '../vehicle';
 import { msToKmh, radsToRpm } from '../units';
-import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker } from './ecu';
+import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ecu';
 
 /** Boot and power-on self test on the 12 V switched supply. */
 const BOOT_S = 0.2;
 /** Current-sensor offset calibration after boot, with the bridge off. */
 const CALIBRATION_S = 0.3;
+/** Torque needs the DC-link at this fraction of pack voltage (R4). */
+const RUN_DC_LINK_RATIO = 0.9;
+/** A VCU_Command older than this counts as lost: torque drops to zero. */
+const COMMAND_TIMEOUT_S = 0.1;
+/** A BMS_Status older than this (two 100 ms periods) counts as lost. */
+const BMS_TIMEOUT_S = 0.2;
 
 export interface McuSensors {
   /** DC-link voltage at the inverter input, V. */
   dcLinkV: number;
-  /** Rotor speed, rad/s. */
+  /** Rotor speed, rad/s, forward positive. */
   motorSpeedRadS: number;
 }
 
 export interface Mcu {
+  /** Torque the inverter makes the motor produce, N·m (the plant's input). */
+  readonly torqueNm: number;
   step(t: number, powered: boolean, sensors: McuSensors): void;
 }
 
@@ -30,26 +42,50 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>): Mcu {
   const bootFrame = bus.writer('MCU', 'MCU_Boot');
   const status = bus.writer('MCU', 'MCU_Status');
   const vehicle = bus.writer('MCU', 'MCU_Vehicle');
+  const inbox = bus.subscribe('MCU', ['VCU_Command', 'BMS_Status']);
   bus.setSenderActive('MCU', false);
 
-  return {
-    step(t, powered, { dcLinkV, motorSpeedRadS }) {
+  /** True if the high-voltage supply and the VCU both allow torque. */
+  function enabled(t: number, dcLinkV: number): boolean {
+    if (!isFresh(inbox, 'VCU_Command', Math.max(boot.bootedAtS, t - COMMAND_TIMEOUT_S))) return false;
+    if (!isFresh(inbox, 'BMS_Status', Math.max(boot.bootedAtS, t - BMS_TIMEOUT_S))) return false;
+    if (inbox.read('VCU_Command', 'powerState') !== 'READY') return false;
+    if (inbox.read('BMS_Status', 'contactorState') !== 'closed') return false;
+    return dcLinkV >= RUN_DC_LINK_RATIO * (inbox.read('BMS_Status', 'packVoltage') as number);
+  }
+
+  const mcu = {
+    torqueNm: 0,
+    step(t: number, powered: boolean, { dcLinkV, motorSpeedRadS }: McuSensors) {
       const edge = boot.update(powered, t);
       if (edge === 'lost') bus.setSenderActive('MCU', false);
-      if (!boot.running) return;
+      if (!boot.running) {
+        mcu.torqueNm = 0;
+        return;
+      }
       if (edge === 'booted') {
         bus.setSenderActive('MCU', true);
         bootFrame.set('selfCheck', 'pass').set('swVersion', INITIAL_SW_VERSION).raise();
       }
 
       const calibrated = t - boot.bootedAtS >= CALIBRATION_S - TIME_EPS_S;
+      const run = calibrated && enabled(t, dcLinkV);
+      if (run) {
+        const request = inbox.read('VCU_Command', 'torqueRequest') as number;
+        const limit = motorMaxTorqueNm(p, motorSpeedRadS);
+        mcu.torqueNm = Math.min(Math.max(request, -limit), limit);
+      } else {
+        mcu.torqueNm = 0;
+      }
+
       const wheelSpeedMs = (motorSpeedRadS / p.reductionRatio) * p.wheelRadiusM;
       status
         .set('motorSpeedRpm', radsToRpm(motorSpeedRadS))
-        .set('torqueActual', 0)
+        .set('torqueActual', mcu.torqueNm)
         .set('dcLinkVoltage', dcLinkV)
-        .set('inverterState', calibrated ? 'standby' : 'off');
+        .set('inverterState', run ? 'run' : calibrated ? 'standby' : 'off');
       vehicle.set('vehicleSpeedKmh', msToKmh(wheelSpeedMs));
     },
   };
+  return mcu;
 }

@@ -6,6 +6,9 @@ export { createMcu, type Mcu, type McuSensors } from './mcu';
 export {
   STARTUP_STEPS,
   createVcu,
+  type DriverInputs,
+  type Gear,
+  type GearRefusal,
   type PowerState,
   type StartupFailReason,
   type StartupStepId,

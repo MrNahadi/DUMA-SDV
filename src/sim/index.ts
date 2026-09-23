@@ -4,22 +4,26 @@
  */
 
 import { createHvCircuit, packOcvV, type ContactorStates } from './battery';
-import { busCatalogue, createBus, type Frame } from './bus';
+import { GEARS, busCatalogue, createBus, type Frame } from './bus';
 import {
   STARTUP_STEPS,
   createBms,
   createIc,
   createMcu,
   createVcu,
+  type DriverInputs,
+  type Gear,
+  type GearRefusal,
   type PowerState,
   type StartupFailReason,
   type StartupStepId,
   type StartupStepStatus,
 } from './ecus';
-import { vehicleParams, type VehicleParams } from './vehicle';
+import { radsToRpm } from './units';
+import { createLongitudinalDynamics, vehicleParams, type VehicleParams } from './vehicle';
 
 export type { Frame } from './bus';
-export type { PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
+export type { Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
 
 /** Fixed simulation step: 10 ms (100 Hz). */
 export const TICK_S = 0.01;
@@ -35,6 +39,12 @@ export interface SimOptions {
 export interface SimInputs {
   /** A press of the power button. It is consumed by the next tick. */
   powerButton: boolean;
+  /** Accelerator pedal, 0..1. Held until changed. */
+  accelerator: number;
+  /** Brake pedal, 0..1. Held until changed. */
+  brake: number;
+  /** A gear selector request. It is consumed by the next tick. */
+  gearRequest: Gear;
 }
 
 export interface StartupStepSnapshot {
@@ -57,6 +67,23 @@ export interface SimSnapshot {
     /** Why the last startup attempt failed, or null. */
     failReason: StartupFailReason | null;
   };
+  gear: Gear;
+  /** Why the latest gear request was refused, or null if it was accepted. */
+  gearRefusal: GearRefusal | null;
+  /** Driver pedal positions, 0..1. */
+  pedals: { accelerator: number; brake: number };
+  /** Vehicle speed, m/s, forward positive. */
+  speedMs: number;
+  /** Vehicle acceleration, m/s². */
+  accelMs2: number;
+  motor: {
+    /** Shaft speed, rpm, forward positive. */
+    speedRpm: number;
+    /** Shaft torque, N·m, forward positive. */
+    torqueNm: number;
+  };
+  /** Distance travelled since creation, m. */
+  odometerM: number;
   pack: {
     /** Terminal voltage, V. */
     voltageV: number;
@@ -71,6 +98,14 @@ export interface SimSnapshot {
   weldingEvents: number;
   /** 12 V battery voltage, V. */
   lvVoltageV: number;
+  /** What the 3D car shows. */
+  render: {
+    /** Road-wheel rotation angle, rad, in [0, 2π). */
+    wheelAngleRad: number;
+    /** Brake-light intensity, 0..1 (follows the brake pedal). */
+    brakeLights: number;
+    headlights: boolean;
+  };
 }
 
 export interface Sim {
@@ -88,14 +123,19 @@ function nullIfNaN(value: number): number | null {
   return Number.isNaN(value) ? null : value;
 }
 
+function checkPedal(name: string, value: number): void {
+  if (!(value >= 0 && value <= 1)) throw new RangeError(`${name} must be within 0..1, got ${value}`);
+}
+
 export function createSim(options: SimOptions = {}): Sim {
   const p = options.params ?? vehicleParams;
   const soc = options.initialSoc ?? 0.8;
   if (!(soc >= 0 && soc <= 1)) throw new RangeError(`initialSoc must be within 0..1, got ${soc}`);
 
-  // The world: pack, HV circuit and 12 V battery.
+  // The world: pack, HV circuit, 12 V battery and the car's motion.
   const ocvV = packOcvV(p, soc);
   const hv = createHvCircuit(p, TICK_S, ocvV);
+  const dynamics = createLongitudinalDynamics(p, TICK_S);
   const bmsSensors = { hv, soc };
   const mcuSensors = { dcLinkV: 0, motorSpeedRadS: 0 };
 
@@ -108,19 +148,24 @@ export function createSim(options: SimOptions = {}): Sim {
 
   let tick = 0;
   let powerButton = false;
+  const driver: DriverInputs = { accelerator: 0, brake: 0, gearRequest: null };
 
   function runTick() {
     // Integer ms first, so t is exact for whole ticks (matches the bus trace).
     const t = (tick * TICK_MS) / 1000;
     bus.deliver();
 
-    vcu.step(t, powerButton);
+    vcu.step(t, powerButton, driver);
     powerButton = false;
+    driver.gearRequest = null;
     bms.step(t, vcu.kl15, bmsSensors);
     mcuSensors.dcLinkV = hv.dcLinkV;
+    mcuSensors.motorSpeedRadS = dynamics.motorSpeedRadS;
     mcu.step(t, vcu.kl15, mcuSensors);
     ic.step(t, vcu.kl15);
 
+    // Friction brakes are hydraulic: the pedal acts on the plant directly.
+    dynamics.step(mcu.torqueNm, driver.brake);
     hv.step(ocvV);
     bus.transmit(tick);
     tick++;
@@ -134,7 +179,15 @@ export function createSim(options: SimOptions = {}): Sim {
       for (let i = 0; i < ticks; i++) runTick();
     },
     setInputs(inputs) {
+      if (inputs.accelerator !== undefined) checkPedal('accelerator', inputs.accelerator);
+      if (inputs.brake !== undefined) checkPedal('brake', inputs.brake);
+      if (inputs.gearRequest !== undefined && !GEARS.includes(inputs.gearRequest)) {
+        throw new RangeError(`gearRequest must be one of ${GEARS.join(', ')}, got ${String(inputs.gearRequest)}`);
+      }
       if (inputs.powerButton) powerButton = true;
+      if (inputs.accelerator !== undefined) driver.accelerator = inputs.accelerator;
+      if (inputs.brake !== undefined) driver.brake = inputs.brake;
+      if (inputs.gearRequest !== undefined) driver.gearRequest = inputs.gearRequest;
     },
     snapshot() {
       return {
@@ -150,11 +203,23 @@ export function createSim(options: SimOptions = {}): Sim {
           })),
           failReason: vcu.failReason,
         },
+        gear: vcu.gear,
+        gearRefusal: vcu.gearRefusal,
+        pedals: { accelerator: driver.accelerator, brake: driver.brake },
+        speedMs: dynamics.speedMs,
+        accelMs2: dynamics.accelMs2,
+        motor: { speedRpm: radsToRpm(dynamics.motorSpeedRadS), torqueNm: mcu.torqueNm },
+        odometerM: dynamics.odometerM,
         pack: { voltageV: hv.packTerminalV, currentA: hv.packCurrentA, soc },
         dcLinkVoltageV: hv.dcLinkV,
         contactors: { ...hv.closed },
         weldingEvents: hv.weldingEvents,
         lvVoltageV: p.lvBatteryNominalV,
+        render: {
+          wheelAngleRad: dynamics.wheelAngleRad,
+          brakeLights: driver.brake,
+          headlights: vcu.powerState === 'READY',
+        },
       };
     },
     trace() {

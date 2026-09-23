@@ -1,16 +1,32 @@
 /**
- * VCU (requirements R4): the supervisor. It senses the power button directly, owns
- * the switched 12 V supply (KL15) of the other ECUs, and runs the power state
- * machine and the startup sequence. It learns everything about the other ECUs from
- * the bus. Timings are in ADR 0005.
+ * VCU (requirements R4): the supervisor. It senses the power button and the
+ * driver's pedals and gear selector directly, owns the switched 12 V supply (KL15)
+ * of the other ECUs, and runs the power state machine, the startup sequence, the
+ * gear interlocks and the pedal map. It learns everything about the other ECUs
+ * from the bus. Timings are in ADR 0005, gear rules in ADR 0006, and the pedal map
+ * and speed limiter in ADR 0007.
  */
 
-import { POWER_STATES, type Bus } from '../bus';
+import { GEARS, POWER_STATES, type Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
-import { msToKmh } from '../units';
+import { motorMaxTorqueNm } from '../vehicle';
+import { msToKmh, rpmToRads } from '../units';
 import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ecu';
 
 export type PowerState = (typeof POWER_STATES)[number];
+export type Gear = (typeof GEARS)[number];
+/** Why a gear request was refused (ADR 0006). */
+export type GearRefusal = 'brakeRequired' | 'speedTooHigh' | 'notReady';
+
+/** What the VCU senses from the driver each tick. */
+export interface DriverInputs {
+  /** Accelerator pedal, 0..1. */
+  accelerator: number;
+  /** Brake pedal, 0..1. */
+  brake: number;
+  /** A gear selector request this tick, or null. */
+  gearRequest: Gear | null;
+}
 
 export const STARTUP_STEPS = ['wake', 'selfCheck', 'precharge', 'contactors', 'ready'] as const;
 export type StartupStepId = (typeof STARTUP_STEPS)[number];
@@ -50,6 +66,14 @@ const READY_DC_LINK_RATIO = 0.9;
 /** Power-down waits this long for the BMS to report open contactors. */
 const SHUTDOWN_TIMEOUT_S = 1;
 const REMOTE_BOOTS = ['BMS_Boot', 'MCU_Boot', 'IC_Boot'] as const;
+/** Leaving P or changing direction needs the car below this speed (R4). */
+const STANDSTILL_KMH = 1;
+/** ... and the brake pedal above this (R4). */
+const SHIFT_BRAKE_MIN = 0.1;
+/** Speed limit in R (R4). */
+const REVERSE_SPEED_LIMIT_KMH = 20;
+/** The limiter fades torque out over this band below the limit (ADR 0007). */
+const LIMITER_BAND_KMH = 2;
 
 export interface Vcu {
   readonly powerState: PowerState;
@@ -60,7 +84,10 @@ export interface Vcu {
   readonly stepStartedS: readonly number[];
   readonly stepDoneS: readonly number[];
   readonly failReason: StartupFailReason | null;
-  step(t: number, powerButtonPressed: boolean): void;
+  readonly gear: Gear;
+  /** Why the latest gear request was refused, or null if it was accepted. */
+  readonly gearRefusal: GearRefusal | null;
+  step(t: number, powerButtonPressed: boolean, driver: Readonly<DriverInputs>): void;
 }
 
 export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
@@ -68,12 +95,13 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
   const bootFrame = bus.writer('VCU', 'VCU_Boot');
   const command = bus.writer('VCU', 'VCU_Command');
   const status = bus.writer('VCU', 'VCU_Status');
-  const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'MCU_Status']);
+  const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'MCU_Status', 'MCU_Vehicle']);
   bus.setSenderActive('VCU', false);
 
   const packVMin = p.seriesCells * 2.5;
   const packVMax = p.seriesCells * 3.65;
   const speedLimitKmh = msToKmh(p.topSpeedMs);
+  const kmhPerRadS = msToKmh(p.wheelRadiusM / p.reductionRatio);
 
   const stepStatus: StartupStepStatus[] = STARTUP_STEPS.map(() => 'pending');
   const stepStartedS: number[] = STARTUP_STEPS.map(() => Number.NaN);
@@ -89,6 +117,8 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
   let contactorRequest: 'open' | 'precharge' | 'close' = 'open';
   let lastBmsFrameS = Number.NaN;
   let bmsValidFrames = 0;
+  /** The last of P, D or R selected. N keeps it, so shifting through N can't skip an interlock. */
+  let lastEngaged: Gear = 'P';
 
   const vcu = {
     powerState: 'OFF' as PowerState,
@@ -97,37 +127,46 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
     stepStartedS,
     stepDoneS,
     failReason: null as StartupFailReason | null,
-    step(t: number, buttonPressed: boolean) {
-      const pressed = buttonPressed || pendingPress;
-      pendingPress = false;
-      if (!awake) {
-        if (!pressed) return;
-        wake(t);
-      } else if (pressed) {
-        // While booting or powering down the press waits: it powers off once booted,
-        // or powers on again once asleep.
-        if (boot.running && !shuttingDown) powerOff(t);
-        else pendingPress = true;
-      }
-
-      if (boot.update(awake, t) === 'booted') {
-        bus.setSenderActive('VCU', true);
-        bootFrame.set('selfCheck', 'pass').set('swVersion', INITIAL_SW_VERSION).raise();
-      }
-      if (!boot.running) return;
-
-      if (shuttingDown) {
-        const bmsOpen = isFresh(inbox, 'BMS_Status', shutdownAtS) && inbox.read('BMS_Status', 'contactorState') === 'open';
-        if (!hvRequested || bmsOpen || t - shutdownAtS >= SHUTDOWN_TIMEOUT_S - TIME_EPS_S) {
-          sleep(t);
-          return;
-        }
-      } else if (current >= 0) {
-        runStartup(t);
-      }
-      publish();
+    gear: 'P' as Gear,
+    gearRefusal: null as GearRefusal | null,
+    step(t: number, buttonPressed: boolean, driver: Readonly<DriverInputs>) {
+      const running = updatePower(t, buttonPressed);
+      if (driver.gearRequest !== null) requestGear(t, driver.gearRequest, driver.brake);
+      if (running) publish(t, driver.accelerator);
     },
   };
+
+  /** Run the power state machine. Returns true if the VCU is running and publishing this tick. */
+  function updatePower(t: number, buttonPressed: boolean): boolean {
+    const pressed = buttonPressed || pendingPress;
+    pendingPress = false;
+    if (!awake) {
+      if (!pressed) return false;
+      wake(t);
+    } else if (pressed) {
+      // While booting or powering down the press waits: it powers off once booted,
+      // or powers on again once asleep.
+      if (boot.running && !shuttingDown) powerOff(t);
+      else pendingPress = true;
+    }
+
+    if (boot.update(awake, t) === 'booted') {
+      bus.setSenderActive('VCU', true);
+      bootFrame.set('selfCheck', 'pass').set('swVersion', INITIAL_SW_VERSION).raise();
+    }
+    if (!boot.running) return false;
+
+    if (shuttingDown) {
+      const bmsOpen = isFresh(inbox, 'BMS_Status', shutdownAtS) && inbox.read('BMS_Status', 'contactorState') === 'open';
+      if (!hvRequested || bmsOpen || t - shutdownAtS >= SHUTDOWN_TIMEOUT_S - TIME_EPS_S) {
+        sleep(t);
+        return false;
+      }
+    } else if (current >= 0) {
+      runStartup(t);
+    }
+    return true;
+  }
 
   function wake(t: number) {
     awake = true;
@@ -180,6 +219,10 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
   }
 
   function beginShutdown(t: number) {
+    // P only once the car has stopped; while it is still rolling, N (ADR 0006).
+    // With no speed reading since waking, the gear stays as it is.
+    const speedKmh = vehicleSpeedKmh(wakeAtS);
+    if (!Number.isNaN(speedKmh)) selectGear(Math.abs(speedKmh) < STANDSTILL_KMH ? 'P' : 'N');
     vcu.powerState = 'OFF';
     shuttingDown = true;
     shutdownAtS = t;
@@ -269,13 +312,76 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>): Vcu {
     );
   }
 
-  function publish() {
-    command.set('torqueRequest', 0).set('contactorRequest', contactorRequest).set('powerState', vcu.powerState);
+  /** Latest vehicle speed from MCU_Vehicle sent since `sinceS`, km/h (forward positive), or NaN. */
+  function vehicleSpeedKmh(sinceS: number): number {
+    return isFresh(inbox, 'MCU_Vehicle', sinceS) ? (inbox.read('MCU_Vehicle', 'vehicleSpeedKmh') as number) : Number.NaN;
+  }
+
+  /** Apply the gear interlocks (R4, ADR 0006) to a request. Re-selecting the engaged gear is a no-op. */
+  function requestGear(t: number, target: Gear, brake: number) {
+    if (target === vcu.gear) {
+      vcu.gearRefusal = null;
+      return;
+    }
+    vcu.gearRefusal = gearRefusal(t, target, brake);
+    if (vcu.gearRefusal === null) selectGear(target);
+  }
+
+  function selectGear(gear: Gear) {
+    vcu.gear = gear;
+    if (gear !== 'N') lastEngaged = gear;
+  }
+
+  function gearRefusal(t: number, target: Gear, brake: number): GearRefusal | null {
+    if (!boot.running || vcu.powerState === 'OFF') return 'notReady';
+    if (target === 'N') return null;
+    if (vcu.powerState !== 'READY') return 'notReady';
+
+    const speedKmh = vehicleSpeedKmh(Math.max(wakeAtS, t - LIVE_S));
+    const stopped = Math.abs(speedKmh) < STANDSTILL_KMH;
+    if (target === 'P') return stopped ? null : 'speedTooHigh';
+
+    const direction = target === 'D' ? 1 : -1;
+    const opposite: Gear = target === 'D' ? 'R' : 'D';
+    const changesDirection = lastEngaged === opposite || speedKmh * direction <= -STANDSTILL_KMH;
+    if (lastEngaged !== 'P' && !changesDirection) return null;
+    if (!stopped) return 'speedTooHigh';
+    return brake > SHIFT_BRAKE_MIN ? null : 'brakeRequired';
+  }
+
+  /**
+   * Pedal map, Normal mode (R4): pedal × the torque available at the current motor
+   * speed, clamped by the BMS discharge limit, faded out by the speed limiter.
+   * Positive drives forward. Zero unless READY in D or R.
+   */
+  function torqueRequestNm(t: number, accelerator: number): number {
+    if (vcu.powerState !== 'READY' || accelerator <= 0 || (vcu.gear !== 'D' && vcu.gear !== 'R')) return 0;
+    const maxDischargeKw = inbox.read('BMS_Limits', 'maxDischargeKw');
+    if (!isFresh(inbox, 'MCU_Status', t - LIVE_S) || maxDischargeKw === undefined) return 0;
+
+    const motorRadS = rpmToRads(inbox.read('MCU_Status', 'motorSpeedRpm') as number);
+    const w = Math.abs(motorRadS);
+    let availableNm = motorMaxTorqueNm(p, motorRadS);
+    if (w > 0) availableNm = Math.min(availableNm, ((maxDischargeKw as number) * 1000) / w);
+
+    const direction = vcu.gear === 'D' ? 1 : -1;
+    const limitKmh = vcu.gear === 'D' ? speedLimitKmh : REVERSE_SPEED_LIMIT_KMH;
+    const speedKmh = motorRadS * kmhPerRadS * direction;
+    const limiter = Math.min(Math.max((limitKmh - speedKmh) / LIMITER_BAND_KMH, 0), 1);
+    if (limiter === 0) return 0;
+    return direction * accelerator * availableNm * limiter;
+  }
+
+  function publish(t: number, accelerator: number) {
+    command
+      .set('torqueRequest', torqueRequestNm(t, accelerator))
+      .set('contactorRequest', contactorRequest)
+      .set('powerState', vcu.powerState);
     status
       .set('powerState', vcu.powerState)
-      .set('gear', 'P')
+      .set('gear', vcu.gear)
       .set('ready', vcu.powerState === 'READY' ? 'yes' : 'no')
-      .set('speedLimitKmh', speedLimitKmh);
+      .set('speedLimitKmh', vcu.gear === 'R' ? REVERSE_SPEED_LIMIT_KMH : speedLimitKmh);
   }
 
   return vcu;
