@@ -1,0 +1,40 @@
+.skeleton {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: var(--s-2);
+  background: var(--bg);
+}
+
+.car,
+.floor {
+  background: var(--surface-2);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.car {
+  width: 320px;
+  height: 88px;
+  border-radius: 48px 64px var(--radius) var(--radius);
+}
+
+.floor {
+  width: 420px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .car,
+  .floor {
+    animation: none;
+  }
+}

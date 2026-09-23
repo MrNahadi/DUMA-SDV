@@ -1,0 +1,67 @@
+.rail {
+  grid-area: rail;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-1);
+  padding: var(--s-3) 0;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+}
+
+.item {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition:
+    background-color var(--dur) var(--ease-out),
+    color var(--dur) var(--ease-out);
+}
+
+.item svg {
+  width: var(--icon-nav);
+  height: var(--icon-nav);
+  stroke-width: 1.5;
+}
+
+.item:hover {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+
+.item[aria-current='page'] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Tooltip: the label is also the accessible name. */
+.item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + var(--s-2));
+  top: 50%;
+  translate: 0 -50%;
+  z-index: 10;
+  padding: var(--s-1) var(--s-2);
+  border-radius: var(--radius);
+  background: var(--ink);
+  color: var(--surface);
+  font: var(--text-small);
+  white-space: nowrap;
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease-out);
+}
+
+.item:hover::after,
+.item:focus-visible::after {
+  opacity: 1;
+}
