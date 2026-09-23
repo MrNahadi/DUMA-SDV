@@ -1,0 +1,40 @@
+.kbd {
+  font: var(--text-label);
+  font-family: var(--font-mono);
+  padding: 2px 5px;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgb(23 24 26 / 0.45);
+}
+.modal {
+  width: min(420px, calc(100vw - 32px));
+  padding: var(--s-5);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-pop);
+}
+.modal h2 {
+  margin: 0 0 var(--s-3);
+  font: var(--text-h1);
+}
+.toast {
+  position: fixed;
+  right: var(--s-5);
+  bottom: var(--s-5);
+  z-index: 30;
+  display: flex;
+  gap: var(--s-2);
+  padding: var(--s-3) var(--s-4);
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+}

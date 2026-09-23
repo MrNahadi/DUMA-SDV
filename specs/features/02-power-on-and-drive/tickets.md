@@ -80,15 +80,15 @@ Notes: The UI click latches the power-button input; the next simulation tick cha
 
 ## T-007: Drive panel: startup checklist, gears, pedals, keyboard and Power off
 
-Status: open
+Status: done
 Blocked by: T-004, T-006
 Slice: The startup checklist (collapsing to "Startup complete in N s"), the PRND segmented control with the refusal hint, on-screen hold pedals with Kbd hints, keyboard input with ramps (R7), and Power off with the confirmation modal above 5 km/h plus a completion toast. Adds the Modal, Toast and Kbd primitives.
 Test seam: UI via Testing Library. `src/app` keyboard hook through the rendered `App`
 Acceptance:
-- [ ] Choosing D without the brake shows "Press the brake to shift out of P". With the brake held it shifts
-- [ ] Holding `W` ramps the accelerator to 1 over about 0.4 s, and releasing ramps it to 0 over about 0.25 s (fake timers)
-- [ ] Power off above 5 km/h opens the modal. Cancel keeps the car READY, and confirming powers off and shows the toast "Car powered off"
-- [ ] Button and label text match DESIGN-RULES §8 exactly
+- [x] Choosing D without the brake shows "Press the brake to shift out of P". With the brake held it shifts
+- [x] Holding `W` ramps the accelerator to 1 over about 0.4 s, and releasing ramps it to 0 over about 0.25 s (fake timers)
+- [x] Power off above 5 km/h opens the modal. Cancel keeps the car READY, and confirming powers off and shows the toast "Car powered off"
+- [x] Button and label text match DESIGN-RULES §8 exactly
 Notes:
 
 ## T-008: Dashboard strip under the stage

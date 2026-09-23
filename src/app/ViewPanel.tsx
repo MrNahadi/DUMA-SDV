@@ -3,6 +3,7 @@ import { VIEWS } from './views';
 import styles from './ViewPanel.module.css';
 import { Button } from '../ui/Button';
 import { useSimStore } from './simStore';
+import { DrivePanel } from './DrivePanel';
 
 export function ViewPanel() {
   const view = useAppStore((s) => s.view);
@@ -26,13 +27,15 @@ export function ViewPanel() {
             Power on
           </Button>
         </section>
-      ) : view === 'drive' ? null : (
-      <div className={styles.empty}>
-        <span className={styles.emptyIcon} aria-hidden="true">
-          <Icon />
-        </span>
-        <p>Nothing to show yet. This view is part of an upcoming phase.</p>
-      </div>
+      ) : null}
+      {view === 'drive' && <DrivePanel />}
+      {view !== 'drive' && (
+        <div className={styles.empty}>
+          <span className={styles.emptyIcon} aria-hidden="true">
+            <Icon />
+          </span>
+          <p>Nothing to show yet. This view is part of an upcoming phase.</p>
+        </div>
       )}
     </aside>
   );

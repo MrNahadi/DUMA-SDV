@@ -1,6 +1,6 @@
-import { act, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App';
 import { useAppStore } from './store';
 import { useSimStore } from './simStore';
@@ -10,6 +10,11 @@ import { VIEW_IDS, VIEWS } from './views';
 vi.mock('../three/Stage', () => ({ default: () => <div data-testid="stage-canvas" /> }));
 
 describe('app shell', () => {
+  beforeEach(() => {
+    useSimStore.getState().reset();
+    useAppStore.getState().setView('drive');
+  });
+
   it('lists every view in the nav rail and opens Drive by default', () => {
     render(<App />);
     for (const id of VIEW_IDS) {
@@ -38,5 +43,72 @@ describe('app shell', () => {
 
     expect(screen.getByRole('status', { name: 'Power state' }).textContent).toContain('READY');
     expect(screen.queryByText('Start here')).toBeNull();
+  });
+
+  it('shows the shift refusal and accepts D while the brake is held', () => {
+    vi.useFakeTimers();
+    try {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: 'Power on' }));
+      act(() => useSimStore.getState().advance(250));
+      fireEvent.click(screen.getByRole('button', { name: 'D' }));
+      act(() => useSimStore.getState().advance(1));
+      expect(screen.getByText('Press the brake to shift out of P')).toBeTruthy();
+      fireEvent.pointerDown(screen.getByRole('button', { name: /Brake/ }));
+      act(() => vi.advanceTimersByTime(400));
+      fireEvent.click(screen.getByRole('button', { name: 'D' }));
+      act(() => useSimStore.getState().advance(1));
+      expect(screen.getByRole('button', { name: 'D' }).getAttribute('aria-pressed')).toBe('true');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ramps W up and down using keyboard input', () => {
+    vi.useFakeTimers();
+    try {
+      render(<App />);
+      fireEvent.keyDown(window, { key: 'w' });
+      act(() => vi.advanceTimersByTime(400));
+      act(() => useSimStore.getState().advance(1));
+      expect(useSimStore.getState().snapshot.pedals.accelerator).toBeCloseTo(1, 1);
+      fireEvent.keyUp(window, { key: 'w' });
+      act(() => vi.advanceTimersByTime(250));
+      act(() => useSimStore.getState().advance(1));
+      expect(useSimStore.getState().snapshot.pedals.accelerator).toBeCloseTo(0, 1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('confirms Power off while moving and shows completion', () => {
+    vi.useFakeTimers();
+    try {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: 'Power on' }));
+      act(() => useSimStore.getState().advance(250));
+      fireEvent.pointerDown(screen.getByRole('button', { name: /Brake/ }));
+      act(() => vi.advanceTimersByTime(400));
+      fireEvent.click(screen.getByRole('button', { name: 'D' }));
+      act(() => useSimStore.getState().advance(1));
+      fireEvent.pointerUp(screen.getByRole('button', { name: /Brake/ }));
+      act(() => vi.advanceTimersByTime(250));
+      fireEvent.pointerDown(screen.getByRole('button', { name: /Accelerator/ }));
+      act(() => vi.advanceTimersByTime(400));
+      act(() => {
+        useSimStore.getState().advance(300);
+      });
+      expect(useSimStore.getState().snapshot.speedMs * 3.6).toBeGreaterThan(5);
+      fireEvent.click(screen.getByRole('button', { name: 'Power off' }));
+      expect(screen.getByRole('dialog', { name: 'Power off while driving?' })).toBeTruthy();
+      fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(useSimStore.getState().snapshot.powerState).toBe('READY');
+      fireEvent.click(screen.getByRole('button', { name: 'Power off' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Power off while driving' }));
+      act(() => useSimStore.getState().advance(1));
+      expect(screen.getByText('Car powered off')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
