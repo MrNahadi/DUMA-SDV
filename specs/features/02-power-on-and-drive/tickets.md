@@ -1,0 +1,142 @@
+# 02 · Power on and drive: tickets
+
+## T-001: Vehicle parameters and road-load physics
+
+Status: open
+Blocked by:
+Slice: Typed, frozen vehicle params from ADR 0001 plus the new estimates (recorded in a new ADR). Pure plant functions for road load, traction limit and the motor torque/power envelope, verified against hand calculations.
+Test seam: `src/sim/vehicle/index.ts` public exports (params object, road-load, motor-envelope and traction-limit functions)
+Acceptance:
+- [ ] Every param cites `ADR 0001 row N` or `estimate: <reason>`. A new ADR records the estimates introduced (R1)
+- [ ] Road load at 100 km/h matches ½ρCdA v² + Crr m g to 0.1%
+- [ ] Motor envelope: 360 N·m below base speed, 230 kW above it, 0 at or above max speed
+- [ ] Traction limit uses static rear load plus load transfer and caps the wheel force
+Notes:
+
+## T-002: Simulated CAN bus with catalogue, scheduling and trace
+
+Status: open
+Blocked by:
+Slice: A bus that sends catalogue-declared periodic and event messages at deterministic tick boundaries, delivers the latest value to subscribers one tick later, and records every frame in a 5,000-frame ring buffer.
+Test seam: `src/sim/bus/index.ts` (`createBus`, catalogue types)
+Acceptance:
+- [ ] A 10 ms message appears 100 times per simulated second, and a 1000 ms one appears once
+- [ ] A subscriber sees a value one tick after it's sent, never in the same tick
+- [ ] The trace keeps the last 5,000 frames in order, and older frames drop off
+- [ ] Duplicate IDs in a catalogue throw at creation
+Notes:
+
+## T-003: Power on: startup sequence to READY
+
+Status: open
+Blocked by: T-001, T-002
+Slice: `createSim` wires the plant (pack, contactors, DC-link RC, 12 V) with VCU, BMS and MCU over the bus. A Power on press runs 12 V wake → self-checks → pre-charge → contactors → READY, and the snapshot shows each step's status and timestamp.
+Test seam: `createSim()` / `setInputs({ powerButton })` / `snapshot()` / `trace()` in `src/sim/index.ts`
+Acceptance:
+- [ ] READY is reached within 1.5–3 s of sim time. Steps complete in order and main+ closes only at ≥ 95% DC-link voltage (no welding event)
+- [ ] The trace contains each ECU's `_Boot` frame and periodic `VCU_Command`, `BMS_Status` and `MCU_Status` frames
+- [ ] Power off from READY opens the contactors and returns to OFF
+- [ ] Two sims with identical inputs have identical snapshots and traces after 10,000 ticks
+Notes:
+
+## T-004: Drive: gears, pedals and the 0–100 reference test
+
+Status: open
+Blocked by: T-003
+Slice: The VCU gear logic with interlocks and the pedal map produce torque requests. The MCU follows them within its envelope. Dynamics move the car, and friction brakes stop it. Includes the 0–100 and top-speed reference tests, plus a startup scenario and a 0–100 scenario in `src/sim/scenarios/`.
+Test seam: `src/sim/index.ts` public API. Scenarios in `src/sim/scenarios/`
+Acceptance:
+- [ ] 0–100 km/h in 5.31–6.49 s under ADR 0001 conditions (the test cites ADR 0001 row 23)
+- [ ] Full accelerator in D settles at 180 ± 1 km/h. Reverse is limited to 20 km/h
+- [ ] Shifting out of P without the brake is refused with a reason code. A direction change above 1 km/h is refused
+- [ ] No torque unless READY and in D or R. The car doesn't creep or roll on flat ground
+Notes:
+
+## T-005: Energy: pack current, SOC, range estimate and the steady-100 range test
+
+Status: open
+Blocked by: T-004
+Slice: Electrical power from motor power through the loss model plus the auxiliary load, pack current and terminal voltage, coulomb-counted SOC, the VCU range estimate, and the IC dashboard model built only from bus frames. Includes a cruise helper scenario and the steady-100 km/h range reference test.
+Test seam: `src/sim/index.ts` public API. Scenarios in `src/sim/scenarios/`
+Acceptance:
+- [ ] Steady-100 range is 459–561 km under ADR 0003 conditions (the test cites ADR 0003). It runs in under about 60 s of wall time
+- [ ] Steady-110 consumption is 172–190 Wh/km at the battery (ADR 0003 calibration anchor)
+- [ ] Energy balance: pack energy out = wheel work + losses + auxiliary, within 1% over a 0–100 run
+- [ ] The IC dashboard SOC goes stale when `BMS_Status` is suppressed (proves it reads the bus, not the plant)
+- [ ] The range estimate starts from WLTP consumption and moves toward the trip average after 5 km
+Notes:
+
+## T-006: App loop: Power on from the UI and a live power state
+
+Status: open
+Blocked by: T-003
+Slice: A rAF sim-loop hook (accumulator, 250 ms catch-up cap, pause when hidden) feeds a store snapshot. The Drive panel shows the Start-here card with **Power on**, and the top bar's power-state badge goes Off → Starting → READY live.
+Test seam: UI via Testing Library (`App` with the stage mocked). E2E via Playwright
+Acceptance:
+- [ ] Testing Library: clicking Power on and advancing time shows READY in the top bar
+- [ ] The Start-here card disappears once the car is on
+- [ ] E2E: on a fresh load, Power on reaches READY within 5 s and there are no console errors
+Notes:
+
+## T-007: Drive panel: startup checklist, gears, pedals, keyboard and Power off
+
+Status: open
+Blocked by: T-004, T-006
+Slice: The startup checklist (collapsing to "Startup complete in N s"), the PRND segmented control with the refusal hint, on-screen hold pedals with Kbd hints, keyboard input with ramps (R7), and Power off with the confirmation modal above 5 km/h plus a completion toast. Adds the Modal, Toast and Kbd primitives.
+Test seam: UI via Testing Library. `src/app` keyboard hook through the rendered `App`
+Acceptance:
+- [ ] Choosing D without the brake shows "Press the brake to shift out of P". With the brake held it shifts
+- [ ] Holding `W` ramps the accelerator to 1 over about 0.4 s, and releasing ramps it to 0 over about 0.25 s (fake timers)
+- [ ] Power off above 5 km/h opens the modal. Cancel keeps the car READY, and confirming powers off and shows the toast "Car powered off"
+- [ ] Button and label text match DESIGN-RULES §8 exactly
+Notes:
+
+## T-008: Dashboard strip under the stage
+
+Status: open
+Blocked by: T-005, T-006
+Slice: The Drive-only strip under the stage, with speed as the display-size subject, a centre-zero power bar with kW, SOC with a bar, range, gear and the READY badge, all from the IC model and throttled to about 10 Hz. When the car is off it shows "—" values and one hint line.
+Test seam: UI via Testing Library
+Acceptance:
+- [ ] The off state shows "—" values and "Power on to see live values"
+- [ ] When driving, speed, power, SOC, range and gear update from the IC model, not plant truth
+- [ ] The READY badge shows an icon and the word, not colour alone
+- [ ] The strip is ≤ 120 px high and there's no horizontal scroll at 1366×768 (E2E check)
+Notes:
+
+## T-009: Procedural car model
+
+Status: open
+Blocked by: T-001
+Slice: Build the car from params (extruded body, glasshouse, wheels, light bars, hidden internal part nodes) with a typed `CarPart` union, and mount it on the stage turntable, framed by the camera.
+Test seam: `src/three/car/` public builder (returns a three `Object3D` tree; runs in Vitest without WebGL)
+Acceptance:
+- [ ] Every `CarPart` id from ADR 0002 exists as a named node. The internal nodes are hidden in solid mode
+- [ ] Under 30k triangles in total
+- [ ] Bounding-box length, width and height, wheelbase and wheel radius are within 2% of params
+- [ ] E2E: the stage renders with no console errors
+Notes:
+
+## T-010: Car animation: wheels, lights and rolling road
+
+Status: open
+Blocked by: T-004, T-009
+Slice: Each frame the car reads the latest snapshot. Wheels rotate by the snapshot's wheel angle, brake lights track the brake pedal, headlights come on at READY, and a rolling-road stripe moves at road speed only while the car is moving. Nothing moves when parked.
+Test seam: pure mapping functions in `src/three/car/` (snapshot → visual state), plus E2E
+Acceptance:
+- [ ] The mapping gives brake-light intensity 0 when the brake is 0 and rising with the pedal, headlights on only when READY, and rolling-road speed equal to vehicle speed
+- [ ] The wheel angle advances by v/r·dt (checked through the sim snapshot)
+- [ ] With the car parked in READY, the visual state doesn't change between frames
+Notes:
+
+## T-011: End-to-end Startup + Driving scenario
+
+Status: open
+Blocked by: T-007, T-008, T-010
+Slice: A Playwright spec that plays the judge flow from brief §6: open → Power on → READY → brake + D → hold accelerator 3 s → speed > 30 km/h → brake to 0 → P → Power off, using both keyboard and on-screen controls.
+Test seam: `e2e/drive.spec.ts`
+Acceptance:
+- [ ] The flow passes in Chromium at 1366×768 in under 60 s, with no console errors
+- [ ] The dashboard speed readout exceeds 30 during the run and returns to 0
+- [ ] Power off returns the badge to Off and brings back the Start-here card
+Notes:

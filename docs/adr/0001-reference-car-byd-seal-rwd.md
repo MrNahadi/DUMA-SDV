@@ -40,15 +40,15 @@ Status key: O = official (manufacturer), M = independent measurement, E = estima
 | 14 | Kerb mass | 2,055 kg (EU unladen incl. 75 kg driver: 2,130 kg) | O | BYD SG sheet; ADAC manufacturer data; Carfolio. EV Database 2,130 = 2,055 + 75. ADAC weighed 2,090 kg |
 | 15 | Gross vehicle mass | 2,501 kg | O | BYD SG sheet; EV Database |
 | 16 | Drag coefficient Cd | 0.219 | O | BYD EU press (0.219); ADAC (0.22); Wikipedia |
-| 17 | Frontal area A | 2.30 m² | E | Not published. 0.84 × W 1.875 m × H 1.460 m (BYD dimensions). Implies CdA ≈ 0.50 m² |
+| 17 | Frontal area A | 2.30 m² (default superseded by ADR 0003: 2.35 m²) | E | Not published. 0.84 × W 1.875 m × H 1.460 m (BYD dimensions). Implies CdA ≈ 0.50 m² |
 | 18 | Tyres | 235/45 R19 (test car: Continental EcoContact 6Q 99V XL) | O | BYD SG sheet; ADAC |
 | 19 | Wheel dynamic radius | 0.335 m | E (derived) | Unloaded 0.347 m from tyre size × ~0.965 |
-| 20 | Rolling resistance Crr | 0.008 | E | Not published. Typical for an EU-label A/B low-rolling-resistance EV tyre |
+| 20 | Rolling resistance Crr | 0.008 (default superseded by ADR 0003: 0.011) | E | Not published. Typical for an EU-label A/B low-rolling-resistance EV tyre |
 | 21 | Wheelbase / L / W / H | 2,920 / 4,800 / 1,875 / 1,460 mm | O | BYD EU press; BYD SG sheet |
 | 22 | Top speed | 180 km/h (limited) | O | BYD EU press; ADAC |
 | 23 | **0-100 km/h (TARGET)** | **5.9 s** (band 5.31-6.49 s) | O | BYD EU press; BYD SG sheet; ADAC; EV Database |
 | 24 | WLTP range / consumption | 570 km / 16.6 kWh/100 km | O | BYD EU press; BYD SG sheet; ADAC; EV Database |
-| 25 | **Range at steady 100 km/h (TARGET)** | **510 km** (≈162 Wh/km from the battery; band 459-561 km) | E (derived) | No manufacturer publishes this. Two independent derivations agree: (a) EV Database mild-weather highway estimate at 110 km/h, 181 Wh/km → scaled to 100 km/h by road load ≈ 162 Wh/km → 509 km; (b) Highmotor measured ~20 kWh/100 km on Spanish motorways at 10-15 °C, no HVAC (≈120 km/h) → scaled ≈ 16.1 kWh/100 km → 512 km |
+| 25 | **Range at steady 100 km/h (TARGET)** | **510 km** (≈162 Wh/km from the battery; band 459-561 km). Basis superseded by ADR 0003 (value unchanged) | E (derived) | No manufacturer publishes this. Two independent derivations agree: (a) EV Database mild-weather highway estimate at 110 km/h, 181 Wh/km → scaled to 100 km/h by road load ≈ 162 Wh/km → 509 km; (b) Highmotor measured ~20 kWh/100 km on Spanish motorways at 10-15 °C, no HVAC (≈120 km/h) → scaled ≈ 16.1 kWh/100 km → 512 km |
 | 26 | AC on-board charger | 11 kW, 3-phase (EU) | O | BYD EU press; ADAC. (Asian markets: 7 kW) |
 | 27 | DC peak power | 150 kW | O | BYD EU press; BYD SG sheet; ADAC; EV Database |
 | 28 | **DC 10-80% time (TARGET)** | **37 min** (band 33.3-40.7 min) | M | BYD publishes only 30-80% (26 min EU, 32 min SG). Measured 10-80%: ADAC 39:00 (103.2 kW avg, 64 kWh added); EV Database 36 min (100 kW avg); EVKX 34:42 (99.8 kW avg). 37 min is the centre, and ±10% covers all three |
@@ -59,7 +59,7 @@ Sanity check with these values: 360 Nm × 10.81 / 0.335 m ≈ 11.6 kN at the whe
 
 Consequences:
 - The Phase 2 vehicle model uses rows 1-22 and 26-27 as its parameters. Physics reference tests (brief §11/§12) assert rows 23, 25 and 28 within ±10%.
-- The range test must run at a steady 100 km/h, flat road, 20-25 °C, HVAC off, with ~0.3-0.5 kW auxiliary load, from 100% to 0% of usable energy. Changing those conditions invalidates target 25.
+- SUPERSEDED by ADR 0003 (test conditions and loss calibration). Original text: The range test must run at a steady 100 km/h, flat road, 20-25 °C, HVAC off, with ~0.3-0.5 kW auxiliary load, from 100% to 0% of usable energy. Changing those conditions invalidates target 25.
 - Rows marked E (frontal area, Crr, wheel radius, gear ratio, motor max speed, cell Ah) are tuning parameters. If a reference test misses, adjust E rows before O rows, and record any change in a new ADR.
 - The DC charge model must taper so that 10-80% averages about 95-105 kW with a 150 kW peak, and must not assume battery preconditioning (ADAC notes the car lacks it).
 - The pack model is 172s LFP at 3.2 V nominal per cell, about 550 V. The "800 V platform" marketing refers to BYD's e-Platform, not the pack's nominal voltage, so do not model an 800 V pack.

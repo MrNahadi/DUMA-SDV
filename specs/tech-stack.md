@@ -70,9 +70,9 @@ docs/adr/         Decisions
 - **Vehicle parameters** live in one typed object in `src/sim/vehicle/params.ts`, taken from `docs/adr/0001-*`. Each value has a comment citing "ADR 0001 row N". Never write the reference car's brand in code, UI or paper.
 - **Physics reference targets (±10%)**, checked by automated tests under the conditions in ADR 0001:
   - 0–100 km/h: **5.9 s** (5.31–6.49 s).
-  - Range at steady 100 km/h: **510 km** (459–561 km). Flat road, 20–25 °C, HVAC off, 0.3–0.5 kW auxiliary load, 100→0% usable.
+  - Range at steady 100 km/h: **510 km** (459–561 km). Flat road, 23 °C, HVAC off, 0.4 kW auxiliary load, 100→0% of 82.5 kWh usable (ADR 0003). The calibration anchor is steady 110 km/h at 172–190 Wh/km.
   - DC 10–80%: **37 min** (33.3–40.7 min). 150 kW peak with taper, no preconditioning.
-- **Tuning order:** if a reference test misses, adjust the estimated (E) parameters in ADR 0001 before the official (O) ones, and record every change in a new ADR. Never widen a tolerance.
+- **Tuning order:** if a reference test misses, adjust the estimated (E) parameters in ADR 0001/0003 before the official (O) ones, and record every change in a new ADR. Never widen a tolerance. The official Cd, mass, tyres, power and torque stay fixed (ADR 0003).
 - The pack is modelled as **~550 V nominal** (172s LFP).
 
 ### UI
