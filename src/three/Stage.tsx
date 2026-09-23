@@ -1,13 +1,55 @@
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows, OrbitControls } from '@react-three/drei';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
+import { Group, Mesh, MeshStandardMaterial } from 'three';
+import { useSimStore } from '../app/simStore';
 import { tokens } from '../ui/tokens';
 import { vehicleParams } from '../sim/vehicle/params';
-import { buildCar } from './car';
+import { buildCar, visualStateFromSnapshot } from './car';
+
+const wheelNames = ['wheel-front-left', 'wheel-front-right', 'wheel-back-left', 'wheel-back-right'];
+const stripeSpacingM = 0.9;
 
 function Car() {
   const model = useMemo(() => buildCar(vehicleParams), []);
+  useFrame(() => {
+    const visual = visualStateFromSnapshot(useSimStore.getState().snapshot);
+    for (const name of wheelNames) {
+      const wheel = model.getObjectByName(name);
+      if (wheel) wheel.rotation.z = visual.wheelAngleRad;
+    }
+    const brake = model.getObjectByName('brake-lights') as Mesh;
+    const head = model.getObjectByName('headlights') as Mesh;
+    (brake.material as MeshStandardMaterial).emissiveIntensity = visual.brakeLightIntensity;
+    (head.material as MeshStandardMaterial).emissiveIntensity = visual.headlightsOn ? 1 : 0;
+  });
   return <primitive object={model} />;
+}
+
+function RollingRoad() {
+  const stripes = useRef<Group>(null);
+  const lastTimeS = useRef<number | null>(null);
+  const phaseM = useRef(0);
+  useFrame(() => {
+    const snapshot = useSimStore.getState().snapshot;
+    const visual = visualStateFromSnapshot(snapshot);
+    const elapsedS = lastTimeS.current === null ? 0 : Math.max(0, snapshot.timeS - lastTimeS.current);
+    lastTimeS.current = snapshot.timeS;
+    if (visual.roadSpeedMs !== 0) {
+      phaseM.current = ((phaseM.current - visual.roadSpeedMs * elapsedS) % stripeSpacingM + stripeSpacingM) % stripeSpacingM;
+      if (stripes.current) stripes.current.position.x = phaseM.current;
+    }
+  });
+  return (
+    <group ref={stripes} position-y={0.004}>
+      {[-2, -1, 0, 1, 2].map((index) => (
+        <mesh key={index} rotation-x={-Math.PI / 2} position-x={index * stripeSpacingM}>
+          <planeGeometry args={[0.025, 2.5]} />
+          <meshBasicMaterial color={tokens.line} transparent opacity={0.34} depthWrite={false} />
+        </mesh>
+      ))}
+    </group>
+  );
 }
 
 /**
@@ -29,6 +71,7 @@ export default function Stage() {
       <hemisphereLight args={[tokens.surface, tokens.surface2, 1.1]} />
       <directionalLight position={[4, 8, 3]} intensity={1.6} castShadow />
       <Car />
+      <RollingRoad />
 
       {/* Seamless studio floor: unlit so it matches the page background exactly. */}
       <mesh rotation-x={-Math.PI / 2}>

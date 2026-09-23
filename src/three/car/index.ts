@@ -8,6 +8,7 @@ import {
   Shape,
 } from 'three';
 import type { VehicleParams } from '../../sim/vehicle/params';
+export { visualStateFromSnapshot } from './animation';
 
 export const carParts = [
   'body',
