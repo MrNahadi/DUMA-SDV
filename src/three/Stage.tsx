@@ -1,6 +1,14 @@
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, OrbitControls } from '@react-three/drei';
+import { useMemo } from 'react';
 import { tokens } from '../ui/tokens';
+import { vehicleParams } from '../sim/vehicle/params';
+import { buildCar } from './car';
+
+function Car() {
+  const model = useMemo(() => buildCar(vehicleParams), []);
+  return <primitive object={model} />;
+}
 
 /**
  * The 3D stage: a quiet studio floor the car will sit on (roadmap 02).
@@ -20,6 +28,7 @@ export default function Stage() {
 
       <hemisphereLight args={[tokens.surface, tokens.surface2, 1.1]} />
       <directionalLight position={[4, 8, 3]} intensity={1.6} castShadow />
+      <Car />
 
       {/* Seamless studio floor: unlit so it matches the page background exactly. */}
       <mesh rotation-x={-Math.PI / 2}>

@@ -106,15 +106,15 @@ Notes: The dashboard samples the IC snapshot at 10 Hz. The 112 px strip is shown
 
 ## T-009: Procedural car model
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: Build the car from params (extruded body, glasshouse, wheels, light bars, hidden internal part nodes) with a typed `CarPart` union, and mount it on the stage turntable, framed by the camera.
 Test seam: `src/three/car/` public builder (returns a three `Object3D` tree; runs in Vitest without WebGL)
 Acceptance:
-- [ ] Every `CarPart` id from ADR 0002 exists as a named node. The internal nodes are hidden in solid mode
-- [ ] Under 30k triangles in total
-- [ ] Bounding-box length, width and height, wheelbase and wheel radius are within 2% of params
-- [ ] E2E: the stage renders with no console errors
+- [x] Every `CarPart` id from ADR 0002 exists as a named node. The internal nodes are hidden in solid mode
+- [x] Under 30k triangles in total
+- [x] Bounding-box length, width and height, wheelbase and wheel radius are within 2% of params
+- [x] E2E: the stage renders with no console errors
 Notes:
 
 ## T-010: Car animation: wheels, lights and rolling road
