@@ -1,10 +1,10 @@
-# Project brief: Software-Defined EV (working name)
+# Project brief: Duma SDV
 
 | Field | Value |
 |---|---|
-| Version | 1.0 |
+| Version | 1.1 |
 | Date | 2026-09-23 |
-| Owner | muigufarid@gmail.com |
+| Owner | FNM (muigufarid@gmail.com) |
 | Project type | greenfield |
 
 ## 1. Summary (REQUIRED)
@@ -171,10 +171,10 @@ The roadmap starts from this.
 
 ## 15. Open questions
 
-- Which reference car (a specific BYD or Tesla trim) sets the physics targets? The answerer can recommend one in Phase 1 using well-published specs.
-- Where does the 3D car come from: a free-licence GLB (CC0/CC-BY), or a stylised model built in code? It needs separable internals (pack, motor, inverter, charger) for fault highlighting and energy flow.
-- What are the product name and team/author line for the app and paper? Same SOMES / Tech Week 2026 line as Duma?
-- Is there a timeline? Not for now: treated as a passion project with no deadline.
+- Which reference car (a specific BYD or Tesla trim) sets the physics targets? Sent to the answerer in Phase 1; see `docs/adr/`.
+- Where does the 3D car come from: a free-licence GLB, or a stylised model built in code? Sent to the answerer in Phase 1; see `docs/adr/`.
+- ~~Product name and author line?~~ Answered 2026-09-23: the product is **Duma SDV** (reuses the Duma family name for a new, different vehicle). The author line in the app and paper is **FNM**.
+- ~~Timeline?~~ None: passion project.
 
 ## 16. References
 
