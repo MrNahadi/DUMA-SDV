@@ -132,12 +132,12 @@ Notes:
 
 ## T-011: End-to-end Startup + Driving scenario
 
-Status: open
+Status: done
 Blocked by: T-007, T-008, T-010
 Slice: A Playwright spec that plays the judge flow from brief §6: open → Power on → READY → brake + D → hold accelerator 3 s → speed > 30 km/h → brake to 0 → P → Power off, using both keyboard and on-screen controls.
 Test seam: `e2e/drive.spec.ts`
 Acceptance:
-- [ ] The flow passes in Chromium at 1366×768 in under 60 s, with no console errors
-- [ ] The dashboard speed readout exceeds 30 during the run and returns to 0
-- [ ] Power off returns the badge to Off and brings back the Start-here card
-Notes:
+- [x] The flow passes in Chromium at 1366×768 in under 60 s, with no console errors
+- [x] The dashboard speed readout exceeds 30 during the run and returns to 0
+- [x] Power off returns the badge to Off and brings back the Start-here card
+Notes: The E2E flow uses keyboard brake and accelerator plus the on-screen brake and gear controls. It passed in 19.5 s under the full Playwright suite.
