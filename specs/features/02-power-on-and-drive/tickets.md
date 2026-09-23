@@ -68,15 +68,15 @@ Notes: Steady 100 km/h range 498.1 km; steady 110 km/h 180.1 Wh/km. Decisions an
 
 ## T-006: App loop: Power on from the UI and a live power state
 
-Status: blocked-failing
+Status: done
 Blocked by: T-003
 Slice: A rAF sim-loop hook (accumulator, 250 ms catch-up cap, pause when hidden) feeds a store snapshot. The Drive panel shows the Start-here card with **Power on**, and the top bar's power-state badge goes Off → Starting → READY live.
 Test seam: UI via Testing Library (`App` with the stage mocked). E2E via Playwright
 Acceptance:
-- [ ] Testing Library: clicking Power on and advancing time shows READY in the top bar
-- [ ] The Start-here card disappears once the car is on
-- [ ] E2E: on a fresh load, Power on reaches READY within 5 s and there are no console errors
-  Notes: Feedback failure after three attempts: `npm test -- --run src/app/App.test.tsx` still reports the top-bar state as OFF after clicking Power on. Tried userEvent.click and native click, and verified the rendered card is present; the store action is not observed. Typecheck, lint and build passed, and E2E smoke passed before the UI test was added. Resume by tracing button event delivery/store instance, then rerun all feedback commands.
+- [x] Testing Library: clicking Power on and advancing time shows READY in the top bar
+- [x] The Start-here card disappears once the car is on
+- [x] E2E: on a fresh load, Power on reaches READY within 5 s and there are no console errors
+Notes: The UI click latches the power-button input; the next simulation tick changes the state to ACCESSORY. The test advances the simulation after clicking and verifies Starting, READY, and removal of the Start-here card. All Feedback commands pass.
 
 ## T-007: Drive panel: startup checklist, gears, pedals, keyboard and Power off
 

@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { App } from './App';
@@ -26,22 +26,17 @@ describe('app shell', () => {
     expect(location.hash).toBe('#/diagnostics');
   });
 
-  it('powers on from the Start here card and updates the top bar to READY', () => {
-    vi.useFakeTimers();
-    try {
-      useAppStore.getState().setView('drive');
-      render(<App />);
+  it('powers on from the Start here card and updates the top bar to READY', async () => {
+    useAppStore.getState().setView('drive');
+    render(<App />);
 
-      expect(screen.getByText('Start here')).toBeTruthy();
-      screen.getByRole('button', { name: 'Power on' }).click();
-      expect(useSimStore.getState().snapshot.powerState).toBe('ACCESSORY');
-      vi.advanceTimersByTime(2_500);
-      useSimStore.getState().advance(250);
+    expect(screen.getByText('Start here')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Power on' }));
+    act(() => useSimStore.getState().advance(1));
+    expect(screen.getByRole('status', { name: 'Power state' }).textContent).toContain('Starting');
+    act(() => useSimStore.getState().advance(249));
 
-      expect(screen.getByRole('status', { name: 'Power state' }).textContent).toContain('READY');
-      expect(screen.queryByText('Start here')).toBeNull();
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(screen.getByRole('status', { name: 'Power state' }).textContent).toContain('READY');
+    expect(screen.queryByText('Start here')).toBeNull();
   });
 });
