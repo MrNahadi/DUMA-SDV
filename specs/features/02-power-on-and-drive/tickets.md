@@ -2,16 +2,16 @@
 
 ## T-001: Vehicle parameters and road-load physics
 
-Status: open
+Status: done
 Blocked by:
 Slice: Typed, frozen vehicle params from ADR 0001 plus the new estimates (recorded in a new ADR). Pure plant functions for road load, traction limit and the motor torque/power envelope, verified against hand calculations.
 Test seam: `src/sim/vehicle/index.ts` public exports (params object, road-load, motor-envelope and traction-limit functions)
 Acceptance:
-- [ ] Every param cites `ADR 0001 row N` or `estimate: <reason>`. A new ADR records the estimates introduced (R1)
-- [ ] Road load at 100 km/h matches ½ρCdA v² + Crr m g to 0.1%
-- [ ] Motor envelope: 360 N·m below base speed, 230 kW above it, 0 at or above max speed
-- [ ] Traction limit uses static rear load plus load transfer and caps the wheel force
-Notes:
+- [x] Every param cites `ADR 0001 row N` or `estimate: <reason>`. A new ADR records the estimates introduced (R1)
+- [x] Road load at 100 km/h matches ½ρCdA v² + Crr m g to 0.1%
+- [x] Motor envelope: 360 N·m below base speed, 230 kW above it, 0 at or above max speed
+- [x] Traction limit uses static rear load plus load transfer and caps the wheel force
+Notes: Estimates recorded in ADR 0004. Also added the motor + inverter loss model (P0 + k_cu·T² + k_fe·ω + k_w·ω², peak about 96%).
 
 ## T-002: Simulated CAN bus with catalogue, scheduling and trace
 
