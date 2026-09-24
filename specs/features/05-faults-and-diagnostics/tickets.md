@@ -2,14 +2,14 @@
 
 ## T-001: Decide diagnostic behavior
 
-Status: open
+Status: done
 Blocked by:
 Slice: Record a focused ADR for fault catalogue identity, ECU ownership, DTC lifecycle, recovery, severity, derate/limp and startup/charging safety.
 Test seam: Public `createSim()` contract, bus catalogue and accepted ADR review
 Acceptance:
-- [ ] ADR names all four brief faults, their responsible ECU and affected `CarPart`
-- [ ] ADR defines active/stored/clear rules and a deterministic recovery action for injected conditions
-- [ ] ADR defines fault responses without changing published vehicle targets or reference tolerances
+- [x] ADR names all four brief faults, their responsible ECU and affected `CarPart`
+- [x] ADR defines active/stored/clear rules and a deterministic recovery action for injected conditions
+- [x] ADR defines fault responses without changing published vehicle targets or reference tolerances
 Notes: Treat temperature injections as diagnostic sensor conditions pending phase 07's thermal plant; label control constants as estimates.
 
 ## T-002: Expose fault injection and records
