@@ -2,14 +2,14 @@
 
 ## T-001: Power-flow snapshot
 
-Status: open
+Status: done
 Blocked by:
 Slice: Add signed branch powers and converter losses (pack, inverter DC, motor shaft, charger output, DC-DC output) to the sim snapshot, taken from the existing plant models.
 Test seam: `createSim()` public API
 Acceptance:
-- [ ] Signs match R3 in the drive, regen, AC charging, DC charging and parked READY scenarios
-- [ ] HV node balance holds within 1 W or 0.5 % on every tick of those scenarios
-- [ ] Existing physics and reference tests pass with unchanged tolerances
+- [x] Signs match R3 in the drive, regen, AC charging, DC charging and parked READY scenarios
+- [x] HV node balance holds within 1 W or 0.5 % on every tick of those scenarios
+- [x] Existing physics and reference tests pass with unchanged tolerances
 Notes: Read-only tap. Do not change energy integration.
 
 ## T-002: Lumped thermal masses

@@ -96,6 +96,30 @@ export interface ChargeSnapshot {
   refusal: ChargeRefusal | null;
 }
 
+/** Signed branch powers at the HV node, W, and converter losses, W (R1–R3). */
+export interface PowerFlowSnapshot {
+  /** Pack power into the HV node through the main contactors, positive for discharge. */
+  packW: number;
+  /** Inverter DC-side input, positive when motoring, negative in regen. */
+  inverterDcW: number;
+  /** Motor shaft power, positive when motoring, negative in regen. */
+  motorShaftW: number;
+  /** Charger (OBC or EVSE) output into the HV node. */
+  chargerOutputW: number;
+  /** DC-DC input from the HV node. */
+  dcdcInputW: number;
+  /** DC-DC output to the 12 V system. */
+  dcdcOutputW: number;
+  losses: {
+    /** Motor plus inverter loss (ADR 0004). */
+    drivetrainW: number;
+    /** OBC loss or DC connection loss. */
+    chargerW: number;
+    /** DC-DC conversion loss (the auxiliary load is modelled at the HV node). */
+    dcdcW: number;
+  };
+}
+
 export interface StartupStepSnapshot {
   id: StartupStepId;
   status: StartupStepStatus;
@@ -114,6 +138,8 @@ export interface SimSnapshot {
   timeS: number;
   powerState: PowerState;
   charge: ChargeSnapshot;
+  /** Power flow during the latest tick. */
+  power: PowerFlowSnapshot;
   /** Charge view model built by the IC from received bus frames. */
   chargeDisplay: ChargeDisplayModel;
   startup: {
@@ -234,6 +260,10 @@ export function createSim(options: SimOptions = {}): Sim {
 
   let tick = 0;
   let powerButton = false;
+  const power: PowerFlowSnapshot = {
+    packW: 0, inverterDcW: 0, motorShaftW: 0, chargerOutputW: 0, dcdcInputW: 0, dcdcOutputW: 0,
+    losses: { drivetrainW: 0, chargerW: 0, dcdcW: 0 },
+  };
   let tripEnergyJ = 0;
   const driver: DriverInputs = {
     accelerator: 0, brake: 0, gearRequest: null, cableConnected: false,
@@ -394,6 +424,19 @@ export function createSim(options: SimOptions = {}): Sim {
     charge.obcOutputPowerW = obc.outputPowerW;
     charge.lossPowerW = obc.lossPowerW + dcInputW - dcOutputW;
     charge.powerW = externalW > 0 ? Math.max(0, -hv.packTerminalV * hv.packCurrentA) : 0;
+    // Read-only tap of the powers used above; it must not feed back into integration.
+    const omegaMean = (omegaBefore + dynamics.motorSpeedRadS) / 2;
+    const mainClosed = hv.closed.mainNeg && hv.closed.mainPos;
+    // Pre-charge current flows through the resistor, not into the HV node.
+    power.packW = mainClosed ? hv.packTerminalV * hv.packCurrentA : 0;
+    power.motorShaftW = mcu.running ? mcu.torqueNm * omegaMean : 0;
+    power.losses.drivetrainW = mcu.running ? motorLossW(p, mcu.torqueNm, omegaMean) : 0;
+    power.inverterDcW = power.motorShaftW + power.losses.drivetrainW;
+    power.chargerOutputW = externalW;
+    power.losses.chargerW = charge.lossPowerW;
+    power.dcdcInputW = mainClosed ? p.auxLoadW : 0;
+    power.dcdcOutputW = power.dcdcInputW;
+    power.losses.dcdcW = 0;
     tripEnergyJ += hv.packTerminalV * hv.packCurrentA * TICK_S;
     bus.transmit(tick);
     tick++;
@@ -440,6 +483,7 @@ export function createSim(options: SimOptions = {}): Sim {
         diagnostics: { ...faultRecords.snapshot(), busStatus: diagnosticBus.snapshot(tick * TICK_S) },
         powerState: vcu.powerState,
         charge: { ...charge },
+        power: { ...power, losses: { ...power.losses } },
         chargeDisplay: { ...ic.chargeDisplay },
         startup: {
           steps: STARTUP_STEPS.map((id, i) => ({
