@@ -81,6 +81,16 @@ describe('energy reference tests (T-005, ADR 0003)', () => {
 });
 
 describe('pack current and SOC (T-005, R2)', () => {
+  it('advertises ADR 0009 charge headroom only with a closed pack path', () => {
+    for (const [soc, expectedKw] of [[0.8, 60], [0.95, 30], [1, 0]] as const) {
+      const sim = createSim({ initialSoc: soc });
+      sim.step(100);
+      expect(lastFrame(sim, 'BMS_Limits')).toBeUndefined();
+      expect(powerOnToReady(sim)).toBe(true);
+      sim.step(10);
+      expect(lastFrame(sim, 'BMS_Limits')?.signals.maxChargeKw).toBeCloseTo(expectedKw, 1);
+    }
+  });
   it('draws current from the pack while driving, sags the terminal voltage, and counts SOC down', () => {
     const sim = readyInD(0.8);
     const parked = sim.snapshot();

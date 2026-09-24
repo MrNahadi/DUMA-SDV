@@ -54,6 +54,11 @@ describe('pack state of charge', () => {
 });
 
 describe('pack current for a load power', () => {
+  it('carries signed charging power with negative current', () => {
+    const i = packCurrentForPowerA(550, 0.08, -50_000);
+    expect(i).toBeLessThan(0);
+    expect((550 - i * 0.08) * i).toBeCloseTo(-50_000, 6);
+  });
   it('solves P = (OCV − I·R)·I for the smaller root', () => {
     const i = packCurrentForPowerA(550, 0.08, 230_000);
     expect((550 - i * 0.08) * i).toBeCloseTo(230_000, 6);
@@ -65,6 +70,21 @@ describe('pack current for a load power', () => {
 
 describe('HV circuit', () => {
   const ocv = packOcvV(p, 0.8);
+
+  it('charges the pack through closed contacts and stops at full usable SOC', () => {
+    const pack = createPack(p, TICK_S, 1 - 1e-6);
+    const hv = createHvCircuit(p, TICK_S, pack.ocvV);
+    hv.coil.mainNeg = true;
+    hv.coil.mainPos = true;
+    for (let i = 0; i < 4; i++) hv.step(pack.ocvV);
+    hv.step(pack.ocvV, -60_000, pack.maxChargeCurrentA);
+    expect(hv.packCurrentA).toBeLessThan(0);
+    expect(hv.packTerminalV * hv.packCurrentA).toBeLessThan(0);
+    pack.step(hv.packCurrentA);
+    expect(pack.soc).toBeLessThanOrEqual(1);
+    hv.step(pack.ocvV, -60_000, pack.maxChargeCurrentA);
+    expect(hv.packCurrentA).toBe(0);
+  });
 
   function stepFor(hv: ReturnType<typeof createHvCircuit>, seconds: number) {
     for (let i = 0; i < Math.round(seconds / TICK_S); i++) hv.step(ocv);

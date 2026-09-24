@@ -14,15 +14,16 @@ Notes:
 
 ## T-002: Permit controlled pack charging
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: Publish a bounded BMS charge allowance and carry negative inverter power through the existing pack path, with full-SOC rejection.
 Test seam: `createSim()` snapshot and `trace()`
 Acceptance:
-- [ ] A pack that can accept charge advertises a nonzero `BMS_Limits.maxChargeKw`; an ineligible pack advertises zero
-- [ ] Allowed negative load yields negative pack current and rising SOC; disallowed charge does not overfill the pack
-- [ ] Existing discharge and startup tests pass
+- [x] A pack that can accept charge advertises a nonzero `BMS_Limits.maxChargeKw`; an ineligible pack advertises zero
+- [x] Allowed negative load yields negative pack current and rising SOC; disallowed charge does not overfill the pack
+- [x] Existing discharge and startup tests pass
 Notes:
+- ADR 0009 charge limit and full-SOC plant bound implemented. Feedback passed; E2E passed on rerun after two timing-related failures in the first run.
 
 ## T-003: Lift-off regen request
 

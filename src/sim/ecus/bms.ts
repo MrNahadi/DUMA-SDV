@@ -51,6 +51,10 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
   // Peak electrical demand of the drive: peak power plus the losses at peak torque and base speed.
   const baseSpeed = motorBaseSpeedRadS(p);
   const maxDischargeKw = (p.motorPeakPowerW + motorLossW(p, p.motorPeakTorqueNm, baseSpeed)) / 1000;
+  // ADR 0009: estimated 60 kW regen acceptance below 90% SOC, tapering to full.
+  const maxChargeKw = () => phase === 'closed'
+    ? 60 * Math.min(1, Math.max(0, (1 - bms.soc) / 0.1))
+    : 0;
 
   const socPerAmpTick = options.tickS / usableChargeC(p);
 
@@ -178,7 +182,7 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
         .set('soc', bms.soc * 100)
         .set('contactorState', contactorState(hv))
         .set('prechargeState', prechargeState);
-      limits.set('maxDischargeKw', maxDischargeKw).set('maxChargeKw', 0);
+      limits.set('maxDischargeKw', maxDischargeKw).set('maxChargeKw', maxChargeKw());
     },
   };
   return bms;

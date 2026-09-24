@@ -32,7 +32,7 @@ export interface HvCircuit {
    * power the loads on the HV bus (inverter, DC-DC) draw at the terminals, positive
    * for discharge; it flows only while the main path is closed.
    */
-  step(ocvV: number, loadW?: number): void;
+  step(ocvV: number, loadW?: number, maxChargeCurrentA?: number): void;
 }
 
 /**
@@ -60,7 +60,7 @@ export function createHvCircuit(p: Readonly<VehicleParams>, tickS: number, ocvV:
     packCurrentA: 0,
     packTerminalV: ocvV,
     weldingEvents: 0,
-    step(ocv: number, loadW = 0) {
+    step(ocv: number, loadW = 0, maxChargeCurrentA = Infinity) {
       for (const id of CONTACTORS) {
         if (coil[id] === closed[id]) {
           timer[id] = 0;
@@ -77,7 +77,9 @@ export function createHvCircuit(p: Readonly<VehicleParams>, tickS: number, ocvV:
 
       if (closed.mainNeg && closed.mainPos) {
         // The link sits at the terminal voltage; contactor and cable resistance are neglected.
-        hv.packCurrentA = packCurrentForPowerA(ocv, p.packInternalResistanceOhm, loadW);
+        hv.packCurrentA = maxChargeCurrentA === 0 && loadW < 0
+          ? 0
+          : Math.max(-maxChargeCurrentA, packCurrentForPowerA(ocv, p.packInternalResistanceOhm, loadW));
         hv.packTerminalV = ocv - hv.packCurrentA * p.packInternalResistanceOhm;
         hv.dcLinkV = hv.packTerminalV;
       } else if (closed.mainNeg && closed.precharge) {

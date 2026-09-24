@@ -47,6 +47,8 @@ export interface Pack {
   readonly soc: number;
   /** Open-circuit voltage at the current SOC, V. */
   readonly ocvV: number;
+  /** Largest charging current this tick before usable SOC reaches 1, A. */
+  readonly maxChargeCurrentA: number;
   /** Advance one tick carrying `currentA` (positive for discharge). */
   step(currentA: number): void;
 }
@@ -56,6 +58,9 @@ export function createPack(p: Readonly<VehicleParams>, tickS: number, initialSoc
   const pack = {
     soc: initialSoc,
     ocvV: packOcvV(p, initialSoc),
+    get maxChargeCurrentA() {
+      return Math.max(0, (1 - pack.soc) / socPerAmpTick);
+    },
     step(currentA: number) {
       if (currentA === 0) return;
       pack.soc -= currentA * socPerAmpTick;

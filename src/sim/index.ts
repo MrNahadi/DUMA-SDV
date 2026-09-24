@@ -186,7 +186,7 @@ export function createSim(options: SimOptions = {}): Sim {
     // Friction brakes are hydraulic: the pedal acts on the plant directly.
     const omegaBefore = dynamics.motorSpeedRadS;
     dynamics.step(mcu.torqueNm, driver.brake);
-    hv.step(pack.ocvV, hvLoadW(mcu.torqueNm, (omegaBefore + dynamics.motorSpeedRadS) / 2));
+    hv.step(pack.ocvV, hvLoadW(mcu.torqueNm, (omegaBefore + dynamics.motorSpeedRadS) / 2), pack.maxChargeCurrentA);
     pack.step(hv.packCurrentA);
     tripEnergyJ += hv.packTerminalV * hv.packCurrentA * TICK_S;
     bus.transmit(tick);
