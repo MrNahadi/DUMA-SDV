@@ -7,6 +7,9 @@ interface SimState {
   powerOn: () => void;
   powerOff: () => void;
   requestGear: (gear: Gear) => void;
+  selectChargeSource: (source: 'AC' | 'DC') => void;
+  setChargeTarget: (soc: number) => void;
+  commandCharge: (command: 'plugIn' | 'unplug' | 'start' | 'stop') => void;
   setPedal: (pedal: 'accelerator' | 'brake', value: number) => void;
   reset: () => void;
   advance: (ticks: number) => void;
@@ -27,6 +30,9 @@ export const useSimStore = create<SimState>((set, get) => ({
     sim.setInputs({ accelerator: 0, brake: 0, powerButton: true });
   },
   requestGear: (gear) => get().sim.setInputs({ gearRequest: gear }),
+  selectChargeSource: (source) => get().sim.setInputs({ chargeSource: source }),
+  setChargeTarget: (soc) => get().sim.setInputs({ chargeTargetSoc: soc }),
+  commandCharge: (command) => get().sim.setInputs({ chargeCommand: command }),
   setPedal: (pedal, value) => get().sim.setInputs({ [pedal]: value }),
   reset: () => {
     const sim = createSim();

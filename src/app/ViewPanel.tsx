@@ -5,6 +5,7 @@ import styles from './ViewPanel.module.css';
 import { Button } from '../ui/Button';
 import { useSimStore } from './simStore';
 import { DrivePanel } from './DrivePanel';
+import { ChargePanel } from './ChargePanel';
 
 export function ViewPanel() {
   const view = useAppStore((s) => s.view);
@@ -30,7 +31,8 @@ export function ViewPanel() {
         </section>
       ) : null}
       {view === 'drive' && <DrivePanel />}
-      {view !== 'drive' && (
+      {view === 'charge' && <ChargePanel />}
+      {view !== 'drive' && view !== 'charge' && (
         <div className={styles.empty}>
           <span className={styles.emptyIcon} aria-hidden="true">
             <Icon />
