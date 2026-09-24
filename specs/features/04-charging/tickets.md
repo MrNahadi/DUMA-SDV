@@ -50,15 +50,15 @@ Notes: OBC reads fresh VCU/BMS bus permission; output is capped by the pack's ti
 
 ## T-005: Charge the pack through the DC path
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Add the DC EVSE-to-pack path around the OBC with the ADR taper and BMS/pack bounds.
 Test seam: `createSim()` DC session snapshot and `trace()`
 Acceptance:
-- [ ] DC input never exceeds 150 kW and follows a taper; OBC output is zero in DC mode
-- [ ] SOC and terminal voltage/current follow actual pack charging and stop at target or full pack
-- [ ] Stale BMS permission, Stop charging or Unplug removes external current
-Notes:
+- [x] DC input never exceeds 150 kW and follows a taper; OBC output is zero in DC mode
+- [x] SOC and terminal voltage/current follow actual pack charging and stop at target or full pack
+- [x] Stale BMS permission, Stop charging or Unplug removes external current
+Notes: DC EVSE uses ADR 0010's taper and 1% connection loss with fresh bus permission, pack current/voltage/target caps, and zero OBC output. All five Feedback commands pass.
 
 ## T-006: Verify the DC reference session
 

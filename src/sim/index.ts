@@ -31,6 +31,23 @@ export type { DashboardModel, Gear, GearRefusal, PowerState, StartupFailReason, 
 /** Fixed simulation step: 10 ms (100 Hz). */
 export const TICK_S = 0.01;
 const TICK_MS = 10;
+/** Estimated EVSE input taper by pack SOC, ADR 0010. */
+const DC_TAPER: readonly (readonly [number, number])[] = [
+  [0.1, 150_000], [0.3, 145_000], [0.5, 120_000],
+  [0.7, 80_000], [0.8, 55_000], [1, 0],
+];
+const DC_CONNECTION_EFFICIENCY = 0.99; // ADR 0010
+
+function dcTaperPowerW(soc: number): number {
+  for (let i = 1; i < DC_TAPER.length; i++) {
+    const [endSoc, endW] = DC_TAPER[i]!;
+    if (soc <= endSoc) {
+      const [startSoc, startW] = DC_TAPER[i - 1]!;
+      return startW + (endW - startW) * (soc - startSoc) / (endSoc - startSoc);
+    }
+  }
+  return 0;
+}
 
 export interface SimOptions {
   /** Vehicle parameters. Defaults to the Duma SDV's (`vehicleParams`). */
@@ -231,7 +248,10 @@ export function createSim(options: SimOptions = {}): Sim {
   }
 
   function updateChargePath(t: number) {
-    if (charge.session === 'charging' && pack.soc >= Math.min(charge.targetSoc, 1)) {
+    // A zero-at-full taper approaches 100% asymptotically; treat the final
+    // 0.001 percentage point as full without adding fictional cell energy.
+    const completionMargin = charge.targetSoc === 1 ? 1e-5 : 1e-12;
+    if (charge.session === 'charging' && pack.soc >= Math.min(charge.targetSoc, 1) - completionMargin) {
       charge.session = 'complete';
     }
     const since = t - 0.1;
@@ -303,12 +323,26 @@ export function createSim(options: SimOptions = {}): Sim {
     const loadW = hvLoadW(mcu.torqueNm, (omegaBefore + dynamics.motorSpeedRadS) / 2);
     const maxOutputW = loadW + (pack.ocvV + acceptedCurrentA * p.packInternalResistanceOhm) * acceptedCurrentA;
     obc.step(t, charge.authorized && charge.source === 'AC' && hv.closed.mainNeg && hv.closed.mainPos, maxOutputW);
-    const externalW = obc.outputPowerW;
+    // The EVSE is a plant, not an ECU. It reads received authorization frames and
+    // delivers DC to the pack-side HV path without energizing the OBC (ADR 0010).
+    const dcAllowed = charge.authorized && charge.source === 'DC' &&
+      hv.closed.mainNeg && hv.closed.mainPos;
+    const dcAllowanceW = dcAllowed
+      ? (chargePath.read('BMS_Charge', 'maxExternalChargeKw') as number) * 1000
+      : 0;
+    const dcInputW = dcAllowed ? Math.max(0, Math.min(
+      p.dcPeakPowerW,
+      dcTaperPowerW(pack.soc),
+      dcAllowanceW,
+      maxOutputW / DC_CONNECTION_EFFICIENCY,
+    )) : 0;
+    const dcOutputW = dcInputW * DC_CONNECTION_EFFICIENCY;
+    const externalW = obc.outputPowerW + dcOutputW;
     hv.step(pack.ocvV, loadW - externalW, externalW > 0 ? acceptedCurrentA : pack.maxChargeCurrentA);
     pack.step(hv.packCurrentA);
-    charge.inputPowerW = obc.inputPowerW;
+    charge.inputPowerW = obc.inputPowerW + dcInputW;
     charge.obcOutputPowerW = obc.outputPowerW;
-    charge.lossPowerW = obc.lossPowerW;
+    charge.lossPowerW = obc.lossPowerW + dcInputW - dcOutputW;
     charge.powerW = externalW > 0 ? Math.max(0, -hv.packTerminalV * hv.packCurrentA) : 0;
     tripEnergyJ += hv.packTerminalV * hv.packCurrentA * TICK_S;
     bus.transmit(tick);
