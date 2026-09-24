@@ -131,3 +131,15 @@ Acceptance:
 - [x] All five Feedback commands pass
 Resolution: 2026-09-24: not reproducible; isolated test and full suite (13/13) plus all Feedback commands pass with no code change. Likely a transient timing flake.
 Notes: Final feature check on 2026-09-24 failed deterministically (full suite and isolated rerun) at spec line 42: `getByText('P0AA6')` not found after confirm. Typecheck, lint, 197 unit tests and build passed; 12/13 browser tests passed. Likely interaction with T-009/T-010 changes (e.g. insulation fault isolating contactors/powering down, or clear-all dropping active records). Investigate before changing the test.
+
+## T-012: Stabilize flaky Clear all faults E2E
+
+Status: open
+Blocked by: T-011
+Slice: Find and fix the root cause of the intermittent failure in the Clear all faults browser test, so it passes reliably in the full suite.
+Test seam: `e2e/diagnostics-panel.spec.ts` "Clear all faults requires confirmation and preserves active records"
+Acceptance:
+- [ ] Root cause identified and fixed without weakening the test
+- [ ] Test passes in 3 consecutive full-suite runs
+- [ ] All five Feedback commands pass
+Notes: Final feature check on 2026-09-24 (after T-011 was closed as a "transient flake") failed again in the full suite, this time at spec line 36: after Cancel, `getByText('P0A7E')` (stored record) not found within 5s. The earlier failure was at line 42 (P0AA6). Typecheck, lint, unit tests and build passed; 12/13 e2e passed. The recurrence at different lines suggests a real race (e.g. records not yet populated / cleared or reset by timing), not random noise.
