@@ -30,6 +30,9 @@ export interface McuSensors {
   dcLinkV: number;
   /** Rotor speed, rad/s, forward positive. */
   motorSpeedRadS: number;
+  /** Motor winding and inverter temperature sensors, °C. */
+  motorTempC: number;
+  inverterTempC: number;
 }
 
 export interface Mcu {
@@ -45,6 +48,7 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>, faultStatus: (ke
   const bootFrame = bus.writer('MCU', 'MCU_Boot');
   const status = bus.writer('MCU', 'MCU_Status');
   const vehicle = bus.writer('MCU', 'MCU_Vehicle');
+  const thermal = bus.writer('MCU', 'MCU_Thermal');
   const inbox = bus.subscribe('MCU', ['VCU_Command', 'BMS_Status']);
   bus.setSenderActive('MCU', false);
 
@@ -60,7 +64,7 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>, faultStatus: (ke
   const mcu = {
     torqueNm: 0,
     running: false,
-    step(t: number, powered: boolean, { dcLinkV, motorSpeedRadS }: McuSensors) {
+    step(t: number, powered: boolean, { dcLinkV, motorSpeedRadS, motorTempC, inverterTempC }: McuSensors) {
       const edge = boot.update(powered, t);
       if (edge === 'lost') bus.setSenderActive('MCU', false);
       if (!boot.running) {
@@ -91,6 +95,7 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>, faultStatus: (ke
         .set('dcLinkVoltage', dcLinkV)
         .set('inverterState', run ? 'run' : calibrated ? 'standby' : 'off');
       vehicle.set('vehicleSpeedKmh', msToKmh(wheelSpeedMs));
+      thermal.set('motorTemperature', motorTempC).set('inverterTemperature', inverterTempC);
     },
   };
   return mcu;

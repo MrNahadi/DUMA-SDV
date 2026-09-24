@@ -26,6 +26,8 @@ type PrechargeState = 'idle' | 'active' | 'done' | 'failed';
 
 export interface BmsSensors {
   hv: HvCircuit;
+  /** Pack temperature sensor, °C. */
+  packTempC: number;
 }
 
 export interface BmsOptions {
@@ -47,6 +49,7 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
   const boot = createBootTracker(BOOT_S);
   const bootFrame = bus.writer('BMS', 'BMS_Boot');
   const status = bus.writer('BMS', 'BMS_Status');
+  const thermal = bus.writer('BMS', 'BMS_Thermal');
   const limits = bus.writer('BMS', 'BMS_Limits');
   const chargeFrame = bus.writer('BMS', 'BMS_Charge');
   const inbox = bus.subscribe('BMS', ['VCU_Command', 'VCU_Charge', 'MCU_Status']);
@@ -160,7 +163,7 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
 
   const bms = {
     soc: options.initialSoc,
-    step(t: number, powered: boolean, { hv }: BmsSensors) {
+    step(t: number, powered: boolean, { hv, packTempC }: BmsSensors) {
       const edge = boot.update(powered, t);
       if (edge === 'lost') {
         // Supply lost: the coils drop out and the ECU forgets its sequence.
@@ -187,6 +190,7 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
         .set('soc', bms.soc * 100)
         .set('contactorState', contactorState(hv))
         .set('prechargeState', prechargeState);
+      thermal.set('packTemperature', packTempC);
       const cellOverTemperature = options.faultStatus('cellOverTemperature') === 'active';
       const insulationFault = options.faultStatus('insulationFault') === 'active';
       limits

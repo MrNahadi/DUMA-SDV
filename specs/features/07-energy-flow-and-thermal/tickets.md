@@ -38,14 +38,14 @@ Notes:
 
 ## T-004: Temperatures over the bus
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: BMS sends pack temperature, and MCU sends motor and inverter temperatures, in new catalogue messages. The IC builds the displayed temperatures from received frames.
 Test seam: `createSim()` snapshot, `trace()` and `topology()`
 Acceptance:
-- [ ] The new messages appear in the trace and topology, with units
-- [ ] Displayed temperatures track the plant within one message period
-- [ ] Dropping the message makes the values stale or unavailable
+- [x] The new messages appear in the trace and topology, with units
+- [x] Displayed temperatures track the plant within one message period
+- [x] Dropping the message makes the values stale or unavailable
 - [ ] Over-temperature fault tests are unchanged
 Notes: ECUs read only their own sensors.
 

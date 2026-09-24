@@ -17,6 +17,7 @@ import {
   createVcu,
   type DashboardModel,
   type ChargeDisplayModel,
+  type ThermalDisplayModel,
   type DriverInputs,
   type Gear,
   type GearRefusal,
@@ -30,7 +31,7 @@ import { createThermal, thermalParams, type ThermalState } from './thermal';
 import { BRAKE_MAX_DECEL_G, GRAVITY_MS2, createLongitudinalDynamics, motorLossW, vehicleParams, type VehicleParams } from './vehicle';
 
 export type { Frame } from './bus';
-export type { ChargeDisplayModel, DashboardModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
+export type { ChargeDisplayModel, DashboardModel, ThermalDisplayModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
 export { faultCatalogue } from './faults';
 export type { CoolantLoopState, ThermalState } from './thermal';
 export type { DiagnosticsSnapshot, FaultCommand, FaultKey, FaultRecord } from './faults';
@@ -146,6 +147,8 @@ export interface SimSnapshot {
   thermal: ThermalState;
   /** Charge view model built by the IC from received bus frames. */
   chargeDisplay: ChargeDisplayModel;
+  /** Pack, motor and inverter temperatures the IC received over the bus, °C; null when stale. */
+  thermalDisplay: ThermalDisplayModel;
   startup: {
     steps: StartupStepSnapshot[];
     /** Why the last startup attempt failed, or null. */
@@ -253,8 +256,8 @@ export function createSim(options: SimOptions = {}): Sim {
   const pack = createPack(p, TICK_S, soc);
   const hv = createHvCircuit(p, TICK_S, pack.ocvV);
   const dynamics = createLongitudinalDynamics(p, TICK_S);
-  const bmsSensors = { hv };
-  const mcuSensors = { dcLinkV: 0, motorSpeedRadS: 0 };
+  const bmsSensors = { hv, packTempC: AMBIENT_C };
+  const mcuSensors = { dcLinkV: 0, motorSpeedRadS: 0, motorTempC: AMBIENT_C, inverterTempC: AMBIENT_C };
   const thermal = createThermal(thermalParams, AMBIENT_C);
 
   // The ECUs, talking over the bus.
@@ -384,6 +387,11 @@ export function createSim(options: SimOptions = {}): Sim {
     vcu.step(t, powerButton, driver);
     powerButton = false;
     driver.gearRequest = null;
+    // Each ECU reads only its own temperature sensors; the plant's last-tick state.
+    const temps = thermal.state();
+    bmsSensors.packTempC = temps.packC;
+    mcuSensors.motorTempC = temps.motorC;
+    mcuSensors.inverterTempC = temps.inverterC;
     bms.step(t, vcu.kl15, bmsSensors);
     mcuSensors.dcLinkV = hv.dcLinkV;
     mcuSensors.motorSpeedRadS = dynamics.motorSpeedRadS;
@@ -501,6 +509,7 @@ export function createSim(options: SimOptions = {}): Sim {
         power: { ...power, losses: { ...power.losses } },
         thermal: thermal.state(),
         chargeDisplay: { ...ic.chargeDisplay },
+        thermalDisplay: { ...ic.thermalDisplay },
         startup: {
           steps: STARTUP_STEPS.map((id, i) => ({
             id,

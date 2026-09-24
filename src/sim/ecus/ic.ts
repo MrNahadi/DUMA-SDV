@@ -64,14 +64,22 @@ export interface ChargeDisplayModel {
   timeToTargetS: number | null;
 }
 
+/** Temperatures received over the bus, °C; null indicates unavailable telemetry. */
+export interface ThermalDisplayModel {
+  packC: number | null;
+  motorC: number | null;
+  inverterC: number | null;
+}
+
 export interface Ic {
   /** The dashboard model, updated in place every tick. */
   readonly dashboard: Readonly<DashboardModel>;
   readonly chargeDisplay: Readonly<ChargeDisplayModel>;
+  readonly thermalDisplay: Readonly<ThermalDisplayModel>;
   step(t: number, powered: boolean): void;
 }
 
-const SOURCES = ['VCU_Status', 'VCU_Range', 'VCU_Recovery', 'VCU_Charge', 'VCU_DriveDecision', 'VCU_DTC', 'BMS_DTC', 'MCU_DTC', 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Vehicle'] as const;
+const SOURCES = ['VCU_Status', 'VCU_Range', 'VCU_Recovery', 'VCU_Charge', 'VCU_DriveDecision', 'VCU_DTC', 'BMS_DTC', 'MCU_DTC', 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'BMS_Thermal', 'MCU_Vehicle', 'MCU_Thermal'] as const;
 type Source = (typeof SOURCES)[number];
 
 export function createIc(bus: Bus, usableEnergyJ: number): Ic {
@@ -112,7 +120,20 @@ export function createIc(bus: Bus, usableEnergyJ: number): Ic {
     return isFresh(inbox, name, Math.max(boot.bootedAtS, t - staleAfterS[name] - TIME_EPS_S));
   }
 
+  const thermalDisplay: ThermalDisplayModel = { packC: null, motorC: null, inverterC: null };
+
+  function updateThermal(t: number) {
+    const pack = live(t, 'BMS_Thermal');
+    const drive = live(t, 'MCU_Thermal');
+    thermalDisplay.packC = pack ? (inbox.read('BMS_Thermal', 'packTemperature') as number) : null;
+    thermalDisplay.motorC = drive ? (inbox.read('MCU_Thermal', 'motorTemperature') as number) : null;
+    thermalDisplay.inverterC = drive ? (inbox.read('MCU_Thermal', 'inverterTemperature') as number) : null;
+  }
+
   function clear() {
+    thermalDisplay.packC = null;
+    thermalDisplay.motorC = null;
+    thermalDisplay.inverterC = null;
     dashboard.diagnostics = { availability: 'unavailable', warning: null, driveStatus: 'unavailable' };
     chargeDisplay.soc = null;
     chargeDisplay.source = null;
@@ -233,6 +254,7 @@ export function createIc(bus: Bus, usableEnergyJ: number): Ic {
   return {
     dashboard,
     chargeDisplay,
+    thermalDisplay,
     step(t, powered) {
       const edge = boot.update(powered, t);
       if (edge === 'lost') {
@@ -245,6 +267,7 @@ export function createIc(bus: Bus, usableEnergyJ: number): Ic {
         bootFrame.set('selfCheck', 'pass').set('swVersion', INITIAL_SW_VERSION).raise();
       }
       update(t);
+      updateThermal(t);
     },
   };
 }

@@ -159,6 +159,11 @@ export const busCatalogue: Catalogue = Object.freeze([
     ],
   },
   {
+    // Pack temperature from the BMS's own sensor (07 R11).
+    id: 0x204, name: 'BMS_Thermal', sender: 'BMS', periodMs: 100,
+    signals: [{ name: 'packTemperature', unit: '°C', scale: 0.1 }],
+  },
+  {
     id: 0x300,
     name: 'MCU_Status',
     sender: 'MCU',
@@ -182,6 +187,14 @@ export const busCatalogue: Catalogue = Object.freeze([
     signals: [
       { name: 'activeBits', unit: 'bits', scale: 1 },
       { name: 'storedBits', unit: 'bits', scale: 1 },
+    ],
+  },
+  {
+    // Motor winding and inverter temperatures from the MCU's own sensors (07 R11).
+    id: 0x303, name: 'MCU_Thermal', sender: 'MCU', periodMs: 100,
+    signals: [
+      { name: 'motorTemperature', unit: '°C', scale: 0.1 },
+      { name: 'inverterTemperature', unit: '°C', scale: 0.1 },
     ],
   },
 ]);
