@@ -21,7 +21,7 @@ Test seam: Thermal module public functions (create, step, state)
 Acceptance:
 - [x] Idle at ambient stays within 0.1 °C for 600 s
 - [x] A constant loss gives a monotonic rise to a bounded steady state, then decay after removal
-- [ ] Every parameter is marked `// estimate` and listed in ADR 0012
+- [x] Every parameter is marked `// estimate` and listed in ADR 0012
 Notes: Plant model, not an ECU. SI units, °C for temperature.
 
 ## T-003: Coolant loops and sim wiring
