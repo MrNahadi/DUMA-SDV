@@ -7,6 +7,7 @@ import { useSimStore } from './simStore';
 import { DrivePanel } from './DrivePanel';
 import { ChargePanel } from './ChargePanel';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
+import { ArchitecturePanel } from './ArchitecturePanel';
 
 export function ViewPanel() {
   const view = useAppStore((s) => s.view);
@@ -34,7 +35,8 @@ export function ViewPanel() {
       {view === 'drive' && <DrivePanel />}
       {view === 'charge' && <ChargePanel />}
       {view === 'diagnostics' && <DiagnosticsPanel />}
-      {view !== 'drive' && view !== 'charge' && view !== 'diagnostics' && (
+      {view === 'architecture' && <ArchitecturePanel />}
+      {view !== 'drive' && view !== 'charge' && view !== 'diagnostics' && view !== 'architecture' && (
         <div className={styles.empty}>
           <span className={styles.emptyIcon} aria-hidden="true">
             <Icon />

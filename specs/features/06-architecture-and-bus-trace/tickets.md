@@ -24,13 +24,13 @@ Notes: Use sim time only, never the wall clock.
 
 ## T-003: Architecture view with live trace table
 
-Status: open
+Status: done
 Blocked by: T-002
 Slice: Route the Architecture nav item to a panel that shows the newest trace rows (time, hex ID, name, sender) from the live sim, up to the row limit.
 Test seam: Architecture panel component and existing view routing
 Acceptance:
-- [ ] Opening Architecture shows trace rows that update while the sim runs
-- [ ] Rows are newest first in Geist Mono with tabular numbers, and the other views still render
+- [x] Opening Architecture shows trace rows that update while the sim runs
+- [x] Rows are newest first in Geist Mono with tabular numbers, and the other views still render
 Notes: Throttle refreshes. Add no packages.
 
 ## T-004: Trace filters
