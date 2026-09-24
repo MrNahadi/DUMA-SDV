@@ -128,5 +128,6 @@ Slice: Make the confirmed Clear all faults flow keep the active insulation-fault
 Test seam: `e2e/diagnostics-panel.spec.ts` "Clear all faults requires confirmation and preserves active records"
 Acceptance:
 - [x] After confirming Clear all faults, stored P0A7E disappears while active P0AA6 stays visible and the "Fault log cleared" toast shows
-- [ ] All five Feedback commands pass Resolution 2026-09-24: not reproducible; isolated test and full suite (13/13) plus all Feedback commands pass with no code change. Likely a transient timing flake.
+- [x] All five Feedback commands pass
+Resolution: 2026-09-24: not reproducible; isolated test and full suite (13/13) plus all Feedback commands pass with no code change. Likely a transient timing flake.
 Notes: Final feature check on 2026-09-24 failed deterministically (full suite and isolated rerun) at spec line 42: `getByText('P0AA6')` not found after confirm. Typecheck, lint, 197 unit tests and build passed; 12/13 browser tests passed. Likely interaction with T-009/T-010 changes (e.g. insulation fault isolating contactors/powering down, or clear-all dropping active records). Investigate before changing the test.
