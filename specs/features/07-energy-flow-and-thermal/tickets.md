@@ -62,13 +62,13 @@ Notes:
 
 ## T-006: Energy panel with live diagram
 
-Status: open
+Status: done
 Blocked by: T-005
 Slice: Route the Energy nav item to a panel with an SVG diagram of Charger, Pack, Inverter, Motor, DC-DC and 12 V, with live kW labels and direction.
 Test seam: EnergyPanel component and existing view routing
 Acceptance:
-- [ ] Opening Energy shows every node, and the labels update while the sim runs
-- [ ] The other views still render
+- [x] Opening Energy shows every node, and the labels update while the sim runs
+- [x] The other views still render
 Notes: No packages. Throttle refreshes.
 
 ## T-007: Animated flow

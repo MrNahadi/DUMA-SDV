@@ -1,0 +1,10 @@
+.content { display: flex; flex-direction: column; gap: var(--s-3); padding: var(--s-5); min-width: 0; }
+.content h2 { margin: 0; font: var(--text-h2); }
+.diagram { width: 100%; max-height: 320px; }
+.node { fill: var(--surface, transparent); stroke: var(--line); }
+.nodeLabel { font: var(--text-small); fill: var(--ink); }
+.edge { stroke-width: 2; stroke: currentColor; }
+.label { font-family: var(--font-mono); font-size: 11px; font-variant-numeric: tabular-nums; fill: currentColor; }
+.idle { color: var(--line); }
+.ok { color: var(--ok); }
+.accent { color: var(--accent); }
