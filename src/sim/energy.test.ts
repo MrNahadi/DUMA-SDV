@@ -132,6 +132,8 @@ describe('IC dashboard model (T-005, R4)', () => {
       powerW: null,
       soc: null,
       rangeM: null,
+      recoveredEnergyJ: null,
+      recoveredDistanceM: null,
       gear: null,
       powerState: null,
       ready: null,

@@ -44,6 +44,8 @@ describe('app shell', () => {
             powerW: 42_000,
             soc: 0.62,
             rangeM: 314_000,
+            recoveredEnergyJ: 0,
+            recoveredDistanceM: 0,
             gear: 'D',
             powerState: 'READY',
             ready: true,

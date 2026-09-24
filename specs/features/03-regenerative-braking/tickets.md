@@ -65,15 +65,15 @@ Notes: VCU publishes `VCU_Recovery` every 100 ms; the tally uses fresh BMS termi
 
 ## T-006: Expose recovered energy through the IC
 
-Status: open
+Status: done
 Blocked by: T-005
 Slice: Add the trip tracker and km equivalent to the IC dashboard model, using bus-fed range consumption and message staleness.
 Test seam: public `createSim().snapshot().dashboard`
 Acceptance:
-- [ ] The IC reports finite, nonnegative kWh-equivalent joules and distance in SI, derived from received frames
-- [ ] Dropping recovery frames makes the IC values unavailable after the defined staleness window
-- [ ] Plant-only changes cannot update the displayed total without the corresponding bus message
-Notes:
+- [x] The IC reports finite, nonnegative kWh-equivalent joules and distance in SI, derived from received frames
+- [x] Dropping recovery frames makes the IC values unavailable after the defined staleness window
+- [x] Plant-only changes cannot update the displayed total without the corresponding bus message
+Notes: The distance estimate uses the received VCU_Range consumption and a 1 J/m defensive floor; recovery freshness uses the IC's three-period window.
 
 ## T-007: Show regen on the Drive power gauge
 
