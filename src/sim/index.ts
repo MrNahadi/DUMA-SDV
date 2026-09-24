@@ -21,7 +21,7 @@ import {
   type StartupStepStatus,
 } from './ecus';
 import { radsToRpm } from './units';
-import { createLongitudinalDynamics, motorLossW, vehicleParams, type VehicleParams } from './vehicle';
+import { BRAKE_MAX_DECEL_G, GRAVITY_MS2, createLongitudinalDynamics, motorLossW, vehicleParams, type VehicleParams } from './vehicle';
 
 export type { Frame } from './bus';
 export type { DashboardModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
@@ -183,9 +183,20 @@ export function createSim(options: SimOptions = {}): Sim {
     mcu.step(t, vcu.kl15, mcuSensors);
     ic.step(t, vcu.kl15);
 
-    // Friction brakes are hydraulic: the pedal acts on the plant directly.
+    // ADR 0009: friction fills the pedal demand left by actual MCU generator torque.
+    // Use the actual torque so stale commands or a disabled inverter cannot reduce braking.
     const omegaBefore = dynamics.motorSpeedRadS;
-    dynamics.step(mcu.torqueNm, driver.brake);
+    const speed = dynamics.speedMs;
+    const fullBrakeN = Math.min(BRAKE_MAX_DECEL_G, p.tyreRoadFriction) * p.testMassKg * GRAVITY_MS2;
+    const liftFade = Math.min(Math.max((Math.abs(speed) - 0.5) / 4.5, 0), 1);
+    const liftN = 0.15 * p.testMassKg * GRAVITY_MS2 * liftFade;
+    const demandN = driver.brake > 0 ? Math.max(liftN, driver.brake * fullBrakeN) : 0;
+    const electricN = mcu.torqueNm * speed < 0
+      ? Math.abs(mcu.torqueNm) * p.reductionRatio / (p.gearEfficiency * p.wheelRadiusM)
+      : 0;
+    const pedalForceScaleN = BRAKE_MAX_DECEL_G * p.testMassKg * GRAVITY_MS2;
+    const frictionPedal = pedalForceScaleN > 0 ? Math.min(Math.max((demandN - electricN) / pedalForceScaleN, 0), 1) : 0;
+    dynamics.step(mcu.torqueNm, frictionPedal);
     hv.step(pack.ocvV, hvLoadW(mcu.torqueNm, (omegaBefore + dynamics.motorSpeedRadS) / 2), pack.maxChargeCurrentA);
     pack.step(hv.packCurrentA);
     tripEnergyJ += hv.packTerminalV * hv.packCurrentA * TICK_S;

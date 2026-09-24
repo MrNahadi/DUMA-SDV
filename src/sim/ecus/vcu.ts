@@ -87,6 +87,9 @@ const MIN_CONSUMPTION_RATIO = 0.5;
 const REGEN_DECEL_G = 0.15;
 const REGEN_START_MS = 0.5;
 const REGEN_FULL_MS = 5;
+/** ADR 0009: brake pedal may request up to 0.30 g electric share. */
+const BRAKE_REGEN_DECEL_G = 0.30;
+const BRAKE_REGEN_FULL_MS = 2;
 
 export interface Vcu {
   readonly powerState: PowerState;
@@ -375,7 +378,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
    */
   function torqueRequestNm(t: number, accelerator: number, brake: number): number {
     if (vcu.powerState !== 'READY' || (vcu.gear !== 'D' && vcu.gear !== 'R')) return 0;
-    if (brake > 0) return 0;
+    if (brake > 0) return liftOffTorqueNm(t, brake);
     if (accelerator <= 0) return liftOffTorqueNm(t);
     const maxDischargeKw = inbox.read('BMS_Limits', 'maxDischargeKw');
     if (!isFresh(inbox, 'MCU_Status', t - LIVE_S) || maxDischargeKw === undefined) return 0;
@@ -394,7 +397,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
   }
 
   /** ADR 0009: generator torque opposes travel only with fresh charge and inverter status. */
-  function liftOffTorqueNm(t: number): number {
+  function liftOffTorqueNm(t: number, brake = 0): number {
     const freshSince = Math.max(wakeAtS, t - LIVE_S);
     if (!isFresh(inbox, 'MCU_Status', freshSince) || !isFresh(inbox, 'MCU_Vehicle', freshSince)) return 0;
     if (!isFresh(inbox, 'BMS_Limits', Math.max(wakeAtS, t - BMS_LIVE_S))) return 0;
@@ -407,8 +410,13 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     if (speedMs <= REGEN_START_MS) return 0;
     const omega = rpmToRads(inbox.read('MCU_Status', 'motorSpeedRpm') as number);
     if (omega * direction <= 0) return 0;
-    const fade = Math.min((speedMs - REGEN_START_MS) / (REGEN_FULL_MS - REGEN_START_MS), 1);
-    const forceN = REGEN_DECEL_G * GRAVITY_MS2 * p.testMassKg * fade;
+    const liftFade = Math.min((speedMs - REGEN_START_MS) / (REGEN_FULL_MS - REGEN_START_MS), 1);
+    const brakeFade = Math.min((speedMs - REGEN_START_MS) / (BRAKE_REGEN_FULL_MS - REGEN_START_MS), 1);
+    const liftForceN = REGEN_DECEL_G * GRAVITY_MS2 * p.testMassKg * liftFade;
+    const pedalForceN = brake * Math.min(1, p.tyreRoadFriction) * GRAVITY_MS2 * p.testMassKg;
+    const forceN = brake > 0
+      ? Math.min(Math.max(liftForceN, pedalForceN), BRAKE_REGEN_DECEL_G * GRAVITY_MS2 * p.testMassKg * brakeFade)
+      : liftForceN;
     const forceBoundN = Math.min(forceN, p.tyreRoadFriction * p.testMassKg * GRAVITY_MS2);
     const torqueNm = Math.min(
       forceBoundN * p.wheelRadiusM * p.gearEfficiency / p.reductionRatio,

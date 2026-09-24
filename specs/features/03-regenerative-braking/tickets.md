@@ -40,16 +40,16 @@ Notes:
 
 ## T-004: Blend brake pedal with friction
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Increase regen on Brake and allocate the unmet pedal demand to friction, including low-speed and charge-limited cases.
 Test seam: `createSim()` braking response through snapshots
 Acceptance:
-- [ ] Increasing Brake does not reduce total braking demand
-- [ ] Full-pedal braking still reaches the existing tyre-limited stop when regen is unavailable
-- [ ] Grip bounds and zero-speed clamping hold in D and R
-- [ ] Existing 0–100, cruise-range, top-speed and gear-interlock tests pass at unchanged thresholds
-Notes:
+- [x] Increasing Brake does not reduce total braking demand
+- [x] Full-pedal braking still reaches the existing tyre-limited stop when regen is unavailable
+- [x] Grip bounds and zero-speed clamping hold in D and R
+- [x] Existing 0–100, cruise-range, top-speed and gear-interlock tests pass at unchanged thresholds
+Notes: Brake regen uses ADR 0009's 0.30 g cap and low-speed fade; friction fills the demand using actual MCU torque.
 
 ## T-005: Count returned trip energy on the VCU
 
