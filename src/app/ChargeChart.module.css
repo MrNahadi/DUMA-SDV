@@ -1,5 +1,5 @@
 .chart { border-top: 1px solid var(--line); padding-top: var(--s-4); min-width: 0; }
 .chart h2 { margin: 0; font: var(--text-h2); }
 .legend, .summary { margin: var(--s-2) 0 0; font: var(--text-small); color: var(--ink-2); }
-.plot { width: 100%; min-width: 0; overflow: hidden; margin-top: var(--s-3); }
+.plot { width: 100%; min-width: 0; min-height: 120px; overflow: hidden; margin-top: var(--s-3); }
 .plot :global(.uplot) { font: var(--text-small); color: var(--ink-3); }

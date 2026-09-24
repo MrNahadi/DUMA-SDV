@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import type uPlot from 'uplot';
 import type { SimSnapshot } from '../sim';
 import { wToKw } from '../sim/units';
 import 'uplot/dist/uPlot.min.css';
@@ -13,6 +14,14 @@ export interface ChargeSample {
 
 const MAX_SAMPLES = 240;
 const SAMPLE_PERIOD_S = 1;
+
+function chartData(samples: readonly ChargeSample[]): uPlot.AlignedData {
+  return [
+    samples.map((point) => point.timeS / 60),
+    samples.map((point) => point.source === 'AC' ? point.soc : null),
+    samples.map((point) => point.source === 'DC' ? point.soc : null),
+  ];
+}
 
 export function appendChargeSample(history: readonly ChargeSample[], snapshot: SimSnapshot): ChargeSample[] {
   const last = history.at(-1);
@@ -31,23 +40,18 @@ export function appendChargeSample(history: readonly ChargeSample[], snapshot: S
 export function ChargeChart({ snapshot }: { snapshot: SimSnapshot }) {
   const [samples, setSamples] = useState<ChargeSample[]>([]);
   const host = useRef<HTMLDivElement>(null);
+  const plot = useRef<uPlot | null>(null);
   useEffect(() => {
     queueMicrotask(() => setSamples((previous) => appendChargeSample(previous, snapshot)));
   }, [snapshot]);
 
   useEffect(() => {
-    if (!host.current || samples.length < 2 || typeof window.matchMedia !== 'function') return;
+    if (!host.current || plot.current || samples.length < 2 || typeof window.matchMedia !== 'function') return;
     let cancelled = false;
-    let plot: { destroy: () => void } | undefined;
-    void import('uplot').then(({ default: uPlot }) => {
-      if (cancelled || !host.current) return;
+    void import('uplot').then(({ default: UPlot }) => {
+      if (cancelled || !host.current || plot.current) return;
       const style = getComputedStyle(host.current);
-      const data: uPlot.AlignedData = [
-        samples.map((point) => point.timeS / 60),
-        samples.map((point) => point.source === 'AC' ? point.soc : null),
-        samples.map((point) => point.source === 'DC' ? point.soc : null),
-      ];
-      plot = new uPlot({
+      plot.current = new UPlot({
         width: Math.max(240, host.current.clientWidth), height: 120,
         legend: { show: false }, cursor: { show: false },
         axes: [{ label: 'Sim time (min)' }, { label: 'SOC (%)' }],
@@ -56,10 +60,19 @@ export function ChargeChart({ snapshot }: { snapshot: SimSnapshot }) {
           { label: 'AC', stroke: style.getPropertyValue('--data-ac').trim(), spanGaps: false },
           { label: 'DC', stroke: style.getPropertyValue('--data-dc').trim(), spanGaps: false },
         ],
-      }, data, host.current);
+      }, chartData(samples), host.current);
     });
-    return () => { cancelled = true; plot?.destroy(); };
+    return () => { cancelled = true; };
   }, [samples]);
+
+  useEffect(() => {
+    if (plot.current && samples.length >= 2) plot.current.setData(chartData(samples));
+  }, [samples]);
+
+  useEffect(() => () => {
+    plot.current?.destroy();
+    plot.current = null;
+  }, []);
 
   const valid = samples.filter((point) => point.soc !== null);
   const latest = valid.at(-1);
