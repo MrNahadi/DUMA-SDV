@@ -3,6 +3,7 @@ import { PlugZap } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { wToKw } from '../sim/units';
 import { useSimStore } from './simStore';
+import { ChargeChart } from './ChargeChart';
 import styles from './ChargePanel.module.css';
 
 const refusalText = {
@@ -48,6 +49,7 @@ export function ChargePanel() {
         <div><span>Target</span><strong>{Math.round((display.targetSoc ?? charge.targetSoc) * 100)}% target</strong></div>
         <div><span>Estimated time to target</span><strong>{minutes === null ? 'Unavailable' : `${minutes} min`}</strong></div>
       </section>
+      <ChargeChart snapshot={snapshot} />
       <section className={styles.controls} aria-label="Charging controls">
         <label htmlFor="charge-source">Charge source</label>
         <select id="charge-source" value={source} disabled={charge.connected} onChange={(event) => setSource(event.target.value as 'AC' | 'DC')}>
