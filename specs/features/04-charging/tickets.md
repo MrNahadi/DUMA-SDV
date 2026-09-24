@@ -62,15 +62,15 @@ Notes: DC EVSE uses ADR 0010's taper and 1% connection loss with fresh bus permi
 
 ## T-006: Verify the DC reference session
 
-Status: open
+Status: done
 Blocked by: T-005
 Slice: Add a deterministic headless 10–80% DC scenario and its reference test under ADR 0001 conditions.
 Test seam: public `createSim({ initialSoc: 0.1 })` scenario and snapshot
 Acceptance:
-- [ ] No-preconditioning 10–80% time is within 33.3–40.7 min, with a peak at or below 150 kW
-- [ ] Repeated runs produce the same time, SOC and bus trace; no SOC overshoot occurs
-- [ ] Existing acceleration, steady-speed range, top-speed, startup and regen bands pass unchanged
-Notes:
+- [x] No-preconditioning 10–80% time is within 33.3–40.7 min, with a peak at or below 150 kW
+- [x] Repeated runs produce the same time, SOC and bus trace; no SOC overshoot occurs
+- [x] Existing acceleration, steady-speed range, top-speed, startup and regen bands pass unchanged
+Notes: Headless public-API scenario advances every 10 ms tick and records peak input, maximum SOC, final snapshot and bounded bus trace. All five Feedback commands pass. No calibration change needed.
 
 ## T-007: Publish charge display data
 
