@@ -51,13 +51,13 @@ Notes: ECUs read only their own sensors.
 
 ## T-005: Power-flow view model
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: A pure helper that maps a snapshot to diagram edges with direction, kW label, idle state and dash rate.
 Test seam: Exported view-model function
 Acceptance:
-- [ ] Fixture tests cover drive, regen, charging and idle, including the threshold
-- [ ] kW conversion uses the `src/sim/units.ts` helpers
+- [x] Fixture tests cover drive, regen, charging and idle, including the threshold
+- [x] kW conversion uses the `src/sim/units.ts` helpers
 Notes:
 
 ## T-006: Energy panel with live diagram
