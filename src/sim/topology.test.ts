@@ -24,4 +24,8 @@ describe('bus topology', () => {
   it('is deterministic across runs', () => {
     expect(createSim().topology()).toEqual(createSim().topology());
   });
+
+  it('reports ECUs whose transceiver is off', () => {
+    expect(createSim().inactiveSenders()).toContain('BMS');
+  });
 });

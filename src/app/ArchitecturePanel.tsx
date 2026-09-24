@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useSimStore } from './simStore';
-import { clearMark, formatCanId, formatSignals, pauseSnapshot, visibleFrames } from './traceModel';
+import { activeEcus, clearMark, formatCanId, formatSignals, pauseSnapshot, visibleFrames } from './traceModel';
 import { busCatalogue, type Frame } from '../sim/bus';
 import { EcuDiagram } from './EcuDiagram';
 import styles from './ArchitecturePanel.module.css';
@@ -8,6 +8,8 @@ import styles from './ArchitecturePanel.module.css';
 export const TRACE_ROW_LIMIT = 100;
 /** Trace refreshes per simulated second; keeps rendering cheap while driving. */
 const REFRESH_HZ = 4;
+/** An ECU counts as active if it sent a frame within this many sim seconds. */
+const ACTIVITY_WINDOW_S = 1;
 
 export function ArchitecturePanel() {
   const sim = useSimStore((s) => s.sim);
@@ -31,12 +33,20 @@ export function ArchitecturePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bucket throttles re-reads of the mutable trace
     [sim, bucket, ecu, message, paused, clearedAt],
   );
+  const activity = useMemo(
+    () => ({
+      active: activeEcus(sim.trace(), sim.snapshot().timeS, ACTIVITY_WINDOW_S),
+      inactive: new Set(sim.inactiveSenders()),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bucket throttles re-reads of the mutable sim
+    [sim, bucket],
+  );
   const filtered = ecu !== '' || message !== '';
 
   return (
     <div className={styles.content}>
       <h2>ECU diagram</h2>
-      <EcuDiagram topology={topology} />
+      <EcuDiagram topology={topology} active={activity.active} inactive={activity.inactive} />
       <h2 id="trace-title">CAN trace</h2>
       <div className={styles.filters}>
         <label>

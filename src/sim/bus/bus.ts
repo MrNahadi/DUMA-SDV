@@ -69,6 +69,8 @@ export interface Bus {
    * Every sender starts active.
    */
   setSenderActive(sender: string, active: boolean): void;
+  /** Senders whose transceiver is off, in catalogue order. */
+  inactiveSenders(): string[];
   /**
    * Drop every frame of one message on the wire (a lost message, as in a comms
    * fault): subscribers stop receiving it and the trace does not record it.
@@ -255,6 +257,12 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
           return Number.isNaN(t) ? undefined : t;
         },
       };
+    },
+
+    inactiveSenders() {
+      const off = new Set<string>();
+      for (let i = 0; i < messages.length; i++) if (!senderActive[i]) off.add(messages[i]!.def.sender);
+      return [...off];
     },
 
     setSenderActive(sender, active) {

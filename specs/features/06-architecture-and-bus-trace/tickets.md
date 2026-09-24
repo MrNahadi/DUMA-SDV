@@ -79,13 +79,13 @@ Notes: Draw no ECU that is absent from the sim.
 
 ## T-008: Live ECU activity
 
-Status: open
+Status: done
 Blocked by: T-002, T-007
 Slice: Mark an ECU node active if it sent a frame within the recent sim-time window. Mark it inactive if its transceiver is off.
 Test seam: ECU diagram component props and trace helpers
 Acceptance:
-- [ ] Active, idle and inactive states differ in more than colour
-- [ ] The sending ECUs show activity during power-on
+- [x] Active, idle and inactive states differ in more than colour
+- [x] The sending ECUs show activity during power-on
 Notes:
 
 ## T-009: Link diagram and trace

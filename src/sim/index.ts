@@ -195,6 +195,8 @@ export interface Sim {
   trace(): Frame[];
   /** ECU nodes and message edges (sender → subscribers), built from the catalogue and subscriptions. */
   topology(): BusTopology;
+  /** ECUs whose bus transceiver is off (they send nothing). */
+  inactiveSenders(): string[];
   /** Drop every frame of a bus message from the next tick on (a lost message), or restore it. */
   setMessageDropped(message: string, dropped: boolean): void;
 }
@@ -471,6 +473,9 @@ export function createSim(options: SimOptions = {}): Sim {
     },
     trace() {
       return bus.trace();
+    },
+    inactiveSenders() {
+      return bus.inactiveSenders();
     },
     topology() {
       const subs = bus.subscriptions().filter((s) => !INTERNAL_SUBSCRIBERS.has(s.subscriber));

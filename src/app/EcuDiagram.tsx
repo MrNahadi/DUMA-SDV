@@ -7,10 +7,18 @@ const NODE_R = 22;
 
 interface Props {
   topology: BusTopology;
+  /** ECUs that sent a frame within the recent sim-time window. */
+  active?: ReadonlySet<string>;
+  /** ECUs whose transceiver is off. */
+  inactive?: ReadonlySet<string>;
 }
 
+type NodeState = 'active' | 'idle' | 'inactive';
+/** Short on-node marker so the state never relies on colour alone. */
+const MARK: Record<NodeState, string> = { active: 'tx', idle: 'idle', inactive: 'off' };
+
 /** SVG ECU diagram: nodes on a circle, one edge per sender → subscriber pair. */
-export function EcuDiagram({ topology }: Props) {
+export function EcuDiagram({ topology, active, inactive }: Props) {
   const { nodes, edges } = topology;
   const pos = new Map(
     nodes.map((n, i) => {
@@ -32,10 +40,21 @@ export function EcuDiagram({ topology }: Props) {
       })}
       {nodes.map((n) => {
         const { x, y } = pos.get(n)!;
+        const state: NodeState = inactive?.has(n) ? 'inactive' : active?.has(n) ? 'active' : 'idle';
         return (
-          <g key={n} className={styles.node} role="button" tabIndex={0} aria-label={n}>
+          <g
+            key={n}
+            className={`${styles.node} ${styles[state]}`}
+            data-state={state}
+            role="button"
+            tabIndex={0}
+            aria-label={`${n}, ${state}`}
+          >
             <circle cx={x} cy={y} r={NODE_R} />
-            <text x={x} y={y} textAnchor="middle" dominantBaseline="central">{n}</text>
+            <text x={x} y={y - 4} textAnchor="middle" dominantBaseline="central">{n}</text>
+            <text className={styles.mark} x={x} y={y + 8} textAnchor="middle" dominantBaseline="central">
+              {MARK[state]}
+            </text>
           </g>
         );
       })}

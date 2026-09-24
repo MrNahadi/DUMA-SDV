@@ -92,6 +92,15 @@ describe('bus sender activity', () => {
     expect(bus.trace().map((f) => f.name)).toEqual(['A_Fast']);
   });
 
+  it('lists inactive senders', () => {
+    const bus = createBus(testCatalogue);
+    expect(bus.inactiveSenders()).toEqual([]);
+    bus.setSenderActive('A', false);
+    expect(bus.inactiveSenders()).toEqual(['A']);
+    bus.setSenderActive('A', true);
+    expect(bus.inactiveSenders()).toEqual([]);
+  });
+
   it('rejects an unknown sender', () => {
     const bus = createBus(testCatalogue);
     expect(() => bus.setSenderActive('Z', false)).toThrow(/sender/);
