@@ -5,6 +5,7 @@ import type { CycleId } from '../sim/scenarios';
 import { useSimStore } from './simStore';
 import { ModeControl } from './ModeControl';
 import { CycleChart } from './CycleChart';
+import { ExportCsvButton } from './ExportCsvButton';
 import styles from './ChargePanel.module.css';
 
 const cycleNames: Record<CycleId, string> = { urban: 'Urban', highway: 'Highway' };
@@ -60,6 +61,7 @@ export function CyclesPanel() {
         )}
       </section>
       <CycleChart samples={samples} />
+      <ExportCsvButton label={status?.cycleId ?? 'cycle'} samples={samples} />
     </div>
   );
 }

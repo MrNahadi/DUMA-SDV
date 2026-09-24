@@ -114,13 +114,13 @@ Notes: Follow the ChargeChart pattern.
 
 ## T-010: Export CSV button
 
-Status: open
+Status: done
 Blocked by: T-006, T-008
 Slice: **Export CSV** in the Cycles view (and in Drive for free runs) saves the recorder's CSV as a file named with cycle, mode and sim duration. An empty log shows a message instead.
 Test seam: Component test with a stubbed download function
 Acceptance:
-- [ ] Clicking passes the CSV text and the expected filename to the download function
-- [ ] An empty log shows a message and saves nothing
+- [x] Clicking passes the CSV text and the expected filename to the download function
+- [x] An empty log shows a message and saves nothing
 Notes: Blob plus an anchor. No new package.
 
 ## T-011: Regression sweep
