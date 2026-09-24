@@ -2,13 +2,13 @@
 
 ## T-001: Expose bus topology
 
-Status: open
+Status: done
 Blocked by:
 Slice: Add a read-only public accessor that returns the ECU nodes and message edges (sender → subscribers), built from the running sim's catalogue and subscriptions.
 Test seam: `createSim()` public API
 Acceptance:
-- [ ] Nodes are exactly the ECUs that send or subscribe to catalogue messages, and each edge names its message, sender and subscribers
-- [ ] The result is deterministic across runs, and existing sim tests still pass
+- [x] Nodes are exactly the ECUs that send or subscribe to catalogue messages, and each edge names its message, sender and subscribers
+- [x] The result is deterministic across runs, and existing sim tests still pass
 Notes: No change to timing, periods or physics.
 
 ## T-002: Pure trace view model

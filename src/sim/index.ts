@@ -166,6 +166,24 @@ export interface SimSnapshot {
   };
 }
 
+export interface TopologyEdge {
+  readonly message: string;
+  readonly id: number;
+  readonly sender: string;
+  /** Subscribing ECUs, sorted by name. */
+  readonly subscribers: readonly string[];
+}
+
+export interface BusTopology {
+  /** ECUs that send or subscribe to catalogue messages, sorted by name. */
+  readonly nodes: readonly string[];
+  /** One edge per catalogue message, in catalogue order. */
+  readonly edges: readonly TopologyEdge[];
+}
+
+/** Sim-internal bus observers: not ECUs, so not part of the topology. */
+const INTERNAL_SUBSCRIBERS = new Set(['ChargePath', 'Diagnostics']);
+
 export interface Sim {
   /** Advance the simulation by a whole number of ticks. */
   step(ticks?: number): void;
@@ -175,6 +193,8 @@ export interface Sim {
   snapshot(): Readonly<SimSnapshot>;
   /** Bus frames recorded so far, oldest first (last 5,000). */
   trace(): Frame[];
+  /** ECU nodes and message edges (sender → subscribers), built from the catalogue and subscriptions. */
+  topology(): BusTopology;
   /** Drop every frame of a bus message from the next tick on (a lost message), or restore it. */
   setMessageDropped(message: string, dropped: boolean): void;
 }
@@ -451,6 +471,17 @@ export function createSim(options: SimOptions = {}): Sim {
     },
     trace() {
       return bus.trace();
+    },
+    topology() {
+      const subs = bus.subscriptions().filter((s) => !INTERNAL_SUBSCRIBERS.has(s.subscriber));
+      const edges = bus.catalogue.map((m) => ({
+        message: m.name,
+        id: m.id,
+        sender: m.sender,
+        subscribers: [...new Set(subs.filter((s) => s.messages.includes(m.name)).map((s) => s.subscriber))].sort(),
+      }));
+      const nodes = [...new Set(edges.flatMap((e) => [e.sender, ...e.subscribers]))].sort();
+      return { nodes, edges };
     },
     setMessageDropped(message, dropped) {
       bus.setMessageDropped(message, dropped);

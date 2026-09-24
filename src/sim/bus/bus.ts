@@ -61,6 +61,8 @@ export interface Bus {
   readonly catalogue: Catalogue;
   writer(sender: string, message: string): MessageWriter;
   subscribe(ecu: string, messages: readonly string[]): Inbox;
+  /** Every subscription so far, in subscribe order: subscriber and its message names. */
+  subscriptions(): { readonly subscriber: string; readonly messages: readonly string[] }[];
   /**
    * Power a sender's transceiver on or off. An inactive sender sends nothing:
    * its periodic messages skip their slots and raised events are dropped.
@@ -156,6 +158,7 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
   if (!Number.isInteger(capacity) || capacity < 1) throw new RangeError(`traceCapacity must be a positive integer, got ${capacity}`);
 
   const messages = compile(catalogue, tickMs);
+  const subscriptionList: { subscriber: string; messages: readonly string[] }[] = [];
   const byName = new Map(messages.map((m, i) => [m.def.name, i]));
   const signalCount = messages.reduce((n, m) => n + m.def.signals.length, 0);
   const maxSignals = messages.reduce((n, m) => Math.max(n, m.def.signals.length), 0);
@@ -226,8 +229,12 @@ export function createBus(catalogue: Catalogue, options: BusOptions = {}): Bus {
       return writer;
     },
 
+    subscriptions() {
+      return subscriptionList.map((entry) => ({ ...entry }));
+    },
     subscribe(ecu, names) {
       const subscribed = new Set(names.map(lookup));
+      subscriptionList.push({ subscriber: ecu, messages: Object.freeze([...names]) });
       function check(name: string): number {
         const index = lookup(name);
         if (!subscribed.has(index)) throw new Error(`Bus: ${ecu} is not subscribed to ${name}`);
