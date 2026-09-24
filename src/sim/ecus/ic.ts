@@ -45,16 +45,30 @@ export interface DashboardModel {
   startupStep: StartupStep | null;
 }
 
+/** Bus-derived charge view values in SI units; null indicates unavailable telemetry. */
+export interface ChargeDisplayModel {
+  soc: number | null;
+  source: 'AC' | 'DC' | null;
+  connected: boolean | null;
+  session: 'idle' | 'plugged' | 'charging' | 'stopped' | 'complete' | null;
+  targetSoc: number | null;
+  /** Net power entering the pack, W. */
+  powerW: number | null;
+  /** Instantaneous estimate from remaining usable energy and received pack power, s. */
+  timeToTargetS: number | null;
+}
+
 export interface Ic {
   /** The dashboard model, updated in place every tick. */
   readonly dashboard: Readonly<DashboardModel>;
+  readonly chargeDisplay: Readonly<ChargeDisplayModel>;
   step(t: number, powered: boolean): void;
 }
 
-const SOURCES = ['VCU_Status', 'VCU_Range', 'VCU_Recovery', 'BMS_Status', 'BMS_Limits', 'MCU_Vehicle'] as const;
+const SOURCES = ['VCU_Status', 'VCU_Range', 'VCU_Recovery', 'VCU_Charge', 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Vehicle'] as const;
 type Source = (typeof SOURCES)[number];
 
-export function createIc(bus: Bus): Ic {
+export function createIc(bus: Bus, usableEnergyJ: number): Ic {
   const boot = createBootTracker(BOOT_S);
   const bootFrame = bus.writer('IC', 'IC_Boot');
   const inbox = bus.subscribe('IC', SOURCES);
@@ -81,12 +95,23 @@ export function createIc(bus: Bus): Ic {
     ready: null,
     startupStep: null,
   };
+  const chargeDisplay: ChargeDisplayModel = {
+    soc: null, source: null, connected: null, session: null,
+    targetSoc: null, powerW: null, timeToTargetS: null,
+  };
 
   function live(t: number, name: Source): boolean {
     return isFresh(inbox, name, Math.max(boot.bootedAtS, t - staleAfterS[name] - TIME_EPS_S));
   }
 
   function clear() {
+    chargeDisplay.soc = null;
+    chargeDisplay.source = null;
+    chargeDisplay.connected = null;
+    chargeDisplay.session = null;
+    chargeDisplay.targetSoc = null;
+    chargeDisplay.powerW = null;
+    chargeDisplay.timeToTargetS = null;
     dashboard.speedMs = null;
     dashboard.powerW = null;
     dashboard.maxChargeKw = null;
@@ -116,6 +141,32 @@ export function createIc(bus: Bus): Ic {
     } else {
       dashboard.powerW = null;
       dashboard.soc = null;
+    }
+    chargeDisplay.soc = dashboard.soc;
+    chargeDisplay.powerW = dashboard.powerW === null ? null : Math.max(0, -dashboard.powerW);
+    if (live(t, 'VCU_Charge')) {
+      const source = inbox.read('VCU_Charge', 'source');
+      chargeDisplay.source = source === 'AC' || source === 'DC' ? source : null;
+      chargeDisplay.connected = inbox.read('VCU_Charge', 'connected') === 'yes';
+      chargeDisplay.session = inbox.read('VCU_Charge', 'session') as ChargeDisplayModel['session'];
+      chargeDisplay.targetSoc = (inbox.read('VCU_Charge', 'targetSoc') as number) / 100;
+    } else {
+      chargeDisplay.source = null;
+      chargeDisplay.connected = null;
+      chargeDisplay.session = null;
+      chargeDisplay.targetSoc = null;
+    }
+    const chargeReady = live(t, 'VCU_Charge') && live(t, 'BMS_Charge') && live(t, 'BMS_Status');
+    if (chargeReady && chargeDisplay.session === 'complete') {
+      chargeDisplay.timeToTargetS = 0;
+    } else if (chargeReady && chargeDisplay.session === 'charging' &&
+      inbox.read('VCU_Charge', 'authorized') === 'yes' &&
+      inbox.read('BMS_Charge', 'accepted') === 'yes' &&
+      chargeDisplay.soc !== null && chargeDisplay.targetSoc !== null &&
+      chargeDisplay.powerW !== null && chargeDisplay.powerW > 0) {
+      chargeDisplay.timeToTargetS = Math.max(0, chargeDisplay.targetSoc - chargeDisplay.soc) * usableEnergyJ / chargeDisplay.powerW;
+    } else {
+      chargeDisplay.timeToTargetS = null;
     }
 
     dashboard.maxChargeKw = live(t, 'BMS_Limits')
@@ -154,6 +205,7 @@ export function createIc(bus: Bus): Ic {
 
   return {
     dashboard,
+    chargeDisplay,
     step(t, powered) {
       const edge = boot.update(powered, t);
       if (edge === 'lost') {

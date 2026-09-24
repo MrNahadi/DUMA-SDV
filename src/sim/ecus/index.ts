@@ -1,7 +1,7 @@
 /** ECUs. Each one reads other ECUs only through its bus inbox. */
 
 export { createBms, PRECHARGE_DONE_RATIO, type Bms, type BmsOptions, type BmsSensors } from './bms';
-export { createIc, type DashboardModel, type Ic } from './ic';
+export { createIc, type ChargeDisplayModel, type DashboardModel, type Ic } from './ic';
 export { createMcu, type Mcu, type McuSensors } from './mcu';
 export {
   STARTUP_STEPS,

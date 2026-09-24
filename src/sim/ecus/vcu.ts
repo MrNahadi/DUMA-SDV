@@ -33,6 +33,7 @@ export interface DriverInputs {
   chargeRequested: boolean;
   chargeSource: 'AC' | 'DC' | null;
   chargeTargetSoc: number;
+  chargeSession: 'idle' | 'plugged' | 'charging' | 'stopped' | 'complete';
 }
 
 export { STARTUP_STEPS };
@@ -165,7 +166,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
       if (driver.gearRequest !== null) requestGear(t, driver.gearRequest, driver.brake, driver.cableConnected);
       if (running) {
         updateCharge(t, driver);
-        publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake);
+        publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake, driver.cableConnected);
       } else vcu.chargeAuthorized = false;
     },
   };
@@ -463,15 +464,17 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
       .set('requested', requested ? 'yes' : 'no')
       .set('authorized', vcu.chargeAuthorized ? 'yes' : 'no')
       .set('source', driver.chargeSource ?? 'none')
-      .set('targetSoc', driver.chargeTargetSoc * 100);
+      .set('targetSoc', driver.chargeTargetSoc * 100)
+      .set('connected', driver.cableConnected ? 'yes' : 'no')
+      .set('session', driver.chargeSession);
   }
 
   /** Add this tick's pack energy (V × I from BMS_Status) and distance (MCU_Vehicle) to the trip. */
-  function accumulateTrip(t: number) {
-    if (isFresh(inbox, 'BMS_Status', Math.max(wakeAtS, t - BMS_LIVE_S))) {
+  function accumulateTrip(t: number, cableConnected: boolean) {
+    if (!cableConnected && isFresh(inbox, 'BMS_Status', Math.max(wakeAtS, t - BMS_LIVE_S))) {
       const powerW = (inbox.read('BMS_Status', 'packVoltage') as number) * (inbox.read('BMS_Status', 'packCurrent') as number);
       tripEnergyJ += powerW * tickS;
-      if (powerW < 0) recoveredJ -= powerW * tickS;
+      if (powerW < 0 && vcu.gear !== 'P') recoveredJ -= powerW * tickS;
     }
     const speedKmh = vehicleSpeedKmh(Math.max(wakeAtS, t - LIVE_S));
     if (!Number.isNaN(speedKmh)) tripDistanceM += kmhToMs(Math.abs(speedKmh)) * tickS;
@@ -488,8 +491,8 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     return Math.max(blended, MIN_CONSUMPTION_RATIO * wltp);
   }
 
-  function publish(t: number, accelerator: number, brake: number) {
-    accumulateTrip(t);
+  function publish(t: number, accelerator: number, brake: number, cableConnected: boolean) {
+    accumulateTrip(t, cableConnected);
     command
       .set('torqueRequest', torqueRequestNm(t, accelerator, brake))
       .set('contactorRequest', contactorRequest)

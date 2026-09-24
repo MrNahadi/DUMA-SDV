@@ -14,6 +14,7 @@ import {
   createMcu,
   createVcu,
   type DashboardModel,
+  type ChargeDisplayModel,
   type DriverInputs,
   type Gear,
   type GearRefusal,
@@ -26,7 +27,7 @@ import { radsToRpm } from './units';
 import { BRAKE_MAX_DECEL_G, GRAVITY_MS2, createLongitudinalDynamics, motorLossW, vehicleParams, type VehicleParams } from './vehicle';
 
 export type { Frame } from './bus';
-export type { DashboardModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
+export type { ChargeDisplayModel, DashboardModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
 
 /** Fixed simulation step: 10 ms (100 Hz). */
 export const TICK_S = 0.01;
@@ -105,6 +106,8 @@ export interface SimSnapshot {
   timeS: number;
   powerState: PowerState;
   charge: ChargeSnapshot;
+  /** Charge view model built by the IC from received bus frames. */
+  chargeDisplay: ChargeDisplayModel;
   startup: {
     steps: StartupStepSnapshot[];
     /** Why the last startup attempt failed, or null. */
@@ -194,7 +197,7 @@ export function createSim(options: SimOptions = {}): Sim {
   const vcu = createVcu(bus, p, TICK_S);
   const bms = createBms(bus, p, { tickS: TICK_S, initialSoc: soc });
   const mcu = createMcu(bus, p);
-  const ic = createIc(bus);
+  const ic = createIc(bus, p.usableEnergyJ);
   const obc = createObc(bus, p);
 
   let tick = 0;
@@ -202,7 +205,7 @@ export function createSim(options: SimOptions = {}): Sim {
   let tripEnergyJ = 0;
   const driver: DriverInputs = {
     accelerator: 0, brake: 0, gearRequest: null, cableConnected: false,
-    chargeRequested: false, chargeSource: null, chargeTargetSoc: 1,
+    chargeRequested: false, chargeSource: null, chargeTargetSoc: 1, chargeSession: 'idle',
   };
   let selectedSource: 'AC' | 'DC' | null = null;
   let chargeCommand: SimInputs['chargeCommand'] | null = null;
@@ -291,6 +294,7 @@ export function createSim(options: SimOptions = {}): Sim {
     driver.chargeRequested = charge.session === 'charging';
     driver.chargeSource = charge.source;
     driver.chargeTargetSoc = charge.targetSoc;
+    driver.chargeSession = charge.session;
 
     vcu.step(t, powerButton, driver);
     powerButton = false;
@@ -385,6 +389,7 @@ export function createSim(options: SimOptions = {}): Sim {
         timeS: tick * TICK_S,
         powerState: vcu.powerState,
         charge: { ...charge },
+        chargeDisplay: { ...ic.chargeDisplay },
         startup: {
           steps: STARTUP_STEPS.map((id, i) => ({
             id,

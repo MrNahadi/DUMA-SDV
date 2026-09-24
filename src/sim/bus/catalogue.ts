@@ -97,6 +97,8 @@ export const busCatalogue: Catalogue = Object.freeze([
       { name: 'authorized', values: ['no', 'yes'] },
       { name: 'source', values: ['none', 'AC', 'DC'] },
       { name: 'targetSoc', unit: '%', scale: 0.1 },
+      { name: 'connected', values: ['no', 'yes'] },
+      { name: 'session', values: ['idle', 'plugged', 'charging', 'stopped', 'complete'] },
     ],
   },
   {

@@ -74,15 +74,15 @@ Notes: Headless public-API scenario advances every 10 ms tick and records peak i
 
 ## T-007: Publish charge display data
 
-Status: open
+Status: done
 Blocked by: T-004, T-005
 Slice: Expose bus-derived SOC, source, charge power, session state and a time-to-target estimate to the display snapshot, with explicit staleness.
 Test seam: public `createSim().snapshot()` display model and `setMessageDropped()`
 Acceptance:
-- [ ] AC and DC display values track bus frames and do not update from plant-only changes
-- [ ] Time-to-target is finite during eligible charging, reaches complete at target and is unavailable when inputs are stale
-- [ ] Charging energy does not increment the regen-only Energy recovered tracker
-Notes:
+- [x] AC and DC display values track bus frames and do not update from plant-only changes
+- [x] Time-to-target is finite during eligible charging, reaches complete at target and is unavailable when inputs are stale
+- [x] Charging energy does not increment the regen-only Energy recovered tracker
+Notes: IC charge display reads received BMS and VCU frames. Time-to-target uses instantaneous received pack power and usable energy; charging cannot raise trip recovery. All five Feedback commands pass; one drive e2e speed-threshold miss passed on rerun.
 
 ## T-008: Show charging controls and status
 
