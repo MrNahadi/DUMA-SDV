@@ -101,11 +101,11 @@ Notes:
 
 ## T-010: Architecture end-to-end scenario
 
-Status: open
+Status: done
 Blocked by: T-005, T-008, T-009
 Slice: Playwright scenario at 1366×768: power on to READY, open Architecture, see the startup frames and active ECUs, filter by an ECU, pause and resume, clear the trace, open a frame's signals, then inject a fault and find its DTC frame.
 Test seam: `e2e/` Playwright Chromium
 Acceptance:
-- [ ] The new architecture spec passes
+- [x] The new architecture spec passes
 - [ ] Existing e2e specs still pass, and `npm run typecheck`, `lint`, `test` and `build` pass
 Notes: Wait for READY before injecting faults (see phase 05 T-012).
