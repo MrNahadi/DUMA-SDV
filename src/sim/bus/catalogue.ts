@@ -12,6 +12,7 @@ export type EcuId = 'VCU' | 'BMS' | 'MCU' | 'IC';
 
 export const POWER_STATES = ['OFF', 'ACCESSORY', 'STARTING', 'READY', 'CHARGING', 'FAULT'] as const;
 export const GEARS = ['P', 'R', 'N', 'D'] as const;
+export const DRIVE_MODES = ['eco', 'normal', 'sport'] as const;
 /** The VCU's startup steps, in order (requirements R4). */
 export const STARTUP_STEPS = ['wake', 'selfCheck', 'precharge', 'contactors', 'ready'] as const;
 
@@ -116,6 +117,10 @@ export const busCatalogue: Catalogue = Object.freeze([
       { name: 'powerCapKw', unit: 'kW', scale: 1 },
       { name: 'speedCapKmh', unit: 'km/h', scale: 1 },
     ],
+  },
+  {
+    id: 0x107, name: 'VCU_Mode', sender: 'VCU', periodMs: 100,
+    signals: [{ name: 'driveMode', values: DRIVE_MODES }],
   },
   {
     id: 0x200,

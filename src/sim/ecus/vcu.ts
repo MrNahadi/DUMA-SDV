@@ -8,7 +8,7 @@
  * in ADR 0008.
  */
 
-import { GEARS, POWER_STATES, STARTUP_STEPS, type Bus } from '../bus';
+import { DRIVE_MODES, GEARS, POWER_STATES, STARTUP_STEPS, type Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
 import { GRAVITY_MS2, motorMaxTorqueNm } from '../vehicle';
 import { jPerMToWhPerKm, kmhToMs, msToKmh, rpmToRads } from '../units';
@@ -17,6 +17,7 @@ import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ec
 
 export type PowerState = (typeof POWER_STATES)[number];
 export type Gear = (typeof GEARS)[number];
+export type DriveMode = (typeof DRIVE_MODES)[number];
 /** Why a gear request was refused (ADR 0006). */
 export type GearRefusal = 'brakeRequired' | 'speedTooHigh' | 'notReady' | 'cableConnected';
 
@@ -28,6 +29,8 @@ export interface DriverInputs {
   brake: number;
   /** A gear selector request this tick, or null. */
   gearRequest: Gear | null;
+  /** Selected drive mode (ADR 0013). */
+  driveMode: DriveMode;
   /** Physical charge-port cable sense. */
   cableConnected: boolean;
   /** Driver charge request and source, sensed through the charge-port controls. */
@@ -125,6 +128,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
   const recoveryFrame = bus.writer('VCU', 'VCU_Recovery');
   const chargeFrame = bus.writer('VCU', 'VCU_Charge');
   const decisionFrame = bus.writer('VCU', 'VCU_DriveDecision');
+  const modeFrame = bus.writer('VCU', 'VCU_Mode');
   const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Status', 'MCU_Vehicle', 'BMS_DTC', 'MCU_DTC']);
   bus.setSenderActive('VCU', false);
 
@@ -169,7 +173,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
       if (driver.gearRequest !== null) requestGear(t, driver.gearRequest, driver.brake, driver.cableConnected);
       if (running) {
         updateCharge(t, driver);
-        publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake, driver.cableConnected);
+        publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake, driver.cableConnected, driver.driveMode);
       } else vcu.chargeAuthorized = false;
     },
   };
@@ -515,7 +519,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
     return Math.max(blended, MIN_CONSUMPTION_RATIO * wltp);
   }
 
-  function publish(t: number, accelerator: number, brake: number, cableConnected: boolean) {
+  function publish(t: number, accelerator: number, brake: number, cableConnected: boolean, driveMode: DriveMode) {
     accumulateTrip(t, cableConnected);
     command
       .set('torqueRequest', torqueRequestNm(t, accelerator, brake))
@@ -529,6 +533,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
       .set('startupStep', current >= 0 ? STARTUP_STEPS[current]! : 'none');
     const decision = driveDecision(t);
     decisionFrame.set('reason', decision.reason).set('powerCapKw', decision.powerCapKw).set('speedCapKmh', decision.speedCapKmh);
+    modeFrame.set('driveMode', driveMode);
 
     // Remaining usable energy from the SOC the BMS reports, over the consumption.
     // Until a BMS_Status has arrived since waking there is no SOC, so the range is flagged invalid.

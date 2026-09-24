@@ -7,6 +7,7 @@ export {
   STARTUP_STEPS,
   createVcu,
   type DriverInputs,
+  type DriveMode,
   type Gear,
   type GearRefusal,
   type PowerState,

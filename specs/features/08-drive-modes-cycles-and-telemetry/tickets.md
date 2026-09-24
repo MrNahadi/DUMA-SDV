@@ -2,14 +2,14 @@
 
 ## T-001: Drive mode input over the bus
 
-Status: open
+Status: done
 Blocked by:
 Slice: Add a drive mode input (Eco / Normal / Sport, default Normal). The VCU sends it on a new catalogue message, and the snapshot reports the mode received from the bus. No behaviour changes yet.
 Test seam: `createSim()` public API, `trace()` and `topology()`
 Acceptance:
-- [ ] The default mode is Normal, and setting a mode shows in the snapshot within one message period
-- [ ] The new message and its signal appear in the catalogue, trace and topology
-- [ ] Existing sim tests pass unchanged
+- [x] The default mode is Normal, and setting a mode shows in the snapshot within one message period
+- [x] The new message and its signal appear in the catalogue, trace and topology
+- [x] Existing sim tests pass unchanged
 Notes: Keep modes as a list with an availability flag, so phase 09 OTA can gate one later. All three are available now.
 
 ## T-002: Eco and Sport torque, power and regen maps

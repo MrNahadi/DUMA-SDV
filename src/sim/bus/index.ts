@@ -13,4 +13,4 @@ export {
   type SignalDef,
   type SignalValue,
 } from './bus';
-export { GEARS, POWER_STATES, STARTUP_STEPS, busCatalogue, formatSwVersion, swVersionCode, type EcuId } from './catalogue';
+export { DRIVE_MODES, GEARS, POWER_STATES, STARTUP_STEPS, busCatalogue, formatSwVersion, swVersionCode, type EcuId } from './catalogue';

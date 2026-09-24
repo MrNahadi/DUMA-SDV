@@ -4,7 +4,7 @@
  */
 
 import { createHvCircuit, createPack, type ContactorStates } from './battery';
-import { GEARS, busCatalogue, createBus, type Frame } from './bus';
+import { DRIVE_MODES, GEARS, busCatalogue, createBus, type Frame } from './bus';
 import { isFresh } from './ecus/ecu';
 import { createFaultRecords, type DiagnosticsSnapshot, type FaultCommand } from './faults';
 import { createDiagnosticBus } from './faults/bus';
@@ -19,6 +19,7 @@ import {
   type ChargeDisplayModel,
   type ThermalDisplayModel,
   type DriverInputs,
+  type DriveMode,
   type Gear,
   type GearRefusal,
   type PowerState,
@@ -31,7 +32,7 @@ import { createThermal, thermalParams, type ThermalState } from './thermal';
 import { BRAKE_MAX_DECEL_G, GRAVITY_MS2, createLongitudinalDynamics, motorLossW, vehicleParams, type VehicleParams } from './vehicle';
 
 export type { Frame } from './bus';
-export type { ChargeDisplayModel, DashboardModel, ThermalDisplayModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
+export type { ChargeDisplayModel, DashboardModel, ThermalDisplayModel, DriveMode, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
 export { faultCatalogue } from './faults';
 export type { CoolantLoopState, ThermalState } from './thermal';
 export type { DiagnosticsSnapshot, FaultCommand, FaultKey, FaultRecord } from './faults';
@@ -75,6 +76,8 @@ export interface SimInputs {
   brake: number;
   /** A gear selector request. It is consumed by the next tick. */
   gearRequest: Gear;
+  /** Selected drive mode (ADR 0013). Held until changed. */
+  driveMode: DriveMode;
   /** Source selected for the next plug-in request. */
   chargeSource: 'AC' | 'DC';
   /** One-shot charge-port or session command. */
@@ -157,6 +160,10 @@ export interface SimSnapshot {
   gear: Gear;
   /** Why the latest gear request was refused, or null if it was accepted. */
   gearRefusal: GearRefusal | null;
+  /** Drive mode the MCU last received on VCU_Mode. */
+  driveMode: DriveMode;
+  /** Drive modes in order, with whether each can be selected (phase 09 OTA may gate one). */
+  driveModes: { id: DriveMode; available: boolean }[];
   /** Driver pedal positions, 0..1. */
   pedals: { accelerator: number; brake: number };
   /** Vehicle speed, m/s, forward positive. */
@@ -279,7 +286,7 @@ export function createSim(options: SimOptions = {}): Sim {
   };
   let tripEnergyJ = 0;
   const driver: DriverInputs = {
-    accelerator: 0, brake: 0, gearRequest: null, cableConnected: false,
+    accelerator: 0, brake: 0, gearRequest: null, driveMode: 'normal', cableConnected: false,
     chargeRequested: false, chargeSource: null, chargeTargetSoc: 1, chargeSession: 'idle',
   };
   let selectedSource: 'AC' | 'DC' | null = null;
@@ -481,6 +488,9 @@ export function createSim(options: SimOptions = {}): Sim {
       if (inputs.gearRequest !== undefined && !GEARS.includes(inputs.gearRequest)) {
         throw new RangeError(`gearRequest must be one of ${GEARS.join(', ')}, got ${String(inputs.gearRequest)}`);
       }
+      if (inputs.driveMode !== undefined && !DRIVE_MODES.includes(inputs.driveMode)) {
+        throw new RangeError(`driveMode must be one of ${DRIVE_MODES.join(', ')}, got ${String(inputs.driveMode)}`);
+      }
       if (inputs.chargeSource !== undefined && inputs.chargeSource !== 'AC' && inputs.chargeSource !== 'DC') {
         throw new RangeError('chargeSource must be AC or DC');
       }
@@ -494,6 +504,7 @@ export function createSim(options: SimOptions = {}): Sim {
       if (inputs.accelerator !== undefined) driver.accelerator = inputs.accelerator;
       if (inputs.brake !== undefined) driver.brake = inputs.brake;
       if (inputs.gearRequest !== undefined) driver.gearRequest = inputs.gearRequest;
+      if (inputs.driveMode !== undefined) driver.driveMode = inputs.driveMode;
       if (inputs.chargeSource !== undefined) selectedSource = inputs.chargeSource;
       if (inputs.chargeTargetSoc !== undefined) charge.targetSoc = inputs.chargeTargetSoc;
       if (inputs.chargeCommand !== undefined) chargeCommand = inputs.chargeCommand;
@@ -521,6 +532,8 @@ export function createSim(options: SimOptions = {}): Sim {
         },
         gear: vcu.gear,
         gearRefusal: vcu.gearRefusal,
+        driveMode: mcu.driveMode,
+        driveModes: DRIVE_MODES.map((id) => ({ id, available: true })),
         pedals: { accelerator: driver.accelerator, brake: driver.brake },
         speedMs: dynamics.speedMs,
         accelMs2: dynamics.accelMs2,

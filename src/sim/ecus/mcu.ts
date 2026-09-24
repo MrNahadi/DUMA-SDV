@@ -12,6 +12,7 @@ import type { FaultKey } from '../faults';
 import type { VehicleParams } from '../vehicle';
 import { motorMaxTorqueNm } from '../vehicle';
 import { msToKmh, radsToRpm } from '../units';
+import type { DriveMode } from './vcu';
 import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ecu';
 
 /** Boot and power-on self test on the 12 V switched supply. */
@@ -40,6 +41,8 @@ export interface Mcu {
   readonly torqueNm: number;
   /** True while the inverter bridge is switching (`run`): it then draws its losses from the HV bus. */
   readonly running: boolean;
+  /** Drive mode last received on VCU_Mode (ADR 0013); Normal until one arrives. */
+  readonly driveMode: DriveMode;
   step(t: number, powered: boolean, sensors: McuSensors): void;
 }
 
@@ -49,7 +52,7 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>, faultStatus: (ke
   const status = bus.writer('MCU', 'MCU_Status');
   const vehicle = bus.writer('MCU', 'MCU_Vehicle');
   const thermal = bus.writer('MCU', 'MCU_Thermal');
-  const inbox = bus.subscribe('MCU', ['VCU_Command', 'BMS_Status']);
+  const inbox = bus.subscribe('MCU', ['VCU_Command', 'BMS_Status', 'VCU_Mode']);
   bus.setSenderActive('MCU', false);
 
   /** True if the high-voltage supply and the VCU both allow torque. */
@@ -64,6 +67,7 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>, faultStatus: (ke
   const mcu = {
     torqueNm: 0,
     running: false,
+    driveMode: 'normal' as DriveMode,
     step(t: number, powered: boolean, { dcLinkV, motorSpeedRadS, motorTempC, inverterTempC }: McuSensors) {
       const edge = boot.update(powered, t);
       if (edge === 'lost') bus.setSenderActive('MCU', false);
@@ -76,6 +80,7 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>, faultStatus: (ke
         bus.setSenderActive('MCU', true);
         bootFrame.set('selfCheck', 'pass').set('swVersion', INITIAL_SW_VERSION).raise();
       }
+      if (isFresh(inbox, 'VCU_Mode', boot.bootedAtS)) mcu.driveMode = inbox.read('VCU_Mode', 'driveMode') as DriveMode;
 
       const calibrated = t - boot.bootedAtS >= CALIBRATION_S - TIME_EPS_S;
       const run = calibrated && enabled(t, dcLinkV);
