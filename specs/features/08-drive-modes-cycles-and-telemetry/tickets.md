@@ -136,11 +136,11 @@ Notes: All feedback commands passed with no fixes needed (287 unit tests, 15 e2e
 
 ## T-012: Cycles end-to-end scenario
 
-Status: open
+Status: done
 Blocked by: T-011
 Slice: A Playwright spec at 1366×768 opens Cycles, picks Eco and Urban, runs the cycle at maximum time scale, sees the chart and a Wh/km result, and exports a CSV whose header and row count are checked.
 Test seam: `e2e/cycles.spec.ts`
 Acceptance:
-- [ ] The spec passes in headless Chromium
-- [ ] The downloaded CSV has the expected header and at least one row per 0.1 s of the cycle
+- [x] The spec passes in headless Chromium
+- [x] The downloaded CSV has the expected header and at least one row per 0.1 s of the cycle
 Notes: Add the scenario to `src/sim/scenarios` if the guided demo (phase 10) can reuse it.
