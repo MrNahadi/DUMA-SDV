@@ -7,7 +7,7 @@
 3. Regression: a recorded Normal run matches the snapshots from before this phase. The 0–100, range, DC 10–80 and regen reference tests pass with unchanged tolerances (R3, R19).
 4. Mode tests: part-pedal torque order Eco < Normal ≤ Sport, the Eco power cap, Eco regen ≥ Normal, full-pedal limits within the official values, and the torque ramp on a mode change (R4–R5).
 5. Cycle data tests: point count, duration and distance match the published totals (R7).
-6. Cycle runner tests: tracking band, determinism, the Wh/km formula, Eco ≤ Normal on Urban, and stop behaviour (R8–R11). Each headless cycle test finishes in under 10 s on the dev machine.
+6. Cycle runner tests: tracking band, determinism, the Wh/km formula, all modes within ±3 % of each other on Urban, and stop behaviour (R8–R11). Each headless cycle test finishes in under 10 s on the dev machine.
 7. Recorder and CSV tests: sample interval, columns, cap, header units, quoting, empty-log refusal and the sim purity lint rule (R12–R14).
 8. Component tests: mode control, Cycles panel run/stop/result, chart series labels and the export button (R15–R18).
 9. Playwright `e2e/cycles.spec.ts` at 1366×768 (T-012) passes, along with all earlier e2e specs.

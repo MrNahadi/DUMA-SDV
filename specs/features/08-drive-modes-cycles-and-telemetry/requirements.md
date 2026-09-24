@@ -14,7 +14,7 @@
 - **R7.** Two cycles are available: Urban (WLTC Class 3b Low phase) and Highway (WLTC Class 3b Extra High phase), stored as 1 Hz speed-time data with their source cited in ADR 0013. Duration and distance of the stored data match the published totals.
 - **R8.** A headless cycle run powers the car on, selects D, and drives the profile with a speed-tracking driver model using only the public `setInputs`. Tracking error stays within ±2 km/h (a time shift of ±1 s allowed) for at least 98 % of samples in Normal.
 - **R9.** A run returns distance (km), net battery energy (kWh, discharge minus regen) and consumption in Wh/km = net battery energy / distance. Results are deterministic for the same mode, cycle and initial SOC.
-- **R10.** Eco gives Wh/km no higher than Normal on the Urban cycle. No absolute Wh/km target is asserted (none exists in the brief).
+- **R10.** Each mode reports its own Wh/km on each cycle, and the modes are compared rather than ranked. On the Urban cycle, Eco, Normal and Sport are within ±3 % of each other. The modes are not ranked because a trace-following driver needs the same wheel energy in every mode. The maps change drivability, not the energy for a fixed speed trace (ADR 0013). No absolute Wh/km target is asserted (none exists in the brief).
 - **R11.** A run can be stopped; stopping leaves the car in a safe state (pedals released, car stopped or coasting to stop) and no result is reported for a stopped run.
 
 ## Telemetry
