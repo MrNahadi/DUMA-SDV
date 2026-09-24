@@ -14,3 +14,10 @@ export {
   type CycleId,
   type CyclePoint,
 } from './cycles';
+export {
+  createCycleRunner,
+  type CycleRunner,
+  type CycleRunnerOptions,
+  type CycleRunState,
+  type CycleRunStatus,
+} from './cycle-runner';

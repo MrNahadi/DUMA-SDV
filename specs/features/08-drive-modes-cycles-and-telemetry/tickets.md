@@ -40,15 +40,15 @@ Notes: Data only, no dependence on the sim. Data is already in `src/sim/scenario
 
 ## T-004: Headless cycle runner with a driver model
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: A runner powers the car on, selects D, and follows a cycle with a speed-tracking driver (road-load feed-forward plus PI) that uses only `setInputs`. It can be stepped in chunks and stopped.
 Test seam: Cycle runner public API (create, step, stop, status)
 Acceptance:
-- [ ] In Normal, speed stays within ±2 km/h of target (±1 s time shift allowed) for at least 98 % of samples on both cycles
-- [ ] Stopping releases the pedals, and the car comes to rest
-- [ ] Two runs with the same inputs give identical results
-- [ ] Each full-cycle test runs in under 10 s
+- [x] In Normal, speed stays within ±2 km/h of target (±1 s time shift allowed) for at least 98 % of samples on both cycles
+- [x] Stopping releases the pedals, and the car comes to rest
+- [x] Two runs with the same inputs give identical results
+- [x] Each full-cycle test runs in under 10 s
 Notes: Pure TS inside `src/sim/`, with no Date or randomness.
 
 ## T-005: Wh/km result
