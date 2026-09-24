@@ -14,15 +14,15 @@ Notes: Treat temperature injections as diagnostic sensor conditions pending phas
 
 ## T-002: Expose fault injection and records
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: Add a typed fault catalogue and public controls for inject, restore normal condition and record clearing, with an observable diagnostic snapshot.
 Test seam: `createSim().setInputs()` and `snapshot()`
 Acceptance:
-- [ ] Each supported fault can be injected and observed deterministically; invalid or duplicate actions are stable
-- [ ] Active condition, stored record and cleared record are distinct; an active condition resists clear
-- [ ] Repeat runs produce identical record order and times
-Notes: Keep diagnostic history bounded and use sim time only.
+- [x] Each supported fault can be injected and observed deterministically; invalid or duplicate actions are stable
+- [x] Active condition, stored record and cleared record are distinct; an active condition resists clear
+- [x] Repeat runs produce identical record order and times
+Notes: History is bounded to one record per catalogue key and uses sim time only. Bus publication is T-003.
 
 ## T-003: Publish ECU DTCs on the bus
 

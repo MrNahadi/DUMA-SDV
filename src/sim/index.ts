@@ -6,6 +6,7 @@
 import { createHvCircuit, createPack, type ContactorStates } from './battery';
 import { GEARS, busCatalogue, createBus, type Frame } from './bus';
 import { isFresh } from './ecus/ecu';
+import { createFaultRecords, type DiagnosticsSnapshot, type FaultCommand } from './faults';
 import { createObc } from './ecus/obc';
 import {
   STARTUP_STEPS,
@@ -28,6 +29,8 @@ import { BRAKE_MAX_DECEL_G, GRAVITY_MS2, createLongitudinalDynamics, motorLossW,
 
 export type { Frame } from './bus';
 export type { ChargeDisplayModel, DashboardModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
+export { faultCatalogue } from './faults';
+export type { DiagnosticsSnapshot, FaultCommand, FaultKey, FaultRecord } from './faults';
 
 /** Fixed simulation step: 10 ms (100 Hz). */
 export const TICK_S = 0.01;
@@ -58,6 +61,8 @@ export interface SimOptions {
 }
 
 export interface SimInputs {
+  /** One-shot diagnostic command, consumed on the next tick. */
+  faultCommand: FaultCommand;
   /** A press of the power button. It is consumed by the next tick. */
   powerButton: boolean;
   /** Accelerator pedal, 0..1. Held until changed. */
@@ -100,6 +105,8 @@ export interface StartupStepSnapshot {
 }
 
 export interface SimSnapshot {
+  /** ECU-owned diagnostic records and latest management result. */
+  diagnostics: DiagnosticsSnapshot;
   /** Ticks elapsed since creation. */
   tick: number;
   /** Simulated time in seconds (tick * TICK_S). */
@@ -199,6 +206,7 @@ export function createSim(options: SimOptions = {}): Sim {
   const mcu = createMcu(bus, p);
   const ic = createIc(bus, p.usableEnergyJ);
   const obc = createObc(bus, p);
+  const faultRecords = createFaultRecords();
 
   let tick = 0;
   let powerButton = false;
@@ -209,6 +217,7 @@ export function createSim(options: SimOptions = {}): Sim {
   };
   let selectedSource: 'AC' | 'DC' | null = null;
   let chargeCommand: SimInputs['chargeCommand'] | null = null;
+  let faultCommand: FaultCommand | null = null;
   const charge: ChargeSnapshot = { source: null, connected: false, session: 'idle', authorized: false, targetSoc: 1, powerW: 0, inputPowerW: 0, obcOutputPowerW: 0, lossPowerW: 0, refusal: null };
 
   function applyChargeCommand() {
@@ -283,6 +292,11 @@ export function createSim(options: SimOptions = {}): Sim {
     // Integer ms first, so t is exact for whole ticks (matches the bus trace).
     const t = (tick * TICK_MS) / 1000;
     bus.deliver();
+
+    if (faultCommand !== null) {
+      faultRecords.apply(faultCommand, t);
+      faultCommand = null;
+    }
 
     applyChargeCommand();
 
@@ -361,6 +375,9 @@ export function createSim(options: SimOptions = {}): Sim {
       for (let i = 0; i < ticks; i++) runTick();
     },
     setInputs(inputs) {
+      if (inputs.faultCommand !== undefined && (typeof inputs.faultCommand !== 'object' || inputs.faultCommand === null)) {
+        throw new RangeError('invalid faultCommand');
+      }
       if (inputs.accelerator !== undefined) checkPedal('accelerator', inputs.accelerator);
       if (inputs.brake !== undefined) checkPedal('brake', inputs.brake);
       if (inputs.gearRequest !== undefined && !GEARS.includes(inputs.gearRequest)) {
@@ -382,11 +399,13 @@ export function createSim(options: SimOptions = {}): Sim {
       if (inputs.chargeSource !== undefined) selectedSource = inputs.chargeSource;
       if (inputs.chargeTargetSoc !== undefined) charge.targetSoc = inputs.chargeTargetSoc;
       if (inputs.chargeCommand !== undefined) chargeCommand = inputs.chargeCommand;
+      if (inputs.faultCommand !== undefined) faultCommand = inputs.faultCommand;
     },
     snapshot() {
       return {
         tick,
         timeS: tick * TICK_S,
+        diagnostics: faultRecords.snapshot(),
         powerState: vcu.powerState,
         charge: { ...charge },
         chargeDisplay: { ...ic.chargeDisplay },
