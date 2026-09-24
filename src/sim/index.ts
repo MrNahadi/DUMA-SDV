@@ -46,6 +46,22 @@ export interface SimInputs {
   brake: number;
   /** A gear selector request. It is consumed by the next tick. */
   gearRequest: Gear;
+  /** Source selected for the next plug-in request. */
+  chargeSource: 'AC' | 'DC';
+  /** One-shot charge-port or session command. */
+  chargeCommand: 'plugIn' | 'unplug' | 'start' | 'stop';
+  /** Desired SOC, 0..1. Start requires it to exceed current SOC. */
+  chargeTargetSoc: number;
+}
+
+export type ChargeRefusal = 'notPlugged' | 'alreadyPlugged' | 'notParked' | 'moving' | 'targetNotAboveSoc' | 'sessionActive' | 'notCharging' | 'noSource';
+export interface ChargeSnapshot {
+  source: 'AC' | 'DC' | null;
+  connected: boolean;
+  session: 'idle' | 'plugged' | 'charging' | 'stopped';
+  targetSoc: number;
+  powerW: number;
+  refusal: ChargeRefusal | null;
 }
 
 export interface StartupStepSnapshot {
@@ -63,6 +79,7 @@ export interface SimSnapshot {
   /** Simulated time in seconds (tick * TICK_S). */
   timeS: number;
   powerState: PowerState;
+  charge: ChargeSnapshot;
   startup: {
     steps: StartupStepSnapshot[];
     /** Why the last startup attempt failed, or null. */
@@ -156,7 +173,49 @@ export function createSim(options: SimOptions = {}): Sim {
   let tick = 0;
   let powerButton = false;
   let tripEnergyJ = 0;
-  const driver: DriverInputs = { accelerator: 0, brake: 0, gearRequest: null };
+  const driver: DriverInputs = { accelerator: 0, brake: 0, gearRequest: null, cableConnected: false };
+  let selectedSource: 'AC' | 'DC' | null = null;
+  let chargeCommand: SimInputs['chargeCommand'] | null = null;
+  const charge: ChargeSnapshot = { source: null, connected: false, session: 'idle', targetSoc: 1, powerW: 0, refusal: null };
+
+  function applyChargeCommand() {
+    const command = chargeCommand;
+    chargeCommand = null;
+    if (command === null) return;
+    charge.refusal = null;
+    const parked = vcu.gear === 'P';
+    const stopped = Math.abs(dynamics.speedMs) < 1 / 3.6;
+    if (command === 'plugIn') {
+      if (charge.connected) charge.refusal = 'alreadyPlugged';
+      else if (!parked) charge.refusal = 'notParked';
+      else if (!stopped) charge.refusal = 'moving';
+      else if (selectedSource === null) charge.refusal = 'noSource';
+      else {
+        charge.source = selectedSource;
+        charge.connected = true;
+        charge.session = 'plugged';
+      }
+    } else if (command === 'start') {
+      if (!charge.connected) charge.refusal = 'notPlugged';
+      else if (charge.session === 'charging') charge.refusal = 'sessionActive';
+      else if (!parked) charge.refusal = 'notParked';
+      else if (!stopped) charge.refusal = 'moving';
+      else if (charge.targetSoc <= pack.soc) charge.refusal = 'targetNotAboveSoc';
+      else charge.session = 'charging';
+    } else if (command === 'stop') {
+      if (charge.session !== 'charging') charge.refusal = 'notCharging';
+      else charge.session = 'stopped';
+    } else if (command === 'unplug') {
+      if (!charge.connected) charge.refusal = 'notPlugged';
+      else if (charge.session === 'charging') charge.refusal = 'sessionActive';
+      else {
+        charge.source = null;
+        charge.connected = false;
+        charge.session = 'idle';
+      }
+    }
+    driver.cableConnected = charge.connected;
+  }
 
   /**
    * Power the HV loads draw at the pack terminals, W (R2): the inverter's DC power
@@ -173,6 +232,8 @@ export function createSim(options: SimOptions = {}): Sim {
     // Integer ms first, so t is exact for whole ticks (matches the bus trace).
     const t = (tick * TICK_MS) / 1000;
     bus.deliver();
+
+    applyChargeCommand();
 
     vcu.step(t, powerButton, driver);
     powerButton = false;
@@ -217,16 +278,29 @@ export function createSim(options: SimOptions = {}): Sim {
       if (inputs.gearRequest !== undefined && !GEARS.includes(inputs.gearRequest)) {
         throw new RangeError(`gearRequest must be one of ${GEARS.join(', ')}, got ${String(inputs.gearRequest)}`);
       }
+      if (inputs.chargeSource !== undefined && inputs.chargeSource !== 'AC' && inputs.chargeSource !== 'DC') {
+        throw new RangeError('chargeSource must be AC or DC');
+      }
+      if (inputs.chargeCommand !== undefined && !['plugIn', 'unplug', 'start', 'stop'].includes(inputs.chargeCommand)) {
+        throw new RangeError('invalid chargeCommand');
+      }
+      if (inputs.chargeTargetSoc !== undefined && !(inputs.chargeTargetSoc > 0 && inputs.chargeTargetSoc <= 1)) {
+        throw new RangeError('chargeTargetSoc must be within (0, 1]');
+      }
       if (inputs.powerButton) powerButton = true;
       if (inputs.accelerator !== undefined) driver.accelerator = inputs.accelerator;
       if (inputs.brake !== undefined) driver.brake = inputs.brake;
       if (inputs.gearRequest !== undefined) driver.gearRequest = inputs.gearRequest;
+      if (inputs.chargeSource !== undefined) selectedSource = inputs.chargeSource;
+      if (inputs.chargeTargetSoc !== undefined) charge.targetSoc = inputs.chargeTargetSoc;
+      if (inputs.chargeCommand !== undefined) chargeCommand = inputs.chargeCommand;
     },
     snapshot() {
       return {
         tick,
         timeS: tick * TICK_S,
         powerState: vcu.powerState,
+        charge: { ...charge },
         startup: {
           steps: STARTUP_STEPS.map((id, i) => ({
             id,

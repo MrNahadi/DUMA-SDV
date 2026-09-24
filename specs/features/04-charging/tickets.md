@@ -14,15 +14,15 @@ Notes: ADR 0010 retains the ADR 0004 pack-resistance estimate; no resistance cha
 
 ## T-002: Expose charge controls and port state
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: Extend the public sim with AC/DC selection, Plug in/Unplug, target and session commands plus an observable port/session snapshot, initially without energy transfer.
 Test seam: `createSim().setInputs()`, `snapshot()` and `trace()`
 Acceptance:
-- [ ] Valid commands produce deterministic idle, plugged and session transitions; invalid targets or transitions are rejected consistently
-- [ ] Starting is refused while moving or outside P; a plugged cable blocks propulsion and gear selection
-- [ ] Existing Power on/off and gear-interlock tests pass
-Notes:
+- [x] Valid commands produce deterministic idle, plugged and session transitions; invalid targets or transitions are rejected consistently
+- [x] Starting is refused while moving or outside P; a plugged cable blocks propulsion and gear selection
+- [x] Existing Power on/off and gear-interlock tests pass
+Notes: Public charge state is control-only at this stage; T-003 adds bus authorization and charging power-state coordination.
 
 ## T-003: Authorize external charge through the bus
 

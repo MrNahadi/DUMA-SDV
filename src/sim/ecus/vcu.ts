@@ -17,7 +17,7 @@ import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ec
 export type PowerState = (typeof POWER_STATES)[number];
 export type Gear = (typeof GEARS)[number];
 /** Why a gear request was refused (ADR 0006). */
-export type GearRefusal = 'brakeRequired' | 'speedTooHigh' | 'notReady';
+export type GearRefusal = 'brakeRequired' | 'speedTooHigh' | 'notReady' | 'cableConnected';
 
 /** What the VCU senses from the driver each tick. */
 export interface DriverInputs {
@@ -27,6 +27,8 @@ export interface DriverInputs {
   brake: number;
   /** A gear selector request this tick, or null. */
   gearRequest: Gear | null;
+  /** Physical charge-port cable sense. */
+  cableConnected: boolean;
 }
 
 export { STARTUP_STEPS };
@@ -153,8 +155,8 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     gearRefusal: null as GearRefusal | null,
     step(t: number, buttonPressed: boolean, driver: Readonly<DriverInputs>) {
       const running = updatePower(t, buttonPressed);
-      if (driver.gearRequest !== null) requestGear(t, driver.gearRequest, driver.brake);
-      if (running) publish(t, driver.accelerator, driver.brake);
+      if (driver.gearRequest !== null) requestGear(t, driver.gearRequest, driver.brake, driver.cableConnected);
+      if (running) publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake);
     },
   };
 
@@ -342,7 +344,11 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
   }
 
   /** Apply the gear interlocks (R4, ADR 0006) to a request. Re-selecting the engaged gear is a no-op. */
-  function requestGear(t: number, target: Gear, brake: number) {
+  function requestGear(t: number, target: Gear, brake: number, cableConnected: boolean) {
+    if (cableConnected && target !== 'P') {
+      vcu.gearRefusal = 'cableConnected';
+      return;
+    }
     if (target === vcu.gear) {
       vcu.gearRefusal = null;
       return;
