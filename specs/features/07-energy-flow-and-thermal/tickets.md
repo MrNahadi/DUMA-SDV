@@ -94,7 +94,7 @@ Notes:
 
 ## T-009: Regression sweep
 
-Status: open
+Status: done
 Blocked by: T-004, T-008
 Slice: Run the full suites and fix anything the new messages or panel broke, without widening tolerances.
 Test seam: Existing test suites
