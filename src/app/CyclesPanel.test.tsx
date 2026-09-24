@@ -37,3 +37,14 @@ it('stopping a run shows no result', () => {
   expect(screen.queryByText('Wh/km')).toBeNull();
   expect(screen.getByText('Cycle stopped. No result.')).toBeTruthy();
 });
+
+it('a failed run shows the failure reason instead of a result', () => {
+  render(<CyclesPanel />);
+  fireEvent.click(screen.getByRole('button', { name: 'Run cycle' }));
+  advanceS(20);
+  act(() => useSimStore.getState().requestGear('N'));
+  advanceS(10);
+  expect(useSimStore.getState().cycleRun?.status.state).toBe('failed');
+  expect(screen.queryByText('Wh/km')).toBeNull();
+  expect(screen.getByText(/Cycle failed: The gear left D/)).toBeTruthy();
+});

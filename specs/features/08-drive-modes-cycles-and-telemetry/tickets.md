@@ -159,15 +159,15 @@ Notes: Review of 696546a..07e4493. The UI calls advance(1–2 ticks) per frame a
 
 ## T-014: Cycle runs start from rest and fail cleanly
 
-Status: open
+Status: done
 Blocked by: T-013
 Slice: A run started while the car is moving first brings it to rest, then starts the cycle clock, so results don't depend on earlier driving. During a run, if the car leaves READY or D (power off, a fault response, or a gear request), the run ends as `failed` with a reason, the pedals are released, and no result is reported. A run that covers no distance reports no result. The Cycles view shows the failure reason. (Review findings #2 and #4.)
 Test seam: Cycle runner public API; CyclesPanel component test
 Acceptance:
-- [ ] Starting Urban at 80 km/h gives the same Wh/km as starting from rest
-- [ ] Power off, an injected fault that drops READY, and a shift to N mid-run each end the run as failed with a reason and no result
-- [ ] A result is never reported with zero distance or a non-finite Wh/km
-- [ ] The Cycles view shows the failure reason instead of a result
+- [x] Starting Urban at 80 km/h gives the same Wh/km as starting from rest
+- [x] Power off, an injected fault that drops READY, and a shift to N mid-run each end the run as failed with a reason and no result
+- [x] A result is never reported with zero distance or a non-finite Wh/km
+- [x] The Cycles view shows the failure reason instead of a result
 Notes: R8, R9 and R11.
 
 ## T-015: Drive mode is locked during a run and shown when chosen

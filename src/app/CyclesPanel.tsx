@@ -38,7 +38,7 @@ export function CyclesPanel() {
             {status?.state === 'stopped'
               ? 'Cycle stopped. No result.'
               : status?.state === 'failed'
-                ? 'Cycle failed. No result.'
+                ? `Cycle failed: ${status.reason ?? 'unknown reason'}. No result.`
                 : status?.state === 'running'
                   ? `${cycleNames[status.cycleId]} cycle running`
                   : 'Run a cycle to see Wh/km.'}

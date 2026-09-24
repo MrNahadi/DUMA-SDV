@@ -3,6 +3,8 @@ import { createSim, TICK_S } from '../index';
 import { msToKmh } from '../units';
 import { createCycleRunner } from './cycle-runner';
 import { getCycle, targetSpeedMs, type CycleId } from './cycles';
+import { shiftWithBrake } from './drive';
+import { powerOnToReady } from './startup';
 
 function runFull(id: CycleId) {
   const sim = createSim();
@@ -124,4 +126,73 @@ describe('cycle runner time scale (T-013)', () => {
       expect(runner.status().elapsedS).toBeGreaterThan(requested - TICK_S - 1e-9);
     }
   });
+});
+
+describe('cycle runner start and failure (T-014)', () => {
+  function atSpeed(kmh: number) {
+    const sim = createSim();
+    expect(powerOnToReady(sim)).toBe(true);
+    expect(shiftWithBrake(sim, 'D')).toBe(true);
+    sim.setInputs({ accelerator: 1, brake: 0 });
+    while (msToKmh(sim.snapshot().speedMs) < kmh) sim.step(10);
+    return sim;
+  }
+
+  it('a run started at 80 km/h first comes to rest and matches a run from rest', () => {
+    const moving = createCycleRunner(atSpeed(80), 'urban');
+    expect(moving.telemetry()[0]!.speedMs).toBeLessThan(0.05);
+    while (moving.status().state === 'running') moving.step(60);
+    const rest = runFull('urban').runner;
+    expect(moving.result()!.whPerKm).toBeCloseTo(rest.result()!.whPerKm, 0);
+  }, 20_000);
+
+  function failMidRun(act: (sim: ReturnType<typeof createSim>) => void) {
+    const sim = createSim();
+    const runner = createCycleRunner(sim, 'urban');
+    runner.step(30);
+    act(sim);
+    runner.step(30);
+    const status = runner.status();
+    expect(status.state).toBe('failed');
+    expect(status.reason).toBeTruthy();
+    expect(runner.result()).toBeNull();
+    expect(sim.snapshot().pedals.accelerator).toBe(0);
+    return status.reason;
+  }
+
+  it('power off ends the run as failed', () => {
+    expect(failMidRun((sim) => sim.setInputs({ powerButton: true }))).toMatch(/READY/);
+  });
+
+  it('a fault response that drops READY ends the run as failed', () => {
+    // No catalogue fault drops READY mid-drive yet, so the VCU's fault response is stood in for at the snapshot.
+    const sim = createSim();
+    const real = sim.snapshot.bind(sim);
+    let faulted = false;
+    sim.snapshot = () => (faulted ? { ...real(), powerState: 'OFF' } : real());
+    const runner = createCycleRunner(sim, 'urban');
+    runner.step(30);
+    faulted = true;
+    sim.setInputs({ faultCommand: { key: 'insulationFault', action: 'inject' } });
+    runner.step(30);
+    expect(runner.status()).toMatchObject({ state: 'failed', reason: expect.stringMatching(/READY/) });
+    expect(runner.result()).toBeNull();
+    expect(real().pedals.accelerator).toBe(0);
+  });
+
+  it('a shift to N ends the run as failed', () => {
+    expect(failMidRun((sim) => sim.setInputs({ gearRequest: 'N' }))).toMatch(/gear/i);
+  });
+
+  it('a run covering no distance reports no result', () => {
+    const sim = createSim();
+    const runner = createCycleRunner(sim, 'urban');
+    // Hold the car still with the brake by overriding the driver each tick.
+    const orig = sim.setInputs.bind(sim);
+    sim.setInputs = (i) => orig({ ...i, accelerator: 0, brake: 1 });
+    while (runner.status().state === 'running') runner.step(60);
+    expect(runner.result()).toBeNull();
+    expect(runner.status().state).toBe('failed');
+    expect(runner.status().reason).toMatch(/distance/);
+  }, 10_000);
 });

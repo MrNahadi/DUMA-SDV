@@ -34,6 +34,8 @@ export interface CycleRunStatus {
   /** Cycle time elapsed, s. */
   elapsedS: number;
   durationS: number;
+  /** Why the run failed; set only when `state` is 'failed'. */
+  reason?: string;
 }
 
 export interface CycleRunner {
@@ -61,7 +63,7 @@ export interface CycleRunnerOptions {
   params?: Readonly<VehicleParams>;
 }
 
-/** Create a runner and prepare the car (READY, D). The run then starts at cycle t = 0. */
+/** Create a runner and prepare the car (READY, at rest, D). The run then starts at cycle t = 0. */
 export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunnerOptions = {}): CycleRunner {
   const p = options.params ?? vehicleParams;
   const cycle = getCycle(cycleId);
@@ -75,9 +77,23 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
   let integral = 0;
   let requestedS = 0;
   let ticks = 0;
+  let reason: string | undefined;
 
-  if (sim.snapshot().powerState !== 'READY' && !powerOnToReady(sim)) state = 'failed';
-  if (state === 'running' && sim.snapshot().gear !== 'D' && !shiftWithBrake(sim, 'D')) state = 'failed';
+  function fail(why: string) {
+    state = 'failed';
+    reason = why;
+    sim.setInputs({ accelerator: 0, brake: 0 });
+  }
+
+  if (sim.snapshot().powerState !== 'READY' && !powerOnToReady(sim)) fail('The car did not reach READY');
+  if (state === 'running') {
+    // Earlier driving must not affect the result: brake to rest before the cycle clock starts.
+    sim.setInputs({ accelerator: 0, brake: 1 });
+    const maxTicks = Math.round(STOP_REST_MAX_S / TICK_S);
+    for (let i = 0; i < maxTicks && Math.abs(sim.snapshot().speedMs) > 0.01; i += DRIVER_TICKS) sim.step(DRIVER_TICKS);
+    if (Math.abs(sim.snapshot().speedMs) > 0.01) fail('The car did not come to rest');
+  }
+  if (state === 'running' && sim.snapshot().gear !== 'D' && !shiftWithBrake(sim, 'D')) fail('The car did not shift to D');
   const start = sim.snapshot();
   const t0 = start.timeS;
   let result: CycleResult | null = null;
@@ -121,13 +137,26 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
         ticks++;
         const s = sim.snapshot();
         elapsedS = s.timeS - t0;
+        if (s.powerState !== 'READY') {
+          fail('The car left READY');
+          break;
+        }
+        if (s.gear !== 'D') {
+          fail(`The gear left D (now ${s.gear})`);
+          break;
+        }
         const done = elapsedS >= cycle.durationS - 1e-9;
         if (ticks % DRIVER_TICKS === 0 || done) recorder.record(s, targetSpeedMs(cycleId, elapsedS));
         if (done) {
-          state = 'completed';
           const distanceKm = (s.odometerM - start.odometerM) / 1000;
           const netEnergyKWh = (s.tripEnergyJ - start.tripEnergyJ) / 3.6e6;
-          result = { distanceKm, netEnergyKWh, whPerKm: (netEnergyKWh * 1000) / distanceKm };
+          const whPerKm = (netEnergyKWh * 1000) / distanceKm;
+          if (!(distanceKm > 0) || !Number.isFinite(whPerKm)) {
+            fail('The car covered no distance');
+            break;
+          }
+          state = 'completed';
+          result = { distanceKm, netEnergyKWh, whPerKm };
           sim.setInputs({ accelerator: 0, brake: 0.3 });
         }
       }
@@ -141,7 +170,7 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
       for (let i = 0; i < maxTicks && Math.abs(sim.snapshot().speedMs) > 0.01; i += DRIVER_TICKS) sim.step(DRIVER_TICKS);
     },
     status() {
-      return { state, cycleId, elapsedS, durationS: cycle.durationS };
+      return { state, cycleId, elapsedS, durationS: cycle.durationS, ...(reason ? { reason } : {}) };
     },
     telemetry() {
       return recorder.samples();
