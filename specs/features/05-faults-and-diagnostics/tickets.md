@@ -38,14 +38,14 @@ Notes: The Architecture trace UI remains phase 06.
 
 ## T-004: Derate drive power for cell over-temperature
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Use the BMS fault state and bus-published limit so the VCU reduces traction power during the brief's cell over-temperature drive case.
 Test seam: Public `createSim()` drive snapshots and `trace()`
 Acceptance:
-- [ ] Injecting cell over-temperature lowers the received discharge allowance and measured power under matched drive conditions
-- [ ] Restoring the condition restores normal allowance while leaving a stored DTC
-- [ ] Healthy acceleration and range reference tests retain their current bounds
+- [x] Injecting cell over-temperature lowers the received discharge allowance and measured power under matched drive conditions
+- [x] Restoring the condition restores normal allowance while leaving a stored DTC
+- [x] Healthy acceleration and range reference tests retain their current bounds
 Notes: Preserve the existing BMS limit to VCU torque path and normal regen behavior.
 
 ## T-005: Apply limp and safety responses

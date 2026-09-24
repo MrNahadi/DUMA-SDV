@@ -203,11 +203,11 @@ export function createSim(options: SimOptions = {}): Sim {
   const bus = createBus(busCatalogue, { tickMs: TICK_MS });
   const chargePath = bus.subscribe('ChargePath', ['VCU_Charge', 'BMS_Charge']);
   const vcu = createVcu(bus, p, TICK_S);
-  const bms = createBms(bus, p, { tickS: TICK_S, initialSoc: soc });
+  const faultRecords = createFaultRecords();
+  const bms = createBms(bus, p, { tickS: TICK_S, initialSoc: soc, faultStatus: faultRecords.statusOf });
   const mcu = createMcu(bus, p);
   const ic = createIc(bus, p.usableEnergyJ);
   const obc = createObc(bus, p);
-  const faultRecords = createFaultRecords();
   const diagnosticBus = createDiagnosticBus(bus, faultRecords.statusOf);
 
   let tick = 0;

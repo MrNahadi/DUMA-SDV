@@ -7,6 +7,7 @@
 
 import { usableChargeC, type HvCircuit } from '../battery';
 import type { Bus } from '../bus';
+import type { FaultKey } from '../faults';
 import type { VehicleParams } from '../vehicle';
 import { motorBaseSpeedRadS, motorLossW } from '../vehicle';
 import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ecu';
@@ -32,6 +33,8 @@ export interface BmsOptions {
   tickS: number;
   /** SOC the counter holds in non-volatile memory at creation, 0..1. */
   initialSoc: number;
+  /** Locally sensed diagnostic condition supplied by the BMS fault recorder. */
+  faultStatus: (key: FaultKey) => 'active' | 'stored' | null;
 }
 
 export interface Bms {
@@ -183,7 +186,10 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
         .set('soc', bms.soc * 100)
         .set('contactorState', contactorState(hv))
         .set('prechargeState', prechargeState);
-      limits.set('maxDischargeKw', maxDischargeKw).set('maxChargeKw', maxChargeKw());
+      const cellOverTemperature = options.faultStatus('cellOverTemperature') === 'active';
+      limits
+        .set('maxDischargeKw', cellOverTemperature ? maxDischargeKw * 0.5 : maxDischargeKw)
+        .set('maxChargeKw', cellOverTemperature ? 0 : maxChargeKw());
       const chargeRequested = isFresh(inbox, 'VCU_Charge', Math.max(boot.bootedAtS, t - COMMAND_TIMEOUT_S)) &&
         inbox.read('VCU_Charge', 'requested') === 'yes';
       const targetPct = inbox.read('VCU_Charge', 'targetSoc') as number | undefined;
