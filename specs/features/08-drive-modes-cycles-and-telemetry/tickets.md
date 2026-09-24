@@ -65,15 +65,15 @@ Notes: No absolute Wh/km target is asserted.
 
 ## T-006: Telemetry recorder and CSV
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: A recorder samples the snapshot every 0.1 s of sim time into the R12 columns, capped at one hour. A pure function turns the samples into CSV with a unit header.
 Test seam: Recorder public API and `toCsv()`
 Acceptance:
-- [ ] Sample spacing is 0.1 s sim time, and the cap drops the oldest samples
-- [ ] The header has names with units, and values use `.` decimals, comma separators and RFC 4180 quoting
-- [ ] Target speed is filled during cycle runs and empty otherwise
-- [ ] An empty log is refused with a reason
+- [x] Sample spacing is 0.1 s sim time, and the cap drops the oldest samples
+- [x] The header has names with units, and values use `.` decimals, comma separators and RFC 4180 quoting
+- [x] Target speed is filled during cycle runs and empty otherwise
+- [x] An empty log is refused with a reason
 Notes: Lives in `src/sim/telemetry/` and is covered by the sim purity lint rule.
 
 ## T-007: Mode control in the Drive view
