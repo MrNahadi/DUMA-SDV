@@ -4,7 +4,7 @@ One user-visible feature per phase. Numbers in brackets are the brief's in-scope
 Each phase gets `specs/features/NN-slug/` and a `feature/NN-slug` branch.
 
 - [x] **01 · Scaffold.** App runs and shows an empty stage with the app shell. One unit test and one e2e test pass. Every Feedback command works. (Built interactively in Phase 2.)
-- [ ] **02 · Power on and drive** [1]. Startup sequence (12 V wake → self-checks → pre-charge → contactors → READY), gear selection, keyboard and on-screen throttle/brake, and a driver dashboard (speed, power, SOC, range) beside the 3D car with spinning wheels. Includes the sim core's longitudinal dynamics, the first ECUs (VCU, BMS, MCU) talking over the bus, and the 0–100 km/h and 100 km/h range reference tests.
+- [x] **02 · Power on and drive** [1]. Startup sequence (12 V wake → self-checks → pre-charge → contactors → READY), gear selection, keyboard and on-screen throttle/brake, and a driver dashboard (speed, power, SOC, range) beside the 3D car with spinning wheels. Includes the sim core's longitudinal dynamics, the first ECUs (VCU, BMS, MCU) talking over the bus, and the 0–100 km/h and 100 km/h range reference tests.
 - [ ] **03 · Regenerative braking** [2]. Lift-off and brake-pedal regen blended with friction brakes, a regen bar on the power gauge, and the trip "energy recovered" tracker (kWh and km added).
 - [ ] **04 · Charging** [2]. Plug into AC (OBC) or DC fast charge, charge-curve chart, time-to-target, charge port state on the 3D car. Includes the 10–80% DC reference test.
 - [ ] **05 · Faults and diagnostics** [3]. Fault injection panel, DTCs (active / stored), derate and limp mode, plain-language warnings, affected module highlighted on the x-ray car. Clearing the fault log asks for confirmation.
