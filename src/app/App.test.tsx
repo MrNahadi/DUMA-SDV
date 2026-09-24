@@ -75,6 +75,33 @@ describe('app shell', () => {
     expect(location.hash).toBe('#/diagnostics');
   });
 
+  it('injects, restores, and clears each diagnostic record through the panel', async () => {
+    useAppStore.getState().setView('diagnostics');
+    render(<App />);
+    expect(screen.getByText(/Diagnostic data unavailable/)).toBeTruthy();
+    act(() => {
+      useSimStore.getState().powerOn();
+      useSimStore.getState().advance(150);
+    });
+    expect(screen.getByText(/No faults/)).toBeTruthy();
+    for (const [name, code] of ([
+      ['Cell over-temperature', 'P0A7E'],
+      ['Insulation fault', 'P0AA6'],
+      ['Motor over-temperature', 'P0A2F'],
+      ['12 V low', 'P0562'],
+    ] as const)) {
+      await userEvent.selectOptions(screen.getByLabelText('Fault type'), name);
+      await userEvent.click(screen.getByRole('button', { name: 'Inject fault' }));
+      const record = screen.getByText(code).closest('li')!;
+      expect(record.textContent).toContain('Active');
+      expect(record.querySelector('button[disabled]')).toBeTruthy();
+      await userEvent.click(screen.getByRole('button', { name: `Restore ${name}` }));
+      expect(record.textContent).toContain('Stored');
+      await userEvent.click(record.querySelector('button')!);
+      expect(screen.queryByText(code)).toBeNull();
+    }
+  });
+
   it('powers on from the Start here card and updates the top bar to READY', async () => {
     useAppStore.getState().setView('drive');
     render(<App />);

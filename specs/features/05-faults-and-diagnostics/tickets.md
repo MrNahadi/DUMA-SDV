@@ -74,14 +74,14 @@ Notes: Keep dashboard information calm and limited to driver-relevant status.
 
 ## T-007: Build Diagnostics actions and DTC list
 
-Status: open
+Status: done
 Blocked by: T-002, T-003
 Slice: Replace the Diagnostics placeholder with injection choices, active/stored DTC list, affected module labels and individual **Clear fault** actions.
 Test seam: Rendered Diagnostics panel through Testing Library and public sim store actions
 Acceptance:
-- [ ] A keyboard user can inject each catalogue fault and read code, status and module
-- [ ] Active records cannot be cleared; restored conditions can be cleared individually
-- [ ] Empty and unavailable states are explicit, and no horizontal overflow occurs at 1366×768
+- [x] A keyboard user can inject each catalogue fault and read code, status and module
+- [x] Active records cannot be cleared; restored conditions can be cleared individually
+- [x] Empty and unavailable states are explicit, and no horizontal overflow occurs at 1366×768
 Notes: Use existing tokens, primitives and one primary action.
 
 ## T-008: Confirm Clear all faults

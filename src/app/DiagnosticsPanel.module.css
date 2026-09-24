@@ -1,0 +1,10 @@
+.content { display: flex; flex-direction: column; gap: var(--s-5); padding: var(--s-5); min-width: 0; }
+.section { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-3); min-width: 0; }
+.section h2, .section p { margin: 0; }
+.section h2 { font: var(--text-h2); }
+.section p, .section label, .record { font: var(--text-small); }
+.section select { box-sizing: border-box; width: 100%; min-width: 0; height: 32px; padding: 0 var(--s-2); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); color: var(--ink); font: var(--text-small); }
+.records { box-sizing: border-box; width: 100%; min-width: 0; margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: var(--s-3); }
+.record { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s-2); min-width: 0; overflow-wrap: anywhere; padding: var(--s-3); border: 1px solid var(--line); border-radius: var(--radius); }
+.record strong { font-family: var(--font-mono); }
+.hint { color: var(--ink-2); }

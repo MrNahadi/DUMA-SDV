@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createSim, type Gear, type Sim, type SimSnapshot } from '../sim';
+import { createSim, type FaultCommand, type Gear, type Sim, type SimSnapshot } from '../sim';
 
 interface SimState {
   sim: Sim;
@@ -11,6 +11,7 @@ interface SimState {
   setChargeTarget: (soc: number) => void;
   commandCharge: (command: 'plugIn' | 'unplug' | 'start' | 'stop') => void;
   setPedal: (pedal: 'accelerator' | 'brake', value: number) => void;
+  commandFault: (command: FaultCommand) => void;
   reset: () => void;
   advance: (ticks: number) => void;
 }
@@ -34,6 +35,12 @@ export const useSimStore = create<SimState>((set, get) => ({
   setChargeTarget: (soc) => get().sim.setInputs({ chargeTargetSoc: soc }),
   commandCharge: (command) => get().sim.setInputs({ chargeCommand: command }),
   setPedal: (pedal, value) => get().sim.setInputs({ [pedal]: value }),
+  commandFault: (command) => {
+    const { sim } = get();
+    sim.setInputs({ faultCommand: command });
+    sim.step(1);
+    set({ snapshot: sim.snapshot() });
+  },
   reset: () => {
     const sim = createSim();
     set({ sim, snapshot: sim.snapshot() });
