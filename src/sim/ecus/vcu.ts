@@ -10,7 +10,7 @@
 
 import { GEARS, POWER_STATES, STARTUP_STEPS, type Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
-import { motorMaxTorqueNm } from '../vehicle';
+import { GRAVITY_MS2, motorMaxTorqueNm } from '../vehicle';
 import { jPerMToWhPerKm, kmhToMs, msToKmh, rpmToRads } from '../units';
 import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ecu';
 
@@ -83,6 +83,10 @@ const TRIP_BLEND_START_M = 5_000;
 const TRIP_BLEND_SPAN_M = 20_000;
 /** Floor on the consumption behind the estimate, as a fraction of WLTP: guards the division. */
 const MIN_CONSUMPTION_RATIO = 0.5;
+/** ADR 0009: Normal lift-off reaches 0.15 g above 5 m/s and vanishes below 0.5 m/s. */
+const REGEN_DECEL_G = 0.15;
+const REGEN_START_MS = 0.5;
+const REGEN_FULL_MS = 5;
 
 export interface Vcu {
   readonly powerState: PowerState;
@@ -145,7 +149,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     step(t: number, buttonPressed: boolean, driver: Readonly<DriverInputs>) {
       const running = updatePower(t, buttonPressed);
       if (driver.gearRequest !== null) requestGear(t, driver.gearRequest, driver.brake);
-      if (running) publish(t, driver.accelerator);
+      if (running) publish(t, driver.accelerator, driver.brake);
     },
   };
 
@@ -369,8 +373,10 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
    * speed, clamped by the BMS discharge limit, faded out by the speed limiter.
    * Positive drives forward. Zero unless READY in D or R.
    */
-  function torqueRequestNm(t: number, accelerator: number): number {
-    if (vcu.powerState !== 'READY' || accelerator <= 0 || (vcu.gear !== 'D' && vcu.gear !== 'R')) return 0;
+  function torqueRequestNm(t: number, accelerator: number, brake: number): number {
+    if (vcu.powerState !== 'READY' || (vcu.gear !== 'D' && vcu.gear !== 'R')) return 0;
+    if (brake > 0) return 0;
+    if (accelerator <= 0) return liftOffTorqueNm(t);
     const maxDischargeKw = inbox.read('BMS_Limits', 'maxDischargeKw');
     if (!isFresh(inbox, 'MCU_Status', t - LIVE_S) || maxDischargeKw === undefined) return 0;
 
@@ -385,6 +391,31 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     const limiter = Math.min(Math.max((limitKmh - speedKmh) / LIMITER_BAND_KMH, 0), 1);
     if (limiter === 0) return 0;
     return direction * accelerator * availableNm * limiter;
+  }
+
+  /** ADR 0009: generator torque opposes travel only with fresh charge and inverter status. */
+  function liftOffTorqueNm(t: number): number {
+    const freshSince = Math.max(wakeAtS, t - LIVE_S);
+    if (!isFresh(inbox, 'MCU_Status', freshSince) || !isFresh(inbox, 'MCU_Vehicle', freshSince)) return 0;
+    if (!isFresh(inbox, 'BMS_Limits', Math.max(wakeAtS, t - BMS_LIVE_S))) return 0;
+    if (!isFresh(inbox, 'BMS_Status', Math.max(wakeAtS, t - BMS_LIVE_S))) return 0;
+    if (inbox.read('MCU_Status', 'inverterState') !== 'run' || inbox.read('BMS_Status', 'contactorState') !== 'closed') return 0;
+    const chargeW = (inbox.read('BMS_Limits', 'maxChargeKw') as number) * 1000;
+    if (chargeW <= 0) return 0;
+    const direction = vcu.gear === 'D' ? 1 : -1;
+    const speedMs = kmhToMs(inbox.read('MCU_Vehicle', 'vehicleSpeedKmh') as number) * direction;
+    if (speedMs <= REGEN_START_MS) return 0;
+    const omega = rpmToRads(inbox.read('MCU_Status', 'motorSpeedRpm') as number);
+    if (omega * direction <= 0) return 0;
+    const fade = Math.min((speedMs - REGEN_START_MS) / (REGEN_FULL_MS - REGEN_START_MS), 1);
+    const forceN = REGEN_DECEL_G * GRAVITY_MS2 * p.testMassKg * fade;
+    const forceBoundN = Math.min(forceN, p.tyreRoadFriction * p.testMassKg * GRAVITY_MS2);
+    const torqueNm = Math.min(
+      forceBoundN * p.wheelRadiusM * p.gearEfficiency / p.reductionRatio,
+      motorMaxTorqueNm(p, omega),
+      chargeW / Math.abs(omega),
+    );
+    return -direction * torqueNm;
   }
 
   /** Add this tick's pack energy (V × I from BMS_Status) and distance (MCU_Vehicle) to the trip. */
@@ -408,10 +439,10 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     return Math.max(blended, MIN_CONSUMPTION_RATIO * wltp);
   }
 
-  function publish(t: number, accelerator: number) {
+  function publish(t: number, accelerator: number, brake: number) {
     accumulateTrip(t);
     command
-      .set('torqueRequest', torqueRequestNm(t, accelerator))
+      .set('torqueRequest', torqueRequestNm(t, accelerator, brake))
       .set('contactorRequest', contactorRequest)
       .set('powerState', vcu.powerState);
     status

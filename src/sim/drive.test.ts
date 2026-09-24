@@ -258,7 +258,7 @@ describe('torque and motion (T-004, R2, R4)', () => {
     expect(sim.snapshot().motor.torqueNm).toBeLessThan(0);
   });
 
-  it('coasts down on lift-off and stops without changing direction', () => {
+  it('slows on lift-off and stops without changing direction', () => {
     const sim = readyIn('D');
     sim.setInputs({ brake: 0, accelerator: 0.5 });
     run(sim, 2);
@@ -266,13 +266,14 @@ describe('torque and motion (T-004, R2, R4)', () => {
     const speeds = run(sim, 10);
     expect(speeds.every((v) => v >= 0)).toBe(true);
     expect(speeds.at(-1)).toBe(0);
-    // Coasting is slower than braking: road load alone.
+    // ADR 0009 lift-off regen slows the car before the brake is pressed.
     sim.setInputs({ brake: 0, accelerator: 0.5 });
     run(sim, 2);
     const moving = sim.snapshot().speedMs;
     sim.setInputs({ accelerator: 0 });
     sim.step(100);
-    expect(sim.snapshot().speedMs).toBeGreaterThan(0.9 * moving);
+    expect(sim.snapshot().speedMs).toBeLessThan(0.9 * moving);
+    expect(sim.snapshot().speedMs).toBeGreaterThan(0);
   });
 
   it('brakes at up to about 1 g, within the tyre-road limit', () => {

@@ -27,15 +27,16 @@ Notes:
 
 ## T-003: Lift-off regen request
 
-Status: open
+Status: done
 Blocked by: T-001, T-002
 Slice: Add VCU lift-off request in moving D/R, respecting the motor envelope, charge allowance and existing READY/HV gates.
 Test seam: `createSim()` input, snapshot and `trace()`
 Acceptance:
-- [ ] Lift-off after acceleration produces torque opposing travel and negative pack power when losses permit
-- [ ] Accelerator input, standstill, P/N and non-READY states do not produce unintended regen
-- [ ] Stale charge-limit data or disabled MCU yields zero regen torque
+- [x] Lift-off after acceleration produces torque opposing travel and negative pack power when losses permit
+- [x] Accelerator input, standstill, P/N and non-READY states do not produce unintended regen
+- [x] Stale charge-limit data or disabled MCU yields zero regen torque
 Notes:
+- VCU lift-off torque follows ADR 0009 fade and fresh bus charge/status gates in D/R. Existing brake-pedal path stays friction-only until T-004. All Feedback commands pass.
 
 ## T-004: Blend brake pedal with friction
 
