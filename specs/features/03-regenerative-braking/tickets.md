@@ -89,15 +89,15 @@ Notes: IC reads fresh BMS charge/discharge limits; the strip scales each half ag
 
 ## T-008: Show the trip recovery tracker
 
-Status: open
+Status: done
 Blocked by: T-006
 Slice: Add `Energy recovered` kWh and km added to the Drive panel, with zero and stale states.
 Test seam: rendered `DrivePanel` via Testing Library
 Acceptance:
-- [ ] Zero trip, rising recovery and stale telemetry render from the IC snapshot with correct unit conversions
-- [ ] Speed remains the sole display-size Drive value and UI wording follows `CONTEXT.md` and DESIGN-RULES
-- [ ] No horizontal scroll at 1366×768
-Notes:
+- [x] Zero trip, rising recovery and stale telemetry render from the IC snapshot with correct unit conversions
+- [x] Speed remains the sole display-size Drive value and UI wording follows `CONTEXT.md` and DESIGN-RULES
+- [x] No horizontal scroll at 1366×768
+Notes: DrivePanel reads IC recovery values, converts joules to kWh and metres to km, and shows unavailable when telemetry is stale.
 ## T-009: End-to-end Regen scenario
 
 Status: open

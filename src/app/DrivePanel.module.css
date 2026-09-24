@@ -17,6 +17,21 @@
   font: var(--text-small);
   color: var(--ink-2);
 }
+.recoveryValues {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  font: var(--text-body);
+  font-variant-numeric: tabular-nums;
+}
+.recoveryValues small {
+  color: var(--ink-2);
+}
+.recoveryUnavailable {
+  margin: 0;
+  font: var(--text-small);
+  color: var(--ink-3);
+}
 .checklistToggle {
   padding: 0;
   border: 0;

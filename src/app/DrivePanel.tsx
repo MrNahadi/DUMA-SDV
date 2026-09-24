@@ -66,12 +66,14 @@ const stepsKey = (s: SimSnapshot) =>
   s.startup.steps.map((step) => `${step.status}:${step.startedS}:${step.doneS}`).join('|');
 
 export function DrivePanel() {
-  const { powerState, gear, gearRefusal, failReason } = useSimStore(
+  const { powerState, gear, gearRefusal, failReason, recoveredEnergyJ, recoveredDistanceM } = useSimStore(
     useShallow((s) => ({
       powerState: s.snapshot.powerState,
       gear: s.snapshot.gear,
       gearRefusal: s.snapshot.gearRefusal,
       failReason: s.snapshot.startup.failReason,
+      recoveredEnergyJ: s.snapshot.dashboard.recoveredEnergyJ,
+      recoveredDistanceM: s.snapshot.dashboard.recoveredDistanceM,
     })),
   );
   // Subscribe to step changes only; read the steps themselves from the latest snapshot.
@@ -186,6 +188,17 @@ export function DrivePanel() {
               {pedal('brake', 'Brake', 'S / ↓')}
             </div>
             {!ready && <small>Power on the car to drive</small>}
+          </section>
+          <section aria-label="Energy recovered" className={styles.section}>
+            <h2>Energy recovered</h2>
+            {recoveredEnergyJ === null || recoveredDistanceM === null ? (
+              <p className={styles.recoveryUnavailable}>Unavailable</p>
+            ) : (
+              <div className={styles.recoveryValues}>
+                <span>{(recoveredEnergyJ / 3_600_000).toFixed(2)} kWh</span>
+                <small>{(recoveredDistanceM / 1000).toFixed(1)} km added</small>
+              </div>
+            )}
           </section>
           <Button variant="secondary" onClick={requestPowerOff}>
             Power off
