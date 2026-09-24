@@ -81,6 +81,13 @@ export const busCatalogue: Catalogue = Object.freeze([
     ],
   },
   {
+    id: 0x103,
+    name: 'VCU_Recovery',
+    sender: 'VCU',
+    periodMs: 100,
+    signals: [{ name: 'recoveredJ', unit: 'J', scale: 1 }],
+  },
+  {
     id: 0x200,
     name: 'BMS_Status',
     sender: 'BMS',

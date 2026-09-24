@@ -53,15 +53,15 @@ Notes: Brake regen uses ADR 0009's 0.30 g cap and low-speed fade; friction fills
 
 ## T-005: Count returned trip energy on the VCU
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Accumulate positive returned pack-terminal joules from fresh `BMS_Status` frames and publish the trip value in a catalogue-declared VCU message.
 Test seam: `createSim()` snapshot and `trace()`
 Acceptance:
-- [ ] Recovery grows only while fresh bus-observed terminal power is negative and never decreases
-- [ ] The total survives Power off/on and is separate from signed net `tripEnergyJ`
-- [ ] The new catalogue entry has a unique ID, sender, period, units and scaling
-Notes:
+- [x] Recovery grows only while fresh bus-observed terminal power is negative and never decreases
+- [x] The total survives Power off/on and is separate from signed net `tripEnergyJ`
+- [x] The new catalogue entry has a unique ID, sender, period, units and scaling
+Notes: VCU publishes `VCU_Recovery` every 100 ms; the tally uses fresh BMS terminal power and persists across power cycles.
 
 ## T-006: Expose recovered energy through the IC
 

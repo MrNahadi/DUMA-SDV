@@ -21,17 +21,15 @@ test('the stage stays still when parked and animates while driving', async ({ pa
   await page.waitForTimeout(150);
   expect(await stage.screenshot()).toEqual(parked);
 
-  const brake = page.getByRole('button', { name: 'Brake (S / ↓)' });
-  const box = await brake.boundingBox();
-  if (!box) throw new Error('Brake control is not visible');
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.mouse.down();
+  await page.keyboard.down('s');
   await page.waitForTimeout(1200);
-  await page.keyboard.press('d');
-  await expect(page.getByRole('region', { name: 'Gear selector' }).getByRole('button', { name: 'D' })).toHaveAttribute('aria-pressed', 'true');
-  await page.mouse.up();
+  const drive = page.getByRole('region', { name: 'Gear selector' }).getByRole('button', { name: 'D' });
+  await drive.click();
+  await expect(drive).toHaveAttribute('aria-pressed', 'true');
+  await page.keyboard.up('s');
   await page.keyboard.down('w');
-  await page.waitForTimeout(700);
+  const speed = page.getByTestId('dashboard-speed').locator('[data-value]');
+  await expect.poll(async () => Number(await speed.getAttribute('data-value')), { timeout: 10_000 }).toBeGreaterThan(10);
   await page.keyboard.up('w');
   expect(await stage.screenshot()).not.toEqual(parked);
 });

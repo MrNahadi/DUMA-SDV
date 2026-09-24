@@ -112,6 +112,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
   const command = bus.writer('VCU', 'VCU_Command');
   const status = bus.writer('VCU', 'VCU_Status');
   const rangeFrame = bus.writer('VCU', 'VCU_Range');
+  const recoveryFrame = bus.writer('VCU', 'VCU_Recovery');
   const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'MCU_Status', 'MCU_Vehicle']);
   bus.setSenderActive('VCU', false);
 
@@ -138,6 +139,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
   let lastEngaged: Gear = 'P';
   // Trip totals, from BMS_Status and MCU_Vehicle. The VCU is always powered, so they survive power cycles.
   let tripEnergyJ = 0;
+  let recoveredJ = 0;
   let tripDistanceM = 0;
 
   const vcu = {
@@ -431,6 +433,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     if (isFresh(inbox, 'BMS_Status', Math.max(wakeAtS, t - BMS_LIVE_S))) {
       const powerW = (inbox.read('BMS_Status', 'packVoltage') as number) * (inbox.read('BMS_Status', 'packCurrent') as number);
       tripEnergyJ += powerW * tickS;
+      if (powerW < 0) recoveredJ -= powerW * tickS;
     }
     const speedKmh = vehicleSpeedKmh(Math.max(wakeAtS, t - LIVE_S));
     if (!Number.isNaN(speedKmh)) tripDistanceM += kmhToMs(Math.abs(speedKmh)) * tickS;
@@ -469,6 +472,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
       .set('rangeKm', (Math.max(socPct, 0) / 100) * p.usableEnergyJ / consumption / 1000)
       .set('avgConsumptionWhKm', jPerMToWhPerKm(consumption))
       .set('rangeValid', socValid ? 'yes' : 'no');
+    recoveryFrame.set('recoveredJ', recoveredJ);
   }
 
   return vcu;
