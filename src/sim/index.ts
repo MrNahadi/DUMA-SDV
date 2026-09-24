@@ -26,11 +26,13 @@ import {
   type StartupStepStatus,
 } from './ecus';
 import { radsToRpm } from './units';
+import { createThermal, thermalParams, type ThermalState } from './thermal';
 import { BRAKE_MAX_DECEL_G, GRAVITY_MS2, createLongitudinalDynamics, motorLossW, vehicleParams, type VehicleParams } from './vehicle';
 
 export type { Frame } from './bus';
 export type { ChargeDisplayModel, DashboardModel, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
 export { faultCatalogue } from './faults';
+export type { CoolantLoopState, ThermalState } from './thermal';
 export type { DiagnosticsSnapshot, FaultCommand, FaultKey, FaultRecord } from './faults';
 
 /** Fixed simulation step: 10 ms (100 Hz). */
@@ -140,6 +142,8 @@ export interface SimSnapshot {
   charge: ChargeSnapshot;
   /** Power flow during the latest tick. */
   power: PowerFlowSnapshot;
+  /** Pack, motor and inverter temperatures, coolant loop state and heat accounting (R5–R8). */
+  thermal: ThermalState;
   /** Charge view model built by the IC from received bus frames. */
   chargeDisplay: ChargeDisplayModel;
   startup: {
@@ -235,6 +239,11 @@ function checkPedal(name: string, value: number): void {
   if (!(value >= 0 && value <= 1)) throw new RangeError(`${name} must be within 0..1, got ${value}`);
 }
 
+/** Ambient temperature, °C (ADR 0003 conditions). */
+const AMBIENT_C = 23;
+/** Share of the modelled drivetrain loss dissipated in the inverter; the rest heats the motor. */
+const INVERTER_LOSS_FRACTION = 0.35; // estimate, ADR 0012
+
 export function createSim(options: SimOptions = {}): Sim {
   const p = options.params ?? vehicleParams;
   const soc = options.initialSoc ?? 0.8;
@@ -246,6 +255,7 @@ export function createSim(options: SimOptions = {}): Sim {
   const dynamics = createLongitudinalDynamics(p, TICK_S);
   const bmsSensors = { hv };
   const mcuSensors = { dcLinkV: 0, motorSpeedRadS: 0 };
+  const thermal = createThermal(thermalParams, AMBIENT_C);
 
   // The ECUs, talking over the bus.
   const bus = createBus(busCatalogue, { tickMs: TICK_MS });
@@ -437,6 +447,11 @@ export function createSim(options: SimOptions = {}): Sim {
     power.dcdcInputW = mainClosed ? p.auxLoadW : 0;
     power.dcdcOutputW = power.dcdcInputW;
     power.losses.dcdcW = 0;
+    thermal.step({
+      packW: hv.packCurrentA * hv.packCurrentA * p.packInternalResistanceOhm,
+      motorW: power.losses.drivetrainW * (1 - INVERTER_LOSS_FRACTION),
+      inverterW: power.losses.drivetrainW * INVERTER_LOSS_FRACTION,
+    }, TICK_S, mainClosed);
     tripEnergyJ += hv.packTerminalV * hv.packCurrentA * TICK_S;
     bus.transmit(tick);
     tick++;
@@ -484,6 +499,7 @@ export function createSim(options: SimOptions = {}): Sim {
         powerState: vcu.powerState,
         charge: { ...charge },
         power: { ...power, losses: { ...power.losses } },
+        thermal: thermal.state(),
         chargeDisplay: { ...ic.chargeDisplay },
         startup: {
           steps: STARTUP_STEPS.map((id, i) => ({

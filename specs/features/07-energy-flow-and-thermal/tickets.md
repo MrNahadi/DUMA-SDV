@@ -26,14 +26,14 @@ Notes: Plant model, not an ECU. SI units, °C for temperature.
 
 ## T-003: Coolant loops and sim wiring
 
-Status: open
+Status: done
 Blocked by: T-001, T-002
 Slice: Add battery and motor+inverter coolant loops with radiators, feed losses from the running sim every tick, and expose the temperatures and loop state in the snapshot.
 Test seam: `createSim()` public API
 Acceptance:
-- [ ] Driving raises motor and inverter temperatures, and DC charging raises pack temperature
-- [ ] Heat generated equals stored plus rejected within 1 % over a drive run
-- [ ] Runs are deterministic, and existing sim tests pass
+- [x] Driving raises motor and inverter temperatures, and DC charging raises pack temperature
+- [x] Heat generated equals stored plus rejected within 1 % over a drive run
+- [x] Runs are deterministic, and existing sim tests pass
 Notes:
 
 ## T-004: Temperatures over the bus

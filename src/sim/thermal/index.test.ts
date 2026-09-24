@@ -12,7 +12,7 @@ function run(losses: ThermalLosses, seconds: number, plant = createThermal(therm
 
 describe('lumped thermal masses', () => {
   it('starts every mass at ambient', () => {
-    expect(createThermal(thermalParams, 23).state()).toEqual({ ambientC: 23, packC: 23, motorC: 23, inverterC: 23 });
+    expect(createThermal(thermalParams, 23).state()).toMatchObject({ ambientC: 23, packC: 23, motorC: 23, inverterC: 23 });
   });
 
   it('idle at ambient stays within 0.1 °C for 600 s', () => {
@@ -25,9 +25,9 @@ describe('lumped thermal masses', () => {
     const load: ThermalLosses = { packW: 500, motorW: 1500, inverterW: 800 };
     const keys = ['packC', 'motorC', 'inverterC'] as const;
     const steady = {
-      packC: 23 + load.packW / thermalParams.packToAmbientWPerK,
-      motorC: 23 + load.motorW / thermalParams.motorToAmbientWPerK,
-      inverterC: 23 + load.inverterW / thermalParams.inverterToAmbientWPerK,
+      packC: 23 + load.packW / thermalParams.batteryRadiatorWPerK + load.packW / thermalParams.packToCoolantWPerK,
+      motorC: 23 + (load.motorW + load.inverterW) / thermalParams.driveRadiatorWPerK + load.motorW / thermalParams.motorToCoolantWPerK,
+      inverterC: 23 + (load.motorW + load.inverterW) / thermalParams.driveRadiatorWPerK + load.inverterW / thermalParams.inverterToCoolantWPerK,
     };
     let prev = plant.state();
     for (let t = 0; t < 40_000; t += 10) {
