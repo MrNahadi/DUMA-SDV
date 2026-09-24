@@ -104,10 +104,10 @@ Notes:
 
 ## T-010: Energy end-to-end scenario
 
-Status: open
+Status: done
 Blocked by: T-007, T-008
 Slice: Playwright at 1366×768: Power on, drive, then lift off. Check that the motor edge reverses and the temperatures rise. Then park, Plug in and Start charging, and check that the charger → pack edge is active.
 Test seam: `e2e/energy.spec.ts`
 Acceptance:
-- [ ] The scenario passes in Chromium together with every earlier e2e spec
+- [x] The scenario passes in Chromium together with every earlier e2e spec
 Notes:
