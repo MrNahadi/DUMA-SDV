@@ -27,6 +27,14 @@ moving the weights by tick / 0.5 s each tick. The torque step a mode change can 
 is therefore at most peak torque × tick / 0.5 s (7.2 N·m at 10 ms). In steady Normal the weight
 is exactly 1 and the result is bit-identical to phase 07.
 
+**Drive cycles.** Urban is the WLTC Class 3 Low phase (0–589 s, 3095 m, peak 56.5 km/h) and
+Highway the Extra High phase (1478–1800 s, 8254 m, peak 131.3 km/h), from UN GTR No. 15,
+Annex 1, Class 3 cycle tables (Class 3a and 3b are identical in these phases). The 1 Hz data in
+`src/sim/scenarios/cycles/` is taken unchanged from JRCSTU/wltp (European Commission JRC),
+`bin/data/class3-1-Low.csv` and `bin/data/class3-4-ExtraHigh.csv` on `master`. Each phase is
+rebased to t = 0 on load; target speed is linear between points and 0 after the end. Stored
+distance by trapezoid sum: 3094.5 m and 8254.1 m.
+
 ## Consequences
 
 - All reference tests (0–100, range, DC, regen) keep their tolerances; Normal is unchanged.
