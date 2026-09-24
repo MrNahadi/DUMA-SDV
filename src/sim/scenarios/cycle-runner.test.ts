@@ -58,3 +58,44 @@ describe('cycle runner (T-004)', () => {
     expect(b).toEqual(a);
   }, 20_000);
 });
+
+describe('cycle result (T-005)', () => {
+  function runMode(id: CycleId, mode: 'eco' | 'normal') {
+    const sim = createSim();
+    sim.setInputs({ driveMode: mode });
+    const runner = createCycleRunner(sim, id);
+    const start = sim.snapshot();
+    while (runner.status().state === 'running') runner.step(60);
+    return { sim, runner, start };
+  }
+
+  it('reports distance, net battery energy and Wh/km = energy / distance', () => {
+    const { runner, start } = runMode('urban', 'normal');
+    const r = runner.result();
+    expect(r).not.toBeNull();
+    expect(r!.distanceKm).toBeGreaterThan(2.9);
+    expect(r!.distanceKm).toBeLessThan(3.3);
+    expect(r!.netEnergyKWh).toBeGreaterThan(0);
+    expect(r!.whPerKm).toBeCloseTo((r!.netEnergyKWh * 1000) / r!.distanceKm, 9);
+    expect(start.odometerM).toBeGreaterThanOrEqual(0);
+  }, 10_000);
+
+  it('is deterministic for the same mode and cycle', () => {
+    expect(runMode('urban', 'normal').runner.result()).toEqual(runMode('urban', 'normal').runner.result());
+  }, 20_000);
+
+  it('Eco gives Wh/km no higher than Normal on Urban', () => {
+    const eco = runMode('urban', 'eco').runner.result()!;
+    const normal = runMode('urban', 'normal').runner.result()!;
+    expect(eco.whPerKm).toBeLessThanOrEqual(normal.whPerKm);
+  }, 20_000);
+
+  it('a stopped run has no result', () => {
+    const sim = createSim();
+    const runner = createCycleRunner(sim, 'urban');
+    expect(runner.result()).toBeNull();
+    runner.step(60);
+    runner.stop();
+    expect(runner.result()).toBeNull();
+  });
+});

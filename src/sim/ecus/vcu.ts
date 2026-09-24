@@ -107,8 +107,8 @@ const BRAKE_REGEN_FULL_MS = 2;
  * ADR 0013: per-mode pedal progression (torque share = pedal^exponent), shaft power
  * cap and lift-off deceleration. Normal is the ADR 0007/0009 behaviour unchanged.
  */
-interface ModeMap { pedalExponent: number; powerCapW: number; liftOffG: number }
-const MODE_MAPS: Readonly<Record<DriveMode, ModeMap>> = {
+export interface ModeMap { pedalExponent: number; powerCapW: number; liftOffG: number }
+export const MODE_MAPS: Readonly<Record<DriveMode, ModeMap>> = {
   eco: { pedalExponent: 1.6, powerCapW: 140_000, liftOffG: 0.2 }, // estimate
   normal: { pedalExponent: 1, powerCapW: Infinity, liftOffG: REGEN_DECEL_G },
   sport: { pedalExponent: 0.8, powerCapW: Infinity, liftOffG: REGEN_DECEL_G }, // estimate

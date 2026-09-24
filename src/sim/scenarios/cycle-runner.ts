@@ -5,6 +5,7 @@
  * Pure and deterministic: no Date, no randomness.
  */
 
+import { MODE_MAPS } from '../ecus/vcu';
 import { TICK_S, type Sim, type SimSnapshot } from '../index';
 import { createRecorder, type TelemetrySample } from '../telemetry';
 import { GRAVITY_MS2, roadLoadN, vehicleParams, type VehicleParams } from '../vehicle';
@@ -22,8 +23,6 @@ const KP_N_PER_MS = 4000;
 const KI_N_PER_M = 800;
 /** Integral clamp, N. */
 const INTEGRAL_MAX_N = 3000;
-/** Pedal forces lift-off regeneration gives with both pedals released (vcu REGEN_DECEL_G). */
-const LIFT_OFF_G = 0.15;
 /** Time for the car to come to rest after stopping, s. */
 const STOP_REST_MAX_S = 60;
 
@@ -45,6 +44,16 @@ export interface CycleRunner {
   status(): CycleRunStatus;
   /** Telemetry recorded during the run, with target speed. */
   telemetry(): TelemetrySample[];
+  /** Result of a completed run; null while running, stopped or failed. */
+  result(): CycleResult | null;
+}
+
+export interface CycleResult {
+  distanceKm: number;
+  /** Net battery energy at the pack terminals, discharge minus regen, kWh. */
+  netEnergyKWh: number;
+  /** netEnergyKWh / distanceKm, Wh/km. */
+  whPerKm: number;
 }
 
 export interface CycleRunnerOptions {
@@ -60,7 +69,6 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
   const massEffKg = p.testMassKg * p.rotationalMassFactor;
   const peakForceN = (p.motorPeakTorqueNm * p.reductionRatio * p.gearEfficiency) / p.wheelRadiusM;
   const fullBrakeN = Math.min(1, p.tyreRoadFriction) * p.testMassKg * GRAVITY_MS2;
-  const liftN = LIFT_OFF_G * p.testMassKg * GRAVITY_MS2;
 
   let state: CycleRunState = 'running';
   let elapsedS = 0;
@@ -68,7 +76,9 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
 
   if (sim.snapshot().powerState !== 'READY' && !powerOnToReady(sim)) state = 'failed';
   if (state === 'running' && sim.snapshot().gear !== 'D' && !shiftWithBrake(sim, 'D')) state = 'failed';
-  const t0 = sim.snapshot().timeS;
+  const start = sim.snapshot();
+  const t0 = start.timeS;
+  let result: CycleResult | null = null;
   sim.setInputs({ brake: 0, accelerator: 0 });
   if (state === 'running') recorder.record(sim.snapshot(), targetSpeedMs(cycleId, 0));
 
@@ -76,6 +86,9 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
     const target = targetSpeedMs(cycleId, elapsedS);
     const ahead = targetSpeedMs(cycleId, elapsedS + LOOKAHEAD_S);
     const next = targetSpeedMs(cycleId, elapsedS + LOOKAHEAD_S + 1);
+    // The driver knows the selected mode's pedal map and lift-off regeneration.
+    const map = MODE_MAPS[sim.snapshot().driveMode];
+    const liftN = map.liftOffG * p.testMassKg * GRAVITY_MS2;
     const error = target - s.speedMs;
     integral = Math.min(Math.max(integral + KI_N_PER_M * error * DRIVER_TICKS * TICK_S, -INTEGRAL_MAX_N), INTEGRAL_MAX_N);
     const moving = ahead > 0.05 || s.speedMs > 0.05;
@@ -86,8 +99,9 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
       integral = 0;
       sim.setInputs({ accelerator: 0, brake: 0.3 });
     } else if (forceN >= -liftN / 2) {
-      const availableN = Math.min(peakForceN, p.motorPeakPowerW / Math.max(s.speedMs, 1));
-      sim.setInputs({ accelerator: Math.min(Math.max(forceN / availableN, 0.001), 1), brake: 0 });
+      const availableN = Math.min(peakForceN, Math.min(p.motorPeakPowerW, map.powerCapW) / Math.max(s.speedMs, 1));
+      const share = Math.min(Math.max(forceN / availableN, 0.001), 1);
+      sim.setInputs({ accelerator: share ** (1 / map.pedalExponent), brake: 0 });
     } else if (forceN >= -liftN) {
       sim.setInputs({ accelerator: 0, brake: 0 });
     } else {
@@ -106,6 +120,9 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
         recorder.record(s, targetSpeedMs(cycleId, elapsedS));
         if (elapsedS >= cycle.durationS - 1e-9) {
           state = 'completed';
+          const distanceKm = (s.odometerM - start.odometerM) / 1000;
+          const netEnergyKWh = (s.tripEnergyJ - start.tripEnergyJ) / 3.6e6;
+          result = { distanceKm, netEnergyKWh, whPerKm: (netEnergyKWh * 1000) / distanceKm };
           sim.setInputs({ accelerator: 0, brake: 0.3 });
         }
       }
@@ -123,6 +140,9 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
     },
     telemetry() {
       return recorder.samples();
+    },
+    result() {
+      return result;
     },
   };
 }
