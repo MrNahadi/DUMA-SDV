@@ -29,14 +29,14 @@ Notes: Do not change official parameters (ADR 0001/0003).
 
 ## T-003: Urban and Highway cycle data
 
-Status: blocked-question
+Status: open
 Blocked by:
 Slice: Add WLTC Class 3b Low (Urban) and Extra High (Highway) phases as 1 Hz speed-time data under sim scenarios, with a lookup that interpolates target speed at any sim time. Cite the UN GTR No. 15 source in ADR 0013.
 Test seam: Cycle catalogue public functions (list cycles, target speed at time)
 Acceptance:
 - [ ] Each cycle's duration and distance match the published phase totals
 - [ ] Target speed interpolates linearly between points and is 0 after the end
-Notes: Data only, no dependence on the sim. Blocked: WLTC data source, see questions/open/T-003-wltc-data-source.md.
+Notes: Data only, no dependence on the sim. Data is already in `src/sim/scenarios/cycles/` (see questions/answered/T-003-wltc-data-source.md); load it, do not retype it.
 
 ## T-004: Headless cycle runner with a driver model
 
