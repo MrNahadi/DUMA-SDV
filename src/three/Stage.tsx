@@ -6,6 +6,7 @@ import { useSimStore } from '../app/simStore';
 import { tokens } from '../ui/tokens';
 import { vehicleParams } from '../sim/vehicle/params';
 import { applyCarVisualState, buildCar, visualStateFromSnapshot } from './car';
+import './Stage.css';
 
 const wheelNames = ['wheel-front-left', 'wheel-front-right', 'wheel-back-left', 'wheel-back-right'];
 const stripeSpacingM = 0.9;
@@ -62,7 +63,10 @@ function RollingRoad() {
  * 1 unit = 1 m. No idle motion (DESIGN-RULES.md §6).
  */
 export default function Stage() {
+  const snapshot = useSimStore((state) => state.snapshot);
+  const highlight = visualStateFromSnapshot(snapshot).faultHighlight;
   return (
+    <>
     <Canvas
       data-testid="stage-canvas"
       shadows
@@ -104,5 +108,9 @@ export default function Stage() {
         maxPolarAngle={Math.PI / 2.1}
       />
     </Canvas>
+    {highlight && <div className="stage-fault-label" role="status" aria-live="polite" data-severity={highlight.severity}>
+      <span aria-hidden="true">●</span> {highlight.module}
+    </div>}
+    </>
   );
 }

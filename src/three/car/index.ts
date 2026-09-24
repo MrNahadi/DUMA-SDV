@@ -67,7 +67,7 @@ export function buildCar(params: Readonly<VehicleParams>): Group {
       bevelEnabled: false,
       curveSegments: 8,
     }),
-    paint,
+    paint.clone(),
   );
   shell.position.z = (-params.widthM * 0.87) / 2;
   shell.name = 'body';
@@ -133,7 +133,7 @@ export function buildCar(params: Readonly<VehicleParams>): Group {
     ['hv-cables', 0, radius * 1.02, 0, params.wheelbaseM * 0.7, 0.035, 0.035],
   ];
   for (const [name, x, y, z, sx, sy, sz] of modules) {
-    const part = new Mesh(new BoxGeometry(sx, sy, sz), hiddenMaterial);
+    const part = new Mesh(new BoxGeometry(sx, sy, sz), hiddenMaterial.clone());
     part.name = name;
     part.visible = false;
     part.position.set(x, y, z);

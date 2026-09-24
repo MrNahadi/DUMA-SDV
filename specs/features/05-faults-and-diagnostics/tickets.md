@@ -98,15 +98,15 @@ Notes: The action wording must match `DESIGN-RULES.md` exactly.
 
 ## T-009: Highlight the faulty module on the car
 
-Status: open
+Status: done
 Blocked by: T-002, T-005
 Slice: Map active diagnostic status to the existing x-ray car parts and apply one deterministic severity/priority highlight with a module label.
 Test seam: `visualStateFromSnapshot()` and named public `CarPart` lookup
 Acceptance:
-- [ ] Cell over-temperature reveals and highlights `pack`; other faults map to their ADR-assigned parts
-- [ ] Active status uses only approved status colours and includes a readable module name
-- [ ] Recovery removes the active highlight without disturbing wheel, lamp or charge-port behavior
-Notes: Check triangle/draw-call budget and reduced-motion behavior.
+- [x] Cell over-temperature reveals and highlights `pack`; other faults map to their ADR-assigned parts
+- [x] Active status uses only approved status colours and includes a readable module name
+- [x] Recovery removes the active highlight without disturbing wheel, lamp or charge-port behavior
+Notes: The existing module meshes add no new geometry or draw calls. The static highlight respects reduced motion.
 
 ## T-010: End-to-end Fault scenario
 

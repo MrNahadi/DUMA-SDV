@@ -1,0 +1,16 @@
+.stage-fault-label {
+  position: absolute;
+  left: 50%;
+  bottom: var(--s-4);
+  transform: translateX(-50%);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid currentColor;
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--warn);
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.stage-fault-label[data-severity='red'] { color: var(--fault); }
