@@ -44,4 +44,4 @@ round-trip loss, so Eco can come out slightly higher. Modes are therefore compar
 ## Consequences
 
 - All reference tests (0–100, range, DC, regen) keep their tolerances; Normal is unchanged.
-- Phase 09 OTA can gate a mode through the snapshot's `driveModes` availability flag.
+- Phase 10 OTA can gate a mode through the snapshot's `driveModes` availability flag.

@@ -1,6 +1,6 @@
 # 0002. The 3D car is built procedurally in code, not loaded from a GLB
 
-Status: accepted
+Status: accepted; styling superseded by ADR 0014 (smooth stylised car and road stage)
 Decided-by: answerer (inferred)
 Question: PH1-Q2 "Where should the 3D car for the three.js view come from?" (brief §15 open question: free-licence GLB (CC0/CC-BY) or a stylised model built in code, with separable internals)
 Decision: Build the car in TypeScript as a stylised, low-poly procedural model (three.js geometry via @react-three/fiber). The body, wheels, lights and every internal module (pack, inverter, drive motor, OBC, DC-DC, 12 V battery, charge port) are separate, named nodes. No third-party car model ships in v1, so there is nothing to license or attribute and no file to download.

@@ -10,7 +10,7 @@ Acceptance:
 - [x] The default mode is Normal, and setting a mode shows in the snapshot within one message period
 - [x] The new message and its signal appear in the catalogue, trace and topology
 - [x] Existing sim tests pass unchanged
-Notes: Keep modes as a list with an availability flag, so phase 09 OTA can gate one later. All three are available now.
+Notes: Keep modes as a list with an availability flag, so phase 10 OTA can gate one later. All three are available now.
 
 ## T-002: Eco and Sport torque, power and regen maps
 
@@ -143,7 +143,7 @@ Test seam: `e2e/cycles.spec.ts`
 Acceptance:
 - [x] The spec passes in headless Chromium
 - [x] The downloaded CSV has the expected header and at least one row per 0.1 s of the cycle
-Notes: Add the scenario to `src/sim/scenarios` if the guided demo (phase 10) can reuse it.
+Notes: Add the scenario to `src/sim/scenarios` if the guided demo (phase 11) can reuse it.
 
 ## T-013: Cycle runs honour the time scale
 

@@ -30,7 +30,7 @@ Runtime dependencies are installed when the feature that needs them starts (see 
 | Feature | Packages |
 |---|---|
 | 04 Charging (first chart) | uplot 1.6.32 |
-| 11 Offline and deployment | vite-plugin-pwa 1.3.0 (+ workbox peers) |
+| 12 Offline and deployment | vite-plugin-pwa 1.3.0 (+ workbox peers) |
 
 Anything else needs an ADR and the human's approval before install.
 
