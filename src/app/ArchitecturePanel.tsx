@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useSimStore } from './simStore';
 import { clearMark, formatCanId, formatSignals, pauseSnapshot, visibleFrames } from './traceModel';
 import { busCatalogue, type Frame } from '../sim/bus';
+import { EcuDiagram } from './EcuDiagram';
 import styles from './ArchitecturePanel.module.css';
 
 export const TRACE_ROW_LIMIT = 100;
@@ -16,7 +17,8 @@ export function ArchitecturePanel() {
   const [paused, setPaused] = useState<readonly Frame[] | null>(null);
   const [clearedAt, setClearedAt] = useState<number | undefined>(undefined);
   const [selected, setSelected] = useState<Frame | null>(null);
-  const edges = useMemo(() => sim.topology().edges, [sim]);
+  const topology = useMemo(() => sim.topology(), [sim]);
+  const edges = topology.edges;
   const senders = useMemo(() => [...new Set(edges.map((e) => e.sender))].sort(), [edges]);
   const rows = useMemo(
     () =>
@@ -33,6 +35,8 @@ export function ArchitecturePanel() {
 
   return (
     <div className={styles.content}>
+      <h2>ECU diagram</h2>
+      <EcuDiagram topology={topology} />
       <h2 id="trace-title">CAN trace</h2>
       <div className={styles.filters}>
         <label>

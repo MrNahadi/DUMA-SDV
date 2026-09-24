@@ -1,0 +1,6 @@
+.diagram { width: 100%; max-width: 360px; height: auto; font-family: var(--font-mono); font-size: 9px; }
+.edge { stroke: var(--line); stroke-width: 1; }
+.node circle { fill: var(--surface, #fff); stroke: var(--ink-2); stroke-width: 1.5; }
+.node text { fill: var(--ink-1, currentColor); pointer-events: none; }
+.node:focus { outline: none; }
+.node:focus-visible circle { stroke: var(--accent, currentColor); stroke-width: 3; }

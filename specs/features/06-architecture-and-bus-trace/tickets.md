@@ -68,13 +68,13 @@ Notes:
 
 ## T-007: ECU diagram
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: Render an SVG ECU diagram from the topology accessor in the Architecture view.
 Test seam: ECU diagram component props
 Acceptance:
-- [ ] There is one node per topology ECU, with edges from each sender to its subscribers
-- [ ] Nodes can be focused with the keyboard and have accessible names
+- [x] There is one node per topology ECU, with edges from each sender to its subscribers
+- [x] Nodes can be focused with the keyboard and have accessible names
 Notes: Draw no ECU that is absent from the sim.
 
 ## T-008: Live ECU activity
