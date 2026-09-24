@@ -1,0 +1,146 @@
+# 04 · Charging: tickets
+
+## T-001: Record the charging control decision
+
+Status: open
+Blocked by:
+Slice: Add a focused ADR for charging handshake, AC efficiency, DC taper, BMS limits, target completion and power-state behavior, citing ADR 0001's published values and marking estimates.
+Test seam: ADR decision reviewed against public `createSim()` and vehicle parameter contracts
+Acceptance:
+- [ ] An accepted ADR distinguishes the 11 kW OBC route from the 150 kW DC route and the existing driving regen allowance
+- [ ] The ADR specifies the 10–80% reference conditions and unchanged 33.3–40.7 min band, with no invented reference figures
+- [ ] Any proposed pack-resistance change is justified and recorded in a separate ADR
+Notes:
+
+## T-002: Expose charge controls and port state
+
+Status: open
+Blocked by: T-001
+Slice: Extend the public sim with AC/DC selection, Plug in/Unplug, target and session commands plus an observable port/session snapshot, initially without energy transfer.
+Test seam: `createSim().setInputs()`, `snapshot()` and `trace()`
+Acceptance:
+- [ ] Valid commands produce deterministic idle, plugged and session transitions; invalid targets or transitions are rejected consistently
+- [ ] Starting is refused while moving or outside P; a plugged cable blocks propulsion and gear selection
+- [ ] Existing Power on/off and gear-interlock tests pass
+Notes:
+
+## T-003: Authorize external charge through the bus
+
+Status: open
+Blocked by: T-002
+Slice: Add VCU/BMS charging coordination and catalogue-declared frames so charge permission and target stop are observable without cross-ECU state reads.
+Test seam: `createSim().snapshot()`, `trace()` and `setMessageDropped()`
+Acceptance:
+- [ ] New messages declare unique IDs, senders, periods or events, units and scaling
+- [ ] Charging is authorized only with fresh required frames, eligible port/source, stationary P and BMS acceptance
+- [ ] Target, full pack, Stop charging or stale permission removes authorization and propulsion stays disabled
+Notes:
+
+## T-004: Charge the pack through the AC OBC
+
+Status: open
+Blocked by: T-003
+Slice: Add the AC-only OBC behavior and external AC power path to the existing HV/pack plant, reporting actual terminal charge.
+Test seam: `createSim()` AC session snapshot and `trace()`
+Acceptance:
+- [ ] AC input stays at or below 11 kW and SOC rises only from delivered negative pack current
+- [ ] Documented OBC loss is accounted for; Stop charging and Unplug remove external current
+- [ ] Pack upper bound, no-propulsion gate and existing regen/discharge tests pass
+Notes:
+
+## T-005: Charge the pack through the DC path
+
+Status: open
+Blocked by: T-003
+Slice: Add the DC EVSE-to-pack path around the OBC with the ADR taper and BMS/pack bounds.
+Test seam: `createSim()` DC session snapshot and `trace()`
+Acceptance:
+- [ ] DC input never exceeds 150 kW and follows a taper; OBC output is zero in DC mode
+- [ ] SOC and terminal voltage/current follow actual pack charging and stop at target or full pack
+- [ ] Stale BMS permission, Stop charging or Unplug removes external current
+Notes:
+
+## T-006: Verify the DC reference session
+
+Status: open
+Blocked by: T-005
+Slice: Add a deterministic headless 10–80% DC scenario and its reference test under ADR 0001 conditions.
+Test seam: public `createSim({ initialSoc: 0.1 })` scenario and snapshot
+Acceptance:
+- [ ] No-preconditioning 10–80% time is within 33.3–40.7 min, with a peak at or below 150 kW
+- [ ] Repeated runs produce the same time, SOC and bus trace; no SOC overshoot occurs
+- [ ] Existing acceleration, steady-speed range, top-speed, startup and regen bands pass unchanged
+Notes:
+
+## T-007: Publish charge display data
+
+Status: open
+Blocked by: T-004, T-005
+Slice: Expose bus-derived SOC, source, charge power, session state and a time-to-target estimate to the display snapshot, with explicit staleness.
+Test seam: public `createSim().snapshot()` display model and `setMessageDropped()`
+Acceptance:
+- [ ] AC and DC display values track bus frames and do not update from plant-only changes
+- [ ] Time-to-target is finite during eligible charging, reaches complete at target and is unavailable when inputs are stale
+- [ ] Charging energy does not increment the regen-only Energy recovered tracker
+Notes:
+
+## T-008: Show charging controls and status
+
+Status: open
+Blocked by: T-002, T-007
+Slice: Replace the Charge placeholder with a panel for source, target, port/session actions, SOC, power and time-to-target.
+Test seam: rendered Charge panel through Testing Library and public store actions
+Acceptance:
+- [ ] Plug in, Unplug, Start charging and Stop charging invoke the public sim controls with clear eligible/disabled states
+- [ ] SOC is the sole display-size value; idle, plugged, charging, complete and stale states are readable with correct unit conversions
+- [ ] The panel is keyboard reachable and has no horizontal scroll at 1366×768
+Notes:
+
+## T-009: Plot the sampled charge curve
+
+Status: open
+Blocked by: T-007
+Slice: Add a bounded simulator-sampled curve to the Charge panel using the approved, locally bundled `uplot@1.6.32` chart dependency.
+Test seam: Charge chart component props with sampled public snapshots
+Acceptance:
+- [ ] Time-ordered samples show real charging progress and a gap for unavailable telemetry; history stays bounded
+- [ ] AC and DC are identified in words, and the chart has an accessible text summary
+- [ ] Only design-rule data colours and locally bundled assets are used; reduced motion adds no decoration
+Notes: Install the already approved exact package version in feature setup before the unattended loop, as required by the stack.
+
+## T-010: Show charge port state on the car
+
+Status: open
+Blocked by: T-002
+Slice: Drive the existing procedural `charge-port` part from the public snapshot for unplugged, plugged and active charging states.
+Test seam: `visualStateFromSnapshot()` and car public part lookup
+Acceptance:
+- [ ] All three states are distinguishable without relying on colour alone
+- [ ] Existing wheel, brake-light and headlight mappings still pass
+- [ ] The car remains within its triangle and draw-call targets
+Notes:
+
+## T-011: Accelerate the charging demonstration
+
+Status: open
+Blocked by: T-008
+Slice: Add a 1×–120× app time-scale control and bounded frame batching, advancing the existing 10 ms sim tick.
+Test seam: public app time-scale control and `createSim().snapshot().timeS`
+Acceptance:
+- [ ] Sim time advances at the selected scale in whole 10 ms ticks; changing scale never changes a deterministic headless replay
+- [ ] Display updates no faster than animation frames, and Stop charging remains responsive at 120×
+- [ ] Existing 1× driving and startup interactions remain usable
+Notes:
+
+## T-012: End-to-end Charging scenario
+
+Status: open
+Blocked by: T-006, T-008, T-009, T-010, T-011
+Slice: Add a Chromium user flow for Charge: Plug in DC, choose a reachable target, Start charging, observe SOC/curve/port, reach target and Unplug; include an AC smoke path.
+Test seam: `e2e/charging.spec.ts` through user actions and visible outputs
+Acceptance:
+- [ ] The DC flow reaches its target and shows a rising SOC, time-to-target, curve and changing port state without console errors
+- [ ] AC flow shows the OBC source and charging progress; neither flow allows driving while plugged
+- [ ] First visible charging feedback occurs within 60 s from first click at 1366×768 with no horizontal scroll
+- [ ] All five Feedback commands pass, including unchanged physics reference bands
+Notes:
