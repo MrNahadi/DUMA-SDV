@@ -53,7 +53,7 @@ Notes: Pure TS inside `src/sim/`, with no Date or randomness.
 
 ## T-005: Wh/km result
 
-Status: in-progress
+Status: blocked-question
 Blocked by: T-002, T-004
 Slice: A completed run reports distance, net battery energy (discharge minus regen) and Wh/km. A stopped run reports no result.
 Test seam: Cycle runner public API
@@ -63,6 +63,7 @@ Acceptance:
 - [ ] A stopped run has no result
 Notes: No absolute Wh/km target is asserted.
 Checkpoint (in-progress): `runner.result()` implemented (odometer/tripEnergyJ deltas from run start; null unless completed); distance, determinism and stopped-run tests pass. Eco vs Normal on Urban FAILS: Eco 146.4 Wh/km vs Normal 144.75. Tried: (1) nothing mode-aware → Eco worse; (2) driver now inverts the mode's pedal exponent, uses the mode power cap and mode lift-off g (MODE_MAPS exported from vcu.ts) → still ~1 % worse. Likely cause: Eco's stronger lift-off (0.2 g vs 0.15 g) regenerates energy that road load would otherwise absorb while coasting, and the round-trip loss costs more than it saves; the pedal/power-cap differences barely act on Urban. Next: consider driver coast band that approximates lift-off with a light accelerator, or escalate whether Eco's map (ADR 0013 estimates) should change.
+Blocked (question): questions/open/T-005-eco-vs-normal-urban.md. A third fix (wider lift-off band) did not help and was reverted. A diagnostic with Eco lift-off = Normal still gave Eco 145.02 vs 144.98, so no Eco map beats Normal while the driver follows the trace. Needs an intent decision on R10.
 
 ## T-006: Telemetry recorder and CSV
 
