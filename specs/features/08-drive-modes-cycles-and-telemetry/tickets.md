@@ -125,14 +125,14 @@ Notes: Blob plus an anchor. No new package.
 
 ## T-011: Regression sweep
 
-Status: open
+Status: done
 Blocked by: T-002, T-009, T-010
 Slice: Run every feedback command and every earlier reference and e2e test. Fix any breakage without widening tolerances.
 Test seam: `npm test` and `npm run e2e`
 Acceptance:
-- [ ] typecheck, lint, test, build and e2e all pass
-- [ ] Reference test tolerances are unchanged
-Notes:
+- [x] typecheck, lint, test, build and e2e all pass
+- [x] Reference test tolerances are unchanged
+Notes: All feedback commands passed with no fixes needed (287 unit tests, 15 e2e).
 
 ## T-012: Cycles end-to-end scenario
 
