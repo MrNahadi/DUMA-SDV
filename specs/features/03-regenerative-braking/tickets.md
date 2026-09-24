@@ -77,15 +77,15 @@ Notes: The distance estimate uses the received VCU_Range consumption and a 1 J/m
 
 ## T-007: Show regen on the Drive power gauge
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Render negative power on the existing center-zero gauge with `--ok`, signed kW and a textual regen cue.
 Test seam: `DashboardStrip` component props/store snapshot via Testing Library
 Acceptance:
-- [ ] Negative IC power is visibly distinct and labeled Regen; positive power keeps the existing display
-- [ ] The gauge does not clip a valid value at the applicable charge/discharge limit
-- [ ] Off or stale values remain unavailable rather than showing a live bar
-Notes:
+- [x] Negative IC power is visibly distinct and labeled Regen; positive power keeps the existing display
+- [x] The gauge does not clip a valid value at the applicable charge/discharge limit
+- [x] Off or stale values remain unavailable rather than showing a live bar
+Notes: IC reads fresh BMS charge/discharge limits; the strip scales each half against its applicable limit.
 
 ## T-008: Show the trip recovery tracker
 
@@ -98,7 +98,6 @@ Acceptance:
 - [ ] Speed remains the sole display-size Drive value and UI wording follows `CONTEXT.md` and DESIGN-RULES
 - [ ] No horizontal scroll at 1366×768
 Notes:
-
 ## T-009: End-to-end Regen scenario
 
 Status: open

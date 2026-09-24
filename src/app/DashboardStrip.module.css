@@ -22,6 +22,8 @@
 .powerBar, .socBar { position: relative; height: 5px; margin-top: var(--s-2); background: var(--surface-2); border-radius: 3px; overflow: hidden; }
 .powerBar::after { content: ''; position: absolute; left: 50%; width: 1px; height: 100%; background: var(--ink-3); }
 .powerFill, .socBar span { display: block; position: absolute; height: 100%; background: var(--ink); }
+.powerFill.regen { background: var(--ok); }
+.regenCue { color: var(--ok); font: var(--text-small); }
 .socBar span { left: 0; background: var(--ok); }
 .ready { display: flex; align-items: center; gap: var(--s-1); color: var(--ok); font: var(--text-label); white-space: nowrap; }
 .hint { margin: 0; max-width: 120px; color: var(--ink-2); font: var(--text-small); white-space: normal; }

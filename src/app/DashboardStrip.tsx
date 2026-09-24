@@ -15,7 +15,10 @@ export function DashboardStrip() {
   const range = off ? '—' : shown(dashboard.rangeM === null ? null : dashboard.rangeM / 1000);
   const gear = off ? '—' : dashboard.gear ?? '—';
   const ready = !off && dashboard.ready === true;
-  const powerFraction = dashboard.powerW === null || off ? 0 : Math.min(1, Math.abs(dashboard.powerW) / 230_000);
+  const regen = !off && dashboard.powerW !== null && dashboard.powerW < 0;
+  const powerLimitKw = regen ? dashboard.maxChargeKw : dashboard.maxDischargeKw;
+  const powerFraction = dashboard.powerW === null || off || powerLimitKw === null || powerLimitKw <= 0
+    ? 0 : Math.min(1, Math.abs(dashboard.powerW) / (powerLimitKw * 1000));
 
   return <section className={styles.strip} aria-label="Driver dashboard">
     <div className={styles.speed} data-testid="dashboard-speed">
@@ -26,7 +29,8 @@ export function DashboardStrip() {
     <div className={styles.metric} data-testid="dashboard-power">
       <span className={styles.label}>Power</span>
       <span className={styles.value} data-value={power}>{power} <small>kW</small></span>
-      <div className={styles.powerBar} aria-hidden="true"><span className={styles.powerFill} style={{ width: `${powerFraction * 50}%`, left: dashboard.powerW !== null && dashboard.powerW < 0 ? `${50 - powerFraction * 50}%` : '50%' }} /></div>
+      {regen && <span className={styles.regenCue}>Regen</span>}
+      <div className={styles.powerBar} aria-hidden="true"><span data-testid="power-fill" className={`${styles.powerFill} ${regen ? styles.regen : ''}`} style={{ width: `${powerFraction * 50}%`, left: regen ? `${50 - powerFraction * 50}%` : '50%' }} /></div>
     </div>
     <div className={styles.metric} data-testid="dashboard-soc">
       <span className={styles.label}>SOC</span>

@@ -23,6 +23,10 @@ export interface DashboardModel {
   speedMs: number | null;
   /** Pack power, W, positive for discharge: packVoltage × packCurrent (BMS_Status). */
   powerW: number | null;
+  /** Live pack charge limit, kW (BMS_Limits). */
+  maxChargeKw: number | null;
+  /** Live pack discharge limit, kW (BMS_Limits). */
+  maxDischargeKw: number | null;
   /** State of charge, 0..1 (BMS_Status). */
   soc: number | null;
   /** Range estimate, m (VCU_Range). */
@@ -47,7 +51,7 @@ export interface Ic {
   step(t: number, powered: boolean): void;
 }
 
-const SOURCES = ['VCU_Status', 'VCU_Range', 'VCU_Recovery', 'BMS_Status', 'MCU_Vehicle'] as const;
+const SOURCES = ['VCU_Status', 'VCU_Range', 'VCU_Recovery', 'BMS_Status', 'BMS_Limits', 'MCU_Vehicle'] as const;
 type Source = (typeof SOURCES)[number];
 
 export function createIc(bus: Bus): Ic {
@@ -66,6 +70,8 @@ export function createIc(bus: Bus): Ic {
   const dashboard: DashboardModel = {
     speedMs: null,
     powerW: null,
+    maxChargeKw: null,
+    maxDischargeKw: null,
     soc: null,
     rangeM: null,
     recoveredEnergyJ: null,
@@ -83,6 +89,8 @@ export function createIc(bus: Bus): Ic {
   function clear() {
     dashboard.speedMs = null;
     dashboard.powerW = null;
+    dashboard.maxChargeKw = null;
+    dashboard.maxDischargeKw = null;
     dashboard.soc = null;
     dashboard.rangeM = null;
     dashboard.recoveredEnergyJ = null;
@@ -109,6 +117,11 @@ export function createIc(bus: Bus): Ic {
       dashboard.powerW = null;
       dashboard.soc = null;
     }
+
+    dashboard.maxChargeKw = live(t, 'BMS_Limits')
+      ? inbox.read('BMS_Limits', 'maxChargeKw') as number : null;
+    dashboard.maxDischargeKw = live(t, 'BMS_Limits')
+      ? inbox.read('BMS_Limits', 'maxDischargeKw') as number : null;
 
     dashboard.rangeM =
       live(t, 'VCU_Range') && inbox.read('VCU_Range', 'rangeValid') === 'yes'

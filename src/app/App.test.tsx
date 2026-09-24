@@ -42,6 +42,8 @@ describe('app shell', () => {
           dashboard: {
             speedMs: 20,
             powerW: 42_000,
+            maxChargeKw: 60,
+            maxDischargeKw: 250,
             soc: 0.62,
             rangeM: 314_000,
             recoveredEnergyJ: 0,

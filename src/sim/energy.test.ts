@@ -130,6 +130,8 @@ describe('IC dashboard model (T-005, R4)', () => {
     expect(d).toEqual({
       speedMs: null,
       powerW: null,
+      maxChargeKw: null,
+      maxDischargeKw: null,
       soc: null,
       rangeM: null,
       recoveredEnergyJ: null,
