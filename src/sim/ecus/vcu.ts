@@ -10,7 +10,7 @@
 
 import { DRIVE_MODES, GEARS, POWER_STATES, STARTUP_STEPS, type Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
-import { GRAVITY_MS2, motorMaxTorqueNm } from '../vehicle';
+import { GRAVITY_MS2, motorLossW, motorMaxTorqueNm } from '../vehicle';
 import { jPerMToWhPerKm, kmhToMs, msToKmh, rpmToRads } from '../units';
 import type { FaultKey } from '../faults';
 import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ecu';
@@ -107,14 +107,14 @@ const BRAKE_REGEN_FULL_MS = 2;
  * ADR 0013: per-mode pedal progression (torque share = pedal^exponent), shaft power
  * cap and lift-off deceleration. Normal is the ADR 0007/0009 behaviour unchanged.
  */
-export interface ModeMap { pedalExponent: number; powerCapW: number; liftOffG: number }
-export const MODE_MAPS: Readonly<Record<DriveMode, ModeMap>> = {
-  eco: { pedalExponent: 1.6, powerCapW: 140_000, liftOffG: 0.2 }, // estimate
-  normal: { pedalExponent: 1, powerCapW: Infinity, liftOffG: REGEN_DECEL_G },
-  sport: { pedalExponent: 0.8, powerCapW: Infinity, liftOffG: REGEN_DECEL_G }, // estimate
-};
 /** ADR 0013: Eco battery discharge cap: the 140 kW shaft cap plus inverter and motor losses. */
 export const ECO_DISCHARGE_CAP_W = 155_000; // estimate
+export interface ModeMap { pedalExponent: number; powerCapW: number; liftOffG: number; batteryCapW: number }
+export const MODE_MAPS: Readonly<Record<DriveMode, ModeMap>> = {
+  eco: { pedalExponent: 1.6, powerCapW: 140_000, liftOffG: 0.2, batteryCapW: ECO_DISCHARGE_CAP_W }, // estimate
+  normal: { pedalExponent: 1, powerCapW: Infinity, liftOffG: REGEN_DECEL_G, batteryCapW: Infinity },
+  sport: { pedalExponent: 0.8, powerCapW: Infinity, liftOffG: REGEN_DECEL_G, batteryCapW: Infinity }, // estimate
+};
 /** ADR 0013: a mode change blends the old map into the new one over this time. */
 export const MODE_RAMP_S = 0.5; // estimate
 
@@ -468,6 +468,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
     const w = Math.abs(motorRadS);
     let availableNm = motorMaxTorqueNm(p, motorRadS);
     if (w > 0) availableNm = Math.min(availableNm, Math.min(maxDischargeKw as number * 1000, decision.powerCapKw * 1000, map.powerCapW) / w);
+    if (Number.isFinite(map.batteryCapW)) availableNm = Math.min(availableNm, batteryCappedTorqueNm(map.batteryCapW, w));
 
     const direction = vcu.gear === 'D' ? 1 : -1;
     const limitKmh = vcu.gear === 'D' ? decision.speedCapKmh : Math.min(REVERSE_SPEED_LIMIT_KMH, decision.speedCapKmh);
@@ -476,6 +477,17 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
     if (limiter === 0) return 0;
     const pedal = map.pedalExponent === 1 ? accelerator : accelerator ** map.pedalExponent;
     return direction * pedal * availableNm * limiter;
+  }
+
+  /**
+   * ADR 0013: largest torque whose shaft power plus motor/inverter loss and aux load
+   * keeps battery discharge within the cap, solving c·T² + ω·T + rest = cap for T.
+   */
+  function batteryCappedTorqueNm(capW: number, w: number): number {
+    const c = p.motorLossCopperWPerNm2;
+    const rest = motorLossW(p, 0, w) + p.auxLoadW - capW;
+    if (rest >= 0) return 0;
+    return c > 0 ? (-w + Math.sqrt(w * w - 4 * c * rest)) / (2 * c) : -rest / w;
   }
 
   /** ADR 0009: generator torque opposes travel only with fresh charge and inverter status. */

@@ -184,7 +184,7 @@ Notes: R10 and R15. The T-001 bus behaviour stays as it is. Only what the contro
 
 ## T-016: Enforce the Eco battery discharge cap
 
-Status: open
+Status: in-progress
 Blocked by:
 Slice: In Eco, battery discharge power is limited to `ECO_DISCHARGE_CAP_W` in the torque path, alongside the existing BMS discharge limit, not only checked in a test. (Review finding #6.)
 Test seam: `createSim()` public API
@@ -192,6 +192,7 @@ Acceptance:
 - [ ] Full pedal in Eco with high motor and inverter losses (hot motor, low pack voltage) keeps battery discharge power at or below the cap
 - [ ] Normal and Sport snapshots are unchanged, and the 0–100, range and regen reference tests pass with unchanged tolerances
 Notes: R4, ADR 0013. Do not change official parameters.
+Checkpoint (in-progress, committed by hand after the iteration hit the usage limit): `MODE_MAPS` has `batteryCapW`; the VCU clamps torque with `batteryCappedTorqueNm` (solves shaft power + motor loss + aux load = cap). The new test in `drive-mode-maps.test.ts` FAILS: Eco peaks at 156.5 kW against the 155 kW cap (+1 %). Check whether inverter loss or pack internal loss is missing from the formula, or whether the one-tick-old speed causes the overshoot (as noted for the shaft power in T-002). Feedback commands not yet run.
 
 ## T-017: Free-drive telemetry and export from the Drive view
 

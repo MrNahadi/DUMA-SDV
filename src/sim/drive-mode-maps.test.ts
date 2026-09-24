@@ -67,3 +67,18 @@ describe('Eco and Sport maps (T-002)', () => {
     expect(worst).toBeLessThanOrEqual(maxStep);
   });
 });
+
+describe('Eco battery discharge cap (T-016)', () => {
+  it('holds pack discharge at or below the cap at full pedal with high losses and a low pack', () => {
+    const lossy = { ...p, motorLossConstW: 3_000, motorLossCopperWPerNm2: 0.6, motorLossIronWPerRadS: 12, motorLossWindageWPerRadS2: 0.01 };
+    const sim = createSim({ params: lossy, initialSoc: 0.15 });
+    expect(powerOnToReady(sim)).toBe(true);
+    expect(shiftWithBrake(sim, 'D')).toBe(true);
+    sim.setInputs({ brake: 0, accelerator: 1, driveMode: 'eco' });
+    sim.step(Math.round(1 / TICK_S));
+    let maxPackW = 0;
+    for (let i = 0; i < 3000 && sim.snapshot().speedMs < 40; i++) { sim.step(1); maxPackW = Math.max(maxPackW, sim.snapshot().power.packW); }
+    expect(maxPackW).toBeGreaterThan(0.9 * ECO_DISCHARGE_CAP_W);
+    expect(maxPackW).toBeLessThanOrEqual(ECO_DISCHARGE_CAP_W);
+  });
+});
