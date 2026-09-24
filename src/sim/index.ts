@@ -5,6 +5,7 @@
 
 import { createHvCircuit, createPack, type ContactorStates } from './battery';
 import { GEARS, busCatalogue, createBus, type Frame } from './bus';
+import { isFresh } from './ecus/ecu';
 import {
   STARTUP_STEPS,
   createBms,
@@ -58,7 +59,9 @@ export type ChargeRefusal = 'notPlugged' | 'alreadyPlugged' | 'notParked' | 'mov
 export interface ChargeSnapshot {
   source: 'AC' | 'DC' | null;
   connected: boolean;
-  session: 'idle' | 'plugged' | 'charging' | 'stopped';
+  session: 'idle' | 'plugged' | 'charging' | 'stopped' | 'complete';
+  /** True only while fresh VCU and BMS frames permit external current. */
+  authorized: boolean;
   targetSoc: number;
   powerW: number;
   refusal: ChargeRefusal | null;
@@ -165,6 +168,7 @@ export function createSim(options: SimOptions = {}): Sim {
 
   // The ECUs, talking over the bus.
   const bus = createBus(busCatalogue, { tickMs: TICK_MS });
+  const chargePath = bus.subscribe('ChargePath', ['VCU_Charge', 'BMS_Charge']);
   const vcu = createVcu(bus, p, TICK_S);
   const bms = createBms(bus, p, { tickS: TICK_S, initialSoc: soc });
   const mcu = createMcu(bus, p);
@@ -173,10 +177,13 @@ export function createSim(options: SimOptions = {}): Sim {
   let tick = 0;
   let powerButton = false;
   let tripEnergyJ = 0;
-  const driver: DriverInputs = { accelerator: 0, brake: 0, gearRequest: null, cableConnected: false };
+  const driver: DriverInputs = {
+    accelerator: 0, brake: 0, gearRequest: null, cableConnected: false,
+    chargeRequested: false, chargeSource: null, chargeTargetSoc: 1,
+  };
   let selectedSource: 'AC' | 'DC' | null = null;
   let chargeCommand: SimInputs['chargeCommand'] | null = null;
-  const charge: ChargeSnapshot = { source: null, connected: false, session: 'idle', targetSoc: 1, powerW: 0, refusal: null };
+  const charge: ChargeSnapshot = { source: null, connected: false, session: 'idle', authorized: false, targetSoc: 1, powerW: 0, refusal: null };
 
   function applyChargeCommand() {
     const command = chargeCommand;
@@ -204,7 +211,7 @@ export function createSim(options: SimOptions = {}): Sim {
       else charge.session = 'charging';
     } else if (command === 'stop') {
       if (charge.session !== 'charging') charge.refusal = 'notCharging';
-      else charge.session = 'stopped';
+      else { charge.session = 'stopped'; charge.authorized = false; }
     } else if (command === 'unplug') {
       if (!charge.connected) charge.refusal = 'notPlugged';
       else if (charge.session === 'charging') charge.refusal = 'sessionActive';
@@ -215,6 +222,21 @@ export function createSim(options: SimOptions = {}): Sim {
       }
     }
     driver.cableConnected = charge.connected;
+  }
+
+  function updateChargePath(t: number) {
+    if (charge.session === 'charging' && pack.soc >= Math.min(charge.targetSoc, 1)) {
+      charge.session = 'complete';
+    }
+    const since = t - 0.1;
+    charge.authorized = charge.session === 'charging' && charge.connected &&
+      vcu.powerState === 'CHARGING' && vcu.gear === 'P' && Math.abs(dynamics.speedMs) < 1 / 3.6 &&
+      isFresh(chargePath, 'VCU_Charge', since) &&
+      chargePath.read('VCU_Charge', 'authorized') === 'yes' &&
+      chargePath.read('VCU_Charge', 'source') === charge.source &&
+      isFresh(chargePath, 'BMS_Charge', since) &&
+      chargePath.read('BMS_Charge', 'accepted') === 'yes' &&
+      (chargePath.read('BMS_Charge', 'maxExternalChargeKw') as number) > 0;
   }
 
   /**
@@ -235,6 +257,15 @@ export function createSim(options: SimOptions = {}): Sim {
 
     applyChargeCommand();
 
+    if (powerButton && charge.session === 'charging') {
+      charge.session = 'stopped';
+      charge.authorized = false;
+    }
+
+    driver.chargeRequested = charge.session === 'charging';
+    driver.chargeSource = charge.source;
+    driver.chargeTargetSoc = charge.targetSoc;
+
     vcu.step(t, powerButton, driver);
     powerButton = false;
     driver.gearRequest = null;
@@ -243,6 +274,7 @@ export function createSim(options: SimOptions = {}): Sim {
     mcuSensors.motorSpeedRadS = dynamics.motorSpeedRadS;
     mcu.step(t, vcu.kl15, mcuSensors);
     ic.step(t, vcu.kl15);
+    updateChargePath(t);
 
     // ADR 0009: friction fills the pedal demand left by actual MCU generator torque.
     // Use the actual torque so stale commands or a disabled inverter cannot reduce braking.

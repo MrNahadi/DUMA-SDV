@@ -29,6 +29,10 @@ export interface DriverInputs {
   gearRequest: Gear | null;
   /** Physical charge-port cable sense. */
   cableConnected: boolean;
+  /** Driver charge request and source, sensed through the charge-port controls. */
+  chargeRequested: boolean;
+  chargeSource: 'AC' | 'DC' | null;
+  chargeTargetSoc: number;
 }
 
 export { STARTUP_STEPS };
@@ -105,6 +109,7 @@ export interface Vcu {
   readonly gear: Gear;
   /** Why the latest gear request was refused, or null if it was accepted. */
   readonly gearRefusal: GearRefusal | null;
+  readonly chargeAuthorized: boolean;
   step(t: number, powerButtonPressed: boolean, driver: Readonly<DriverInputs>): void;
 }
 
@@ -115,7 +120,8 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
   const status = bus.writer('VCU', 'VCU_Status');
   const rangeFrame = bus.writer('VCU', 'VCU_Range');
   const recoveryFrame = bus.writer('VCU', 'VCU_Recovery');
-  const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'MCU_Status', 'MCU_Vehicle']);
+  const chargeFrame = bus.writer('VCU', 'VCU_Charge');
+  const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Status', 'MCU_Vehicle']);
   bus.setSenderActive('VCU', false);
 
   const packVMin = p.seriesCells * 2.5;
@@ -153,19 +159,23 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     failReason: null as StartupFailReason | null,
     gear: 'P' as Gear,
     gearRefusal: null as GearRefusal | null,
+    chargeAuthorized: false,
     step(t: number, buttonPressed: boolean, driver: Readonly<DriverInputs>) {
-      const running = updatePower(t, buttonPressed);
+      const running = updatePower(t, buttonPressed, driver.chargeRequested && driver.cableConnected);
       if (driver.gearRequest !== null) requestGear(t, driver.gearRequest, driver.brake, driver.cableConnected);
-      if (running) publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake);
+      if (running) {
+        updateCharge(t, driver);
+        publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake);
+      } else vcu.chargeAuthorized = false;
     },
   };
 
   /** Run the power state machine. Returns true if the VCU is running and publishing this tick. */
-  function updatePower(t: number, buttonPressed: boolean): boolean {
+  function updatePower(t: number, buttonPressed: boolean, chargeWake: boolean): boolean {
     const pressed = buttonPressed || pendingPress;
     pendingPress = false;
     if (!awake) {
-      if (!pressed) return false;
+      if (!pressed && !chargeWake) return false;
       wake(t);
     } else if (pressed) {
       // While booting or powering down the press waits: it powers off once booted,
@@ -432,6 +442,29 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
       chargeW / Math.abs(omega),
     );
     return -direction * torqueNm;
+  }
+
+  /** ADR 0010: VCU permission is based only on bus reports, plus local controls. */
+  function updateCharge(t: number, driver: Readonly<DriverInputs>) {
+    const requested = driver.chargeRequested && driver.cableConnected && driver.chargeSource !== null;
+    const freshSince = Math.max(wakeAtS, t - LIVE_S);
+    const speedKmh = vehicleSpeedKmh(freshSince);
+    const eligible = requested && vcu.gear === 'P' && Math.abs(speedKmh) < STANDSTILL_KMH &&
+      driver.chargeTargetSoc > 0 && driver.chargeTargetSoc <= 1 &&
+      isFresh(inbox, 'BMS_Status', freshSince) &&
+      inbox.read('BMS_Status', 'contactorState') === 'closed' &&
+      (inbox.read('BMS_Status', 'soc') as number) < Math.min(100, driver.chargeTargetSoc * 100);
+    const accepted = isFresh(inbox, 'BMS_Charge', freshSince) &&
+      inbox.read('BMS_Charge', 'accepted') === 'yes' &&
+      (inbox.read('BMS_Charge', 'maxExternalChargeKw') as number) > 0;
+    vcu.chargeAuthorized = eligible && accepted && !shuttingDown && (vcu.powerState === 'READY' || vcu.powerState === 'CHARGING' || vcu.powerState === 'ACCESSORY');
+    if (vcu.chargeAuthorized) vcu.powerState = 'CHARGING';
+    else if (vcu.powerState === 'CHARGING' && !requested) vcu.powerState = 'ACCESSORY';
+    chargeFrame
+      .set('requested', requested ? 'yes' : 'no')
+      .set('authorized', vcu.chargeAuthorized ? 'yes' : 'no')
+      .set('source', driver.chargeSource ?? 'none')
+      .set('targetSoc', driver.chargeTargetSoc * 100);
   }
 
   /** Add this tick's pack energy (V × I from BMS_Status) and distance (MCU_Vehicle) to the trip. */

@@ -88,6 +88,18 @@ export const busCatalogue: Catalogue = Object.freeze([
     signals: [{ name: 'recoveredJ', unit: 'J', scale: 1 }],
   },
   {
+    id: 0x104,
+    name: 'VCU_Charge',
+    sender: 'VCU',
+    periodMs: 10,
+    signals: [
+      { name: 'requested', values: ['no', 'yes'] },
+      { name: 'authorized', values: ['no', 'yes'] },
+      { name: 'source', values: ['none', 'AC', 'DC'] },
+      { name: 'targetSoc', unit: '%', scale: 0.1 },
+    ],
+  },
+  {
     id: 0x200,
     name: 'BMS_Status',
     sender: 'BMS',
@@ -108,6 +120,16 @@ export const busCatalogue: Catalogue = Object.freeze([
     signals: [
       { name: 'maxDischargeKw', unit: 'kW', scale: 0.1 },
       { name: 'maxChargeKw', unit: 'kW', scale: 0.1 },
+    ],
+  },
+  {
+    id: 0x202,
+    name: 'BMS_Charge',
+    sender: 'BMS',
+    periodMs: 10,
+    signals: [
+      { name: 'accepted', values: ['no', 'yes'] },
+      { name: 'maxExternalChargeKw', unit: 'kW', scale: 0.1 },
     ],
   },
   {

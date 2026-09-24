@@ -45,7 +45,8 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
   const bootFrame = bus.writer('BMS', 'BMS_Boot');
   const status = bus.writer('BMS', 'BMS_Status');
   const limits = bus.writer('BMS', 'BMS_Limits');
-  const inbox = bus.subscribe('BMS', ['VCU_Command', 'MCU_Status']);
+  const chargeFrame = bus.writer('BMS', 'BMS_Charge');
+  const inbox = bus.subscribe('BMS', ['VCU_Command', 'VCU_Charge', 'MCU_Status']);
   bus.setSenderActive('BMS', false);
 
   // Peak electrical demand of the drive: peak power plus the losses at peak torque and base speed.
@@ -183,6 +184,16 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
         .set('contactorState', contactorState(hv))
         .set('prechargeState', prechargeState);
       limits.set('maxDischargeKw', maxDischargeKw).set('maxChargeKw', maxChargeKw());
+      const chargeRequested = isFresh(inbox, 'VCU_Charge', Math.max(boot.bootedAtS, t - COMMAND_TIMEOUT_S)) &&
+        inbox.read('VCU_Charge', 'requested') === 'yes';
+      const targetPct = inbox.read('VCU_Charge', 'targetSoc') as number | undefined;
+      const accepted = chargeRequested && phase === 'closed' &&
+        bms.soc < 1 && targetPct !== undefined && bms.soc * 100 < targetPct &&
+        hv.packTerminalV > 0 && hv.packTerminalV < 620;
+      // ADR 0010: separate external allowance; BMS_Limits.maxChargeKw remains regen-only.
+      chargeFrame
+        .set('accepted', accepted ? 'yes' : 'no')
+        .set('maxExternalChargeKw', accepted ? Math.min(150, 300 * hv.packTerminalV / 1000) : 0);
     },
   };
   return bms;

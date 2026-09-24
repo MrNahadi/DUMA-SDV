@@ -26,15 +26,15 @@ Notes: Public charge state is control-only at this stage; T-003 adds bus authori
 
 ## T-003: Authorize external charge through the bus
 
-Status: open
+Status: done
 Blocked by: T-002
 Slice: Add VCU/BMS charging coordination and catalogue-declared frames so charge permission and target stop are observable without cross-ECU state reads.
 Test seam: `createSim().snapshot()`, `trace()` and `setMessageDropped()`
 Acceptance:
-- [ ] New messages declare unique IDs, senders, periods or events, units and scaling
-- [ ] Charging is authorized only with fresh required frames, eligible port/source, stationary P and BMS acceptance
-- [ ] Target, full pack, Stop charging or stale permission removes authorization and propulsion stays disabled
-Notes:
+- [x] New messages declare unique IDs, senders, periods or events, units and scaling
+- [x] Charging is authorized only with fresh required frames, eligible port/source, stationary P and BMS acceptance
+- [x] Target, full pack, Stop charging or stale permission removes authorization and propulsion stays disabled
+Notes: `charge.authorized` exposes the bus-checked permission. External power remains zero until T-004/T-005 wire the AC/DC plant paths. Start from OFF wakes through the existing HV startup sequence; Stop and completion move CHARGING to ACCESSORY.
 
 ## T-004: Charge the pack through the AC OBC
 
