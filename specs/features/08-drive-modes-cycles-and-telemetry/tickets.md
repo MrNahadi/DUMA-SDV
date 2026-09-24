@@ -24,7 +24,7 @@ Acceptance:
 - [x] No mode exceeds the official motor power or torque at full pedal
 - [x] A mode change while driving keeps the torque step within the ADR 0013 ramp
 - [x] Normal gives identical snapshots to before, and the 0–100, range and regen reference tests pass with unchanged tolerances
-- [ ] Every new value is marked `// estimate` and listed in ADR 0013
+- [x] Every new value is marked `// estimate` and listed in ADR 0013
 Notes: Do not change official parameters (ADR 0001/0003).
 
 ## T-003: Urban and Highway cycle data
