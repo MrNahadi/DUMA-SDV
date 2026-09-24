@@ -124,3 +124,33 @@ it('shows every signal of a selected frame by mouse or keyboard, with enum names
   await user.keyboard('{Enter}');
   expect(screen.getByRole('region', { name: `Signals: ${name}` })).toBeTruthy();
 }, 15_000);
+
+it('filters the trace by clicking a diagram node and highlights a selected frame\'s sender and receivers', async () => {
+  const user = userEvent.setup();
+  render(<ArchitecturePanel />);
+  act(() => {
+    useSimStore.getState().powerOn();
+    useSimStore.getState().advance(200);
+  });
+  const diagram = screen.getByRole('group', { name: 'ECU diagram' });
+  const ecu = column(3)[0]!;
+  const node = within(diagram).getByRole('button', { name: new RegExp(`^${ecu},`) });
+  await user.click(node);
+  expect(new Set(column(3))).toEqual(new Set([ecu]));
+  expect((screen.getByRole('combobox', { name: 'ECU' }) as HTMLSelectElement).value).toBe(ecu);
+  expect(node.getAttribute('aria-pressed')).toBe('true');
+  await user.click(node);
+  expect(new Set(column(3)).size).toBeGreaterThan(1);
+  expect(node.getAttribute('aria-pressed')).toBe('false');
+
+  const row = bodyRows()[0]!;
+  const [, , name, sender] = within(row).getAllByRole('cell').map((c) => c.textContent!);
+  await user.click(row);
+  const edge = useSimStore.getState().sim.topology().edges.find((e) => e.message === name)!;
+  const expected = new Set([sender, ...edge.subscribers]);
+  const lit = within(diagram)
+    .getAllByRole('button')
+    .filter((n) => n.getAttribute('data-highlighted') === 'true')
+    .map((n) => n.getAttribute('aria-label')!.split(',')[0]);
+  expect(new Set(lit)).toEqual(expected);
+}, 15_000);

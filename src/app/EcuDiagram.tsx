@@ -11,6 +11,11 @@ interface Props {
   active?: ReadonlySet<string>;
   /** ECUs whose transceiver is off. */
   inactive?: ReadonlySet<string>;
+  /** ECUs involved in the selected frame (sender and receivers). */
+  highlighted?: ReadonlySet<string>;
+  /** ECU currently applied as the trace filter. */
+  selected?: string;
+  onSelect?: (ecu: string) => void;
 }
 
 type NodeState = 'active' | 'idle' | 'inactive';
@@ -18,7 +23,7 @@ type NodeState = 'active' | 'idle' | 'inactive';
 const MARK: Record<NodeState, string> = { active: 'tx', idle: 'idle', inactive: 'off' };
 
 /** SVG ECU diagram: nodes on a circle, one edge per sender → subscriber pair. */
-export function EcuDiagram({ topology, active, inactive }: Props) {
+export function EcuDiagram({ topology, active, inactive, highlighted, selected, onSelect }: Props) {
   const { nodes, edges } = topology;
   const pos = new Map(
     nodes.map((n, i) => {
@@ -41,14 +46,24 @@ export function EcuDiagram({ topology, active, inactive }: Props) {
       {nodes.map((n) => {
         const { x, y } = pos.get(n)!;
         const state: NodeState = inactive?.has(n) ? 'inactive' : active?.has(n) ? 'active' : 'idle';
+        const lit = highlighted?.has(n) ?? false;
         return (
           <g
             key={n}
-            className={`${styles.node} ${styles[state]}`}
+            className={`${styles.node} ${styles[state]}${lit ? ` ${styles.highlighted}` : ''}`}
             data-state={state}
+            data-highlighted={lit}
             role="button"
             tabIndex={0}
-            aria-label={`${n}, ${state}`}
+            aria-pressed={selected === n}
+            aria-label={`${n}, ${state}${lit ? ', in selected frame' : ''}`}
+            onClick={() => onSelect?.(n)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect?.(n);
+              }
+            }}
           >
             <circle cx={x} cy={y} r={NODE_R} />
             <text x={x} y={y - 4} textAnchor="middle" dominantBaseline="central">{n}</text>

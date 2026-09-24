@@ -90,13 +90,13 @@ Notes:
 
 ## T-009: Link diagram and trace
 
-Status: open
+Status: done
 Blocked by: T-004, T-006, T-007
 Slice: Clicking an ECU node sets the trace's ECU filter. A selected frame highlights its sender and subscribers.
 Test seam: Architecture panel component
 Acceptance:
-- [ ] Clicking a node filters the trace to that ECU, and the filter can be removed
-- [ ] A selected frame highlights only its sender and receivers
+- [x] Clicking a node filters the trace to that ECU, and the filter can be removed
+- [x] A selected frame highlights only its sender and receivers
 Notes:
 
 ## T-010: Architecture end-to-end scenario

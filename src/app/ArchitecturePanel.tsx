@@ -41,12 +41,21 @@ export function ArchitecturePanel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bucket throttles re-reads of the mutable sim
     [sim, bucket],
   );
+  const highlighted = useMemo(() => {
+    if (!selected) return undefined;
+    const edge = edges.find((e) => e.message === selected.name);
+    return new Set([selected.sender, ...(edge?.subscribers ?? [])]);
+  }, [selected, edges]);
   const filtered = ecu !== '' || message !== '';
 
   return (
     <div className={styles.content}>
       <h2>ECU diagram</h2>
-      <EcuDiagram topology={topology} active={activity.active} inactive={activity.inactive} />
+      <EcuDiagram topology={topology} active={activity.active} inactive={activity.inactive}
+        highlighted={highlighted}
+        selected={ecu || undefined}
+        onSelect={(n) => setEcu(ecu === n ? '' : n)}
+      />
       <h2 id="trace-title">CAN trace</h2>
       <div className={styles.filters}>
         <label>

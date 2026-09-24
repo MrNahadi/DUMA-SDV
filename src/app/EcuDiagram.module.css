@@ -9,3 +9,5 @@
 .idle circle { stroke-width: 1.5; }
 .inactive circle { stroke-dasharray: 3 3; opacity: 0.6; }
 .inactive text { opacity: 0.6; }
+.highlighted circle { fill: var(--accent-soft, #fde68a); stroke-width: 3; }
+.node[aria-pressed='true'] circle { stroke-dasharray: none; stroke-width: 4; }
