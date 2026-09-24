@@ -107,5 +107,5 @@ Slice: Playwright scenario at 1366×768: power on to READY, open Architecture, s
 Test seam: `e2e/` Playwright Chromium
 Acceptance:
 - [x] The new architecture spec passes
-- [ ] Existing e2e specs still pass, and `npm run typecheck`, `lint`, `test` and `build` pass
+- [x] Existing e2e specs still pass, and `npm run typecheck`, `lint`, `test` and `build` pass
 Notes: Wait for READY before injecting faults (see phase 05 T-012).
