@@ -9,6 +9,13 @@ describe('procedural car', () => {
     for (const id of carParts) {
       const part = car.getObjectByName(id);
       expect(part, id).toBeDefined();
+      if (id === 'charge-port') {
+        expect(part?.visible).toBe(true);
+        expect(part?.getObjectByName('port-flap')).toBeDefined();
+        expect(part?.getObjectByName('port-plug')).toBeDefined();
+        expect(part?.getObjectByName('port-charging-marker')).toBeDefined();
+        continue;
+      }
       if (
         [
           'pack',

@@ -1,8 +1,37 @@
 import { describe, expect, it } from 'vitest';
 import { createSim } from '../../sim';
 import { visualStateFromSnapshot } from './animation';
+import { buildCar, applyCarVisualState } from './index';
+import { vehicleParams } from '../../sim/vehicle/params';
 
 describe('car visual state', () => {
+  it('shows a closed flap, inserted plug, and charging marker from public snapshots', () => {
+    const sim = createSim();
+    const car = buildCar(vehicleParams);
+    const port = car.getObjectByName('charge-port')!;
+    const flap = port.getObjectByName('port-flap')!;
+    const plug = port.getObjectByName('port-plug')!;
+    const marker = port.getObjectByName('port-charging-marker')!;
+    applyCarVisualState(car, visualStateFromSnapshot(sim.snapshot()));
+    expect(port.visible).toBe(true);
+    expect(flap.visible).toBe(true);
+    expect(plug.visible).toBe(false);
+    expect(marker.visible).toBe(false);
+
+    sim.setInputs({ chargeSource: 'DC', chargeCommand: 'plugIn' });
+    sim.step();
+    applyCarVisualState(car, visualStateFromSnapshot(sim.snapshot()));
+    expect(flap.visible).toBe(false);
+    expect(plug.visible).toBe(true);
+    expect(marker.visible).toBe(false);
+
+    sim.setInputs({ chargeCommand: 'start' });
+    sim.step(200);
+    applyCarVisualState(car, visualStateFromSnapshot(sim.snapshot()));
+    expect(sim.snapshot().charge.session).toBe('charging');
+    expect(plug.visible).toBe(true);
+    expect(marker.visible).toBe(true);
+  });
   it('maps pedals, READY and signed road speed', () => {
     const sim = createSim();
     const off = visualStateFromSnapshot(sim.snapshot());

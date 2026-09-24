@@ -8,7 +8,7 @@ import {
   Shape,
 } from 'three';
 import type { VehicleParams } from '../../sim/vehicle/params';
-export { visualStateFromSnapshot } from './animation';
+export { applyCarVisualState, visualStateFromSnapshot } from './animation';
 
 export const carParts = [
   'body',
@@ -130,7 +130,6 @@ export function buildCar(params: Readonly<VehicleParams>): Group {
     ['obc', 0.5, radius * 1.25, 0, 0.35, 0.15, 0.32],
     ['dcdc', -0.45, radius * 1.25, 0, 0.25, 0.14, 0.25],
     ['battery-12v', halfLength * 0.7, radius * 1.4, 0, 0.25, 0.18, 0.18],
-    ['charge-port', -halfLength * 0.7, shoulder * 0.85, halfWidth * 0.75, 0.08, 0.11, 0.08],
     ['hv-cables', 0, radius * 1.02, 0, params.wheelbaseM * 0.7, 0.035, 0.035],
   ];
   for (const [name, x, y, z, sx, sy, sz] of modules) {
@@ -141,5 +140,26 @@ export function buildCar(params: Readonly<VehicleParams>): Group {
     internal.add(part);
   }
   car.add(internal);
+  const port = new Group();
+  port.name = 'charge-port';
+  port.position.set(-halfLength * 0.7, shoulder * 0.85, halfWidth * 0.84);
+  const socket = new Mesh(new BoxGeometry(0.19, 0.15, 0.015), rubber);
+  port.add(socket);
+  const flap = new Mesh(new BoxGeometry(0.21, 0.17, 0.02), paint);
+  flap.name = 'port-flap';
+  flap.position.z = 0.02;
+  port.add(flap);
+  const plug = new Mesh(new BoxGeometry(0.13, 0.1, 0.1), metal);
+  plug.name = 'port-plug';
+  plug.position.z = 0.065;
+  plug.visible = false;
+  port.add(plug);
+  const marker = new Mesh(new BoxGeometry(0.035, 0.12, 0.012), lamp);
+  marker.name = 'port-charging-marker';
+  marker.position.set(0, 0, 0.123);
+  marker.rotation.z = -0.35;
+  marker.visible = false;
+  port.add(marker);
+  car.add(port);
   return car;
 }

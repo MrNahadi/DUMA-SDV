@@ -5,7 +5,7 @@ import { Group, Mesh, MeshStandardMaterial } from 'three';
 import { useSimStore } from '../app/simStore';
 import { tokens } from '../ui/tokens';
 import { vehicleParams } from '../sim/vehicle/params';
-import { buildCar, visualStateFromSnapshot } from './car';
+import { applyCarVisualState, buildCar, visualStateFromSnapshot } from './car';
 
 const wheelNames = ['wheel-front-left', 'wheel-front-right', 'wheel-back-left', 'wheel-back-right'];
 const stripeSpacingM = 0.9;
@@ -23,6 +23,7 @@ function Car() {
     const head = model.getObjectByName('headlights') as Mesh;
     (brake.material as MeshStandardMaterial).emissiveIntensity = visual.brakeLightIntensity;
     (head.material as MeshStandardMaterial).emissiveIntensity = visual.headlightsOn ? 1 : 0;
+    applyCarVisualState(model, visual);
   });
   return <primitive object={model} />;
 }

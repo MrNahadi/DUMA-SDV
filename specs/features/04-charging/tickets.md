@@ -112,15 +112,15 @@ Checkpoint: Focused test and all five Feedback commands pass. Review found that 
 
 ## T-010: Show charge port state on the car
 
-Status: open
+Status: done
 Blocked by: T-002
 Slice: Drive the existing procedural `charge-port` part from the public snapshot for unplugged, plugged and active charging states.
 Test seam: `visualStateFromSnapshot()` and car public part lookup
 Acceptance:
-- [ ] All three states are distinguishable without relying on colour alone
-- [ ] Existing wheel, brake-light and headlight mappings still pass
-- [ ] The car remains within its triangle and draw-call targets
-Notes:
+- [x] All three states are distinguishable without relying on colour alone
+- [x] Existing wheel, brake-light and headlight mappings still pass
+- [x] The car remains within its triangle and draw-call targets
+Notes: Exterior port uses a closed flap, inserted plug and static charging marker from the public snapshot. All five Feedback commands pass.
 
 ## T-011: Accelerate the charging demonstration
 
