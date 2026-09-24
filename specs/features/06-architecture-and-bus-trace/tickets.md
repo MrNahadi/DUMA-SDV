@@ -13,13 +13,13 @@ Notes: No change to timing, periods or physics.
 
 ## T-002: Pure trace view model
 
-Status: open
+Status: done
 Blocked by:
 Slice: Pure helpers over `Frame[]`: newest-first order with a row limit, ECU and message filters, a pause snapshot, a clear mark by sim time, recent activity per ECU and signal formatting from the catalogue.
 Test seam: Exported helper functions (public module interface)
 Acceptance:
-- [ ] Fixture tests cover each filter alone and combined, plus the row limit, clear mark and activity window
-- [ ] Enumerated signals format to their value-table name, and units appear where defined
+- [x] Fixture tests cover each filter alone and combined, plus the row limit, clear mark and activity window
+- [x] Enumerated signals format to their value-table name, and units appear where defined
 Notes: Use sim time only, never the wall clock.
 
 ## T-003: Architecture view with live trace table
