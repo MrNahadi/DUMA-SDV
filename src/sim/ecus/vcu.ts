@@ -103,6 +103,21 @@ const REGEN_FULL_MS = 5;
 const BRAKE_REGEN_DECEL_G = 0.30;
 const BRAKE_REGEN_FULL_MS = 2;
 
+/**
+ * ADR 0013: per-mode pedal progression (torque share = pedal^exponent), shaft power
+ * cap and lift-off deceleration. Normal is the ADR 0007/0009 behaviour unchanged.
+ */
+interface ModeMap { pedalExponent: number; powerCapW: number; liftOffG: number }
+const MODE_MAPS: Readonly<Record<DriveMode, ModeMap>> = {
+  eco: { pedalExponent: 1.6, powerCapW: 140_000, liftOffG: 0.2 }, // estimate
+  normal: { pedalExponent: 1, powerCapW: Infinity, liftOffG: REGEN_DECEL_G },
+  sport: { pedalExponent: 0.8, powerCapW: Infinity, liftOffG: REGEN_DECEL_G }, // estimate
+};
+/** ADR 0013: Eco battery discharge cap: the 140 kW shaft cap plus inverter and motor losses. */
+export const ECO_DISCHARGE_CAP_W = 155_000; // estimate
+/** ADR 0013: a mode change blends the old map into the new one over this time. */
+export const MODE_RAMP_S = 0.5; // estimate
+
 export interface Vcu {
   readonly powerState: PowerState;
   /** True while the VCU holds the other ECUs' switched 12 V supply on. */
@@ -142,6 +157,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
   const stepDoneS: number[] = STARTUP_STEPS.map(() => Number.NaN);
 
   let awake = false;
+  const modeWeight: Record<DriveMode, number> = { eco: 0, normal: 1, sport: 0 };
   let pendingPress = false;
   let wakeAtS = 0;
   let current = -1;
@@ -420,29 +436,50 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
    * Positive drives forward. Zero unless READY in D or R.
    */
   function torqueRequestNm(t: number, accelerator: number, brake: number): number {
+    let torqueNm = 0;
+    for (const mode of DRIVE_MODES) {
+      if (modeWeight[mode] > 0) torqueNm += modeWeight[mode] === 1 ? modeTorqueNm(t, accelerator, brake, MODE_MAPS[mode]) : modeWeight[mode] * modeTorqueNm(t, accelerator, brake, MODE_MAPS[mode]);
+    }
+    return torqueNm;
+  }
+
+  /** ADR 0013: move the map weights toward the selected mode by one tick of the ramp. */
+  function updateModeWeights(driveMode: DriveMode) {
+    const delta = tickS / MODE_RAMP_S;
+    let others = 0;
+    for (const mode of DRIVE_MODES) {
+      if (mode === driveMode) continue;
+      modeWeight[mode] = Math.max(0, modeWeight[mode] - delta);
+      others += modeWeight[mode];
+    }
+    modeWeight[driveMode] = others === 0 ? 1 : 1 - others;
+  }
+
+  function modeTorqueNm(t: number, accelerator: number, brake: number, map: ModeMap): number {
     if (vcu.powerState !== 'READY' || (vcu.gear !== 'D' && vcu.gear !== 'R')) return 0;
     const decision = driveDecision(t);
     if (decision.powerCapKw === 0) return 0;
-    if (brake > 0) return liftOffTorqueNm(t, brake);
-    if (accelerator <= 0) return liftOffTorqueNm(t);
+    if (brake > 0) return liftOffTorqueNm(t, map.liftOffG, brake);
+    if (accelerator <= 0) return liftOffTorqueNm(t, map.liftOffG);
     const maxDischargeKw = inbox.read('BMS_Limits', 'maxDischargeKw');
     if (!isFresh(inbox, 'MCU_Status', t - LIVE_S) || maxDischargeKw === undefined) return 0;
 
     const motorRadS = rpmToRads(inbox.read('MCU_Status', 'motorSpeedRpm') as number);
     const w = Math.abs(motorRadS);
     let availableNm = motorMaxTorqueNm(p, motorRadS);
-    if (w > 0) availableNm = Math.min(availableNm, (Math.min(maxDischargeKw as number, decision.powerCapKw) * 1000) / w);
+    if (w > 0) availableNm = Math.min(availableNm, Math.min(maxDischargeKw as number * 1000, decision.powerCapKw * 1000, map.powerCapW) / w);
 
     const direction = vcu.gear === 'D' ? 1 : -1;
     const limitKmh = vcu.gear === 'D' ? decision.speedCapKmh : Math.min(REVERSE_SPEED_LIMIT_KMH, decision.speedCapKmh);
     const speedKmh = motorRadS * kmhPerRadS * direction;
     const limiter = Math.min(Math.max((limitKmh - speedKmh) / LIMITER_BAND_KMH, 0), 1);
     if (limiter === 0) return 0;
-    return direction * accelerator * availableNm * limiter;
+    const pedal = map.pedalExponent === 1 ? accelerator : accelerator ** map.pedalExponent;
+    return direction * pedal * availableNm * limiter;
   }
 
   /** ADR 0009: generator torque opposes travel only with fresh charge and inverter status. */
-  function liftOffTorqueNm(t: number, brake = 0): number {
+  function liftOffTorqueNm(t: number, liftOffG: number, brake = 0): number {
     if (driveDecision(t).regenDisabled) return 0;
     const freshSince = Math.max(wakeAtS, t - LIVE_S);
     if (!isFresh(inbox, 'MCU_Status', freshSince) || !isFresh(inbox, 'MCU_Vehicle', freshSince)) return 0;
@@ -458,7 +495,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
     if (omega * direction <= 0) return 0;
     const liftFade = Math.min((speedMs - REGEN_START_MS) / (REGEN_FULL_MS - REGEN_START_MS), 1);
     const brakeFade = Math.min((speedMs - REGEN_START_MS) / (BRAKE_REGEN_FULL_MS - REGEN_START_MS), 1);
-    const liftForceN = REGEN_DECEL_G * GRAVITY_MS2 * p.testMassKg * liftFade;
+    const liftForceN = liftOffG * GRAVITY_MS2 * p.testMassKg * liftFade;
     const pedalForceN = brake * Math.min(1, p.tyreRoadFriction) * GRAVITY_MS2 * p.testMassKg;
     const forceN = brake > 0
       ? Math.min(Math.max(liftForceN, pedalForceN), BRAKE_REGEN_DECEL_G * GRAVITY_MS2 * p.testMassKg * brakeFade)
@@ -521,6 +558,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
 
   function publish(t: number, accelerator: number, brake: number, cableConnected: boolean, driveMode: DriveMode) {
     accumulateTrip(t, cableConnected);
+    updateModeWeights(driveMode);
     command
       .set('torqueRequest', torqueRequestNm(t, accelerator, brake))
       .set('contactorRequest', contactorRequest)

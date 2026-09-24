@@ -14,16 +14,16 @@ Notes: Keep modes as a list with an availability flag, so phase 09 OTA can gate 
 
 ## T-002: Eco and Sport torque, power and regen maps
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: The pedal map, discharge power cap and lift-off regen read the mode from the bus. Eco is softer with a lower power cap and stronger lift-off regen. Sport is sharper at part pedal. Mode changes ramp the torque. Write ADR 0013 (modes part).
 Test seam: `createSim()` public API
 Acceptance:
-- [ ] At the same part pedal and speed, wheel torque is Eco < Normal ≤ Sport
-- [ ] Eco battery discharge power stays below its cap, and Eco lift-off regen is at least Normal's
-- [ ] No mode exceeds the official motor power or torque at full pedal
-- [ ] A mode change while driving keeps the torque step within the ADR 0013 ramp
-- [ ] Normal gives identical snapshots to before, and the 0–100, range and regen reference tests pass with unchanged tolerances
+- [x] At the same part pedal and speed, wheel torque is Eco < Normal ≤ Sport
+- [x] Eco battery discharge power stays below its cap, and Eco lift-off regen is at least Normal's
+- [x] No mode exceeds the official motor power or torque at full pedal
+- [x] A mode change while driving keeps the torque step within the ADR 0013 ramp
+- [x] Normal gives identical snapshots to before, and the 0–100, range and regen reference tests pass with unchanged tolerances
 - [ ] Every new value is marked `// estimate` and listed in ADR 0013
 Notes: Do not change official parameters (ADR 0001/0003).
 
