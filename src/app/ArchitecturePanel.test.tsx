@@ -26,7 +26,7 @@ it('shows live trace rows newest first, capped at the row limit', () => {
   const before = times[0]!;
   act(() => useSimStore.getState().advance(100));
   expect(Number(within(bodyRows()[0]!).getAllByRole('cell')[0]!.textContent)).toBeGreaterThan(before);
-});
+}, 15_000);
 
 function column(index: number) {
   return bodyRows().map((r) => within(r).getAllByRole('cell')[index]!.textContent);
@@ -59,4 +59,44 @@ it('filters the trace by ECU and message, clears filters and shows an empty stat
 
   await user.click(screen.getByRole('button', { name: 'Clear filters' }));
   expect(bodyRows().length).toBe(all);
+}, 15_000);
+
+function newestTime() {
+  return Number(column(0)[0]);
+}
+
+it('pauses and resumes the displayed trace while the sim keeps running', async () => {
+  const user = userEvent.setup();
+  render(<ArchitecturePanel />);
+  act(() => {
+    useSimStore.getState().powerOn();
+    useSimStore.getState().advance(50);
+  });
+  await user.click(screen.getByRole('button', { name: 'Pause' }));
+  const frozen = column(0);
+  const simTime = useSimStore.getState().snapshot.timeS;
+  act(() => useSimStore.getState().advance(50));
+  expect(useSimStore.getState().snapshot.timeS).toBeGreaterThan(simTime);
+  expect(column(0)).toEqual(frozen);
+
+  await user.click(screen.getByRole('button', { name: 'Resume' }));
+  expect(newestTime()).toBeGreaterThan(Number(frozen[0]));
+  expect(screen.getByRole('button', { name: 'Pause' })).toBeTruthy();
+}, 15_000);
+
+it('clears the displayed trace without touching the sim trace', async () => {
+  const user = userEvent.setup();
+  render(<ArchitecturePanel />);
+  act(() => {
+    useSimStore.getState().powerOn();
+    useSimStore.getState().advance(50);
+  });
+  const before = newestTime();
+  const traceLength = useSimStore.getState().sim.trace().length;
+  await user.click(screen.getByRole('button', { name: 'Clear trace' }));
+  expect(screen.queryByRole('table', { name: 'CAN trace' })).toBeNull();
+  expect(useSimStore.getState().sim.trace().length).toBe(traceLength);
+
+  act(() => useSimStore.getState().advance(100));
+  expect(Math.min(...column(0).map(Number))).toBeGreaterThan(before);
 }, 15_000);

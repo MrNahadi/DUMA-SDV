@@ -46,13 +46,13 @@ Notes:
 
 ## T-005: Pause, Resume and Clear trace
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Add **Pause**/**Resume** and **Clear trace** buttons that freeze or clear the displayed trace without affecting the sim.
 Test seam: Architecture panel component and `createSim().trace()`
 Acceptance:
-- [ ] Pause freezes the rows while sim time advances, and Resume shows newer frames
-- [ ] Clear trace hides earlier frames and newer frames still appear, while `createSim().trace()` is unchanged
+- [x] Pause freezes the rows while sim time advances, and Resume shows newer frames
+- [x] Clear trace hides earlier frames and newer frames still appear, while `createSim().trace()` is unchanged
 Notes: Use the labels exactly as DESIGN-RULES.md §8 gives them.
 
 ## T-006: Frame signal detail
