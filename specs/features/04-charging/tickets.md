@@ -86,15 +86,15 @@ Notes: IC charge display reads received BMS and VCU frames. Time-to-target uses 
 
 ## T-008: Show charging controls and status
 
-Status: in-progress
+Status: done
 Blocked by: T-002, T-007
 Slice: Replace the Charge placeholder with a panel for source, target, port/session actions, SOC, power and time-to-target.
 Test seam: rendered Charge panel through Testing Library and public store actions
 Acceptance:
-- [ ] Plug in, Unplug, Start charging and Stop charging invoke the public sim controls with clear eligible/disabled states
-- [ ] SOC is the sole display-size value; idle, plugged, charging, complete and stale states are readable with correct unit conversions
-- [ ] The panel is keyboard reachable and has no horizontal scroll at 1366×768
-Notes: Checkpoint after the 600 s iteration timeout. Charge panel, public store actions, focused UI test, and desktop keyboard/viewport e2e test are implemented. Typecheck, lint, 167 unit tests, and build passed. The new e2e test passed; two existing startup waits intermittently timed out in the full suite. Resume full e2e verification and review before marking done.
+- [x] Plug in, Unplug, Start charging and Stop charging invoke the public sim controls with clear eligible/disabled states
+- [x] SOC is the sole display-size value; idle, plugged, charging, complete and stale states are readable with correct unit conversions
+- [x] The panel is keyboard reachable and has no horizontal scroll at 1366×768
+Notes: Charge panel, public store actions, focused UI test, and desktop keyboard/viewport e2e test pass. All five Feedback commands pass. An existing Power on e2e startup wait timed out once at 5 s, then passed on full-suite rerun.
 
 ## T-009: Plot the sampled charge curve
 
