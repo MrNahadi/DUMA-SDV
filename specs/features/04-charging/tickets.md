@@ -137,13 +137,13 @@ Notes: Charge panel exposes 1×, 10×, 30×, 60× and 120×. Loop caps each fram
 
 ## T-012: End-to-end Charging scenario
 
-Status: in-progress
+Status: done
 Blocked by: T-006, T-008, T-009, T-010, T-011
 Slice: Add a Chromium user flow for Charge: Plug in DC, choose a reachable target, Start charging, observe SOC/curve/port, reach target and Unplug; include an AC smoke path.
 Test seam: `e2e/charging.spec.ts` through user actions and visible outputs
 Acceptance:
-- [ ] The DC flow reaches its target and shows a rising SOC, time-to-target, curve and changing port state without console errors
-- [ ] AC flow shows the OBC source and charging progress; neither flow allows driving while plugged
-- [ ] First visible charging feedback occurs within 60 s from first click at 1366×768 with no horizontal scroll
-- [ ] All five Feedback commands pass, including unchanged physics reference bands
-Notes: In-progress checkpoint: added DC and AC Playwright flows. Both reach rising SOC after charging starts, but the chart role=img locator with `Charge curve: DC/AC from` finds no element. First fix moved SOC sampling after start because pre-start display is unavailable; second run exposed this chart failure. Investigate chart sampling/accessible summary next iteration, then run all Feedback commands.
+- [x] The DC flow reaches its target and shows a rising SOC, time-to-target, curve and changing port state without console errors
+- [x] AC flow shows the OBC source and charging progress; neither flow allows driving while plugged
+- [x] First visible charging feedback occurs within 60 s from first click at 1366×768 with no horizontal scroll
+- [x] All five Feedback commands pass, including unchanged physics reference bands
+Notes: DC and AC browser flows pass after chart sampling was made reliable at 120×. All five Feedback commands pass. Existing regen e2e missed its brief Regen display once under full-suite load, then passed on a full-suite rerun.

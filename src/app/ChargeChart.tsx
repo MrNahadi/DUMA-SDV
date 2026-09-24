@@ -16,7 +16,7 @@ const SAMPLE_PERIOD_S = 1;
 
 export function appendChargeSample(history: readonly ChargeSample[], snapshot: SimSnapshot): ChargeSample[] {
   const last = history.at(-1);
-  if (last && snapshot.timeS - last.timeS < SAMPLE_PERIOD_S) return [...history];
+  if (last && snapshot.timeS - last.timeS < SAMPLE_PERIOD_S) return history as ChargeSample[];
   const display = snapshot.chargeDisplay;
   const available = display.soc !== null && display.powerW !== null && display.session !== null;
   const sample: ChargeSample = {
@@ -32,8 +32,7 @@ export function ChargeChart({ snapshot }: { snapshot: SimSnapshot }) {
   const [samples, setSamples] = useState<ChargeSample[]>([]);
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setSamples((previous) => appendChargeSample(previous, snapshot)));
-    return () => cancelAnimationFrame(frame);
+    queueMicrotask(() => setSamples((previous) => appendChargeSample(previous, snapshot)));
   }, [snapshot]);
 
   useEffect(() => {
