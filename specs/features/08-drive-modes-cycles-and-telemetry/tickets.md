@@ -179,7 +179,7 @@ Test seam: simStore actions; ModeControl, DrivePanel and CyclesPanel component t
 Acceptance:
 - [x] During a run, setting the mode through the store or clicking the Drive view control leaves the mode unchanged
 - [x] Clicking Eco while the car is OFF shows Eco as selected (`aria-pressed`), and it's still selected after READY
-- [ ] Existing mode control, DrivePanel and CyclesPanel tests pass
+- [x] Existing mode control, DrivePanel and CyclesPanel tests pass
 Notes: R10 and R15. The T-001 bus behaviour stays as it is. Only what the control shows changes.
 
 ## T-016: Enforce the Eco battery discharge cap
