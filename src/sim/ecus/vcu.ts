@@ -12,6 +12,7 @@ import { GEARS, POWER_STATES, STARTUP_STEPS, type Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
 import { GRAVITY_MS2, motorMaxTorqueNm } from '../vehicle';
 import { jPerMToWhPerKm, kmhToMs, msToKmh, rpmToRads } from '../units';
+import type { FaultKey } from '../faults';
 import { INITIAL_SW_VERSION, TIME_EPS_S, createBootTracker, isFresh } from './ecu';
 
 export type PowerState = (typeof POWER_STATES)[number];
@@ -46,7 +47,8 @@ export type StartupFailReason =
   | 'prechargeFailed'
   | 'prechargeTimeout'
   | 'contactorTimeout'
-  | 'readyTimeout';
+  | 'readyTimeout'
+  | 'faultActive';
 
 const WAKE = 0;
 const SELF_CHECK = 1;
@@ -114,7 +116,7 @@ export interface Vcu {
   step(t: number, powerButtonPressed: boolean, driver: Readonly<DriverInputs>): void;
 }
 
-export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): Vcu {
+export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, faultStatus: (key: FaultKey) => 'active' | 'stored' | null): Vcu {
   const boot = createBootTracker(VCU_WAKE_S);
   const bootFrame = bus.writer('VCU', 'VCU_Boot');
   const command = bus.writer('VCU', 'VCU_Command');
@@ -122,7 +124,8 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
   const rangeFrame = bus.writer('VCU', 'VCU_Range');
   const recoveryFrame = bus.writer('VCU', 'VCU_Recovery');
   const chargeFrame = bus.writer('VCU', 'VCU_Charge');
-  const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Status', 'MCU_Vehicle']);
+  const decisionFrame = bus.writer('VCU', 'VCU_DriveDecision');
+  const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Status', 'MCU_Vehicle', 'BMS_DTC', 'MCU_DTC']);
   bus.setSenderActive('VCU', false);
 
   const packVMin = p.seriesCells * 2.5;
@@ -170,6 +173,22 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
       } else vcu.chargeAuthorized = false;
     },
   };
+
+  function driveDecision(t: number) {
+    const low12V = faultStatus('low12V') === 'active';
+    const bmsFresh = isFresh(inbox, 'BMS_DTC', Math.max(wakeAtS, t - 0.25));
+    const mcuFresh = isFresh(inbox, 'MCU_DTC', Math.max(wakeAtS, t - 0.25));
+    const bmsBits = bmsFresh ? inbox.read('BMS_DTC', 'activeBits') as number : 0;
+    const mcuBits = mcuFresh ? inbox.read('MCU_DTC', 'activeBits') as number : 0;
+    const insulation = (bmsBits & 2) !== 0;
+    const motorHot = (mcuBits & 1) !== 0;
+    const cellHot = (bmsBits & 1) !== 0;
+    const unavailable = !bmsFresh || !mcuFresh;
+    const reason = insulation ? 'insulationFault' : unavailable ? 'unavailable' : motorHot ? 'motorOverTemperature' : low12V ? 'low12V' : cellHot ? 'cellOverTemperature' : 'normal';
+    const powerCapKw = insulation || unavailable ? 0 : Math.min(motorHot ? 30 : Infinity, low12V ? 20 : Infinity);
+    const speedCapKmh = Math.min(motorHot ? 50 : Infinity, low12V ? 40 : Infinity, speedLimitKmh);
+    return { reason, powerCapKw: Number.isFinite(powerCapKw) ? powerCapKw : 1000, speedCapKmh, regenDisabled: insulation || motorHot || unavailable };
+  }
 
   /** Run the power state machine. Returns true if the VCU is running and publishing this tick. */
   function updatePower(t: number, buttonPressed: boolean, chargeWake: boolean): boolean {
@@ -283,8 +302,9 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
         break;
       case SELF_CHECK:
         if (anySelfCheckFailed()) return fail(SELF_CHECK, 'selfCheckFailed', t);
+        if (faultStatus('low12V') === 'active' || (isFresh(inbox, 'BMS_DTC', wakeAtS) && ((inbox.read('BMS_DTC', 'activeBits') as number) & 2) !== 0)) return fail(SELF_CHECK, 'faultActive', t);
         qualifyBms();
-        if (bmsValidFrames >= BMS_QUALIFY_FRAMES && isFresh(inbox, 'BMS_Limits', wakeAtS) && mcuStandby(t)) {
+        if (bmsValidFrames >= BMS_QUALIFY_FRAMES && isFresh(inbox, 'BMS_Limits', wakeAtS) && isFresh(inbox, 'BMS_DTC', wakeAtS) && isFresh(inbox, 'MCU_DTC', wakeAtS) && mcuStandby(t)) {
           finishStep(SELF_CHECK, t);
           vcu.powerState = 'STARTING';
           contactorRequest = 'precharge';
@@ -397,6 +417,8 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
    */
   function torqueRequestNm(t: number, accelerator: number, brake: number): number {
     if (vcu.powerState !== 'READY' || (vcu.gear !== 'D' && vcu.gear !== 'R')) return 0;
+    const decision = driveDecision(t);
+    if (decision.powerCapKw === 0) return 0;
     if (brake > 0) return liftOffTorqueNm(t, brake);
     if (accelerator <= 0) return liftOffTorqueNm(t);
     const maxDischargeKw = inbox.read('BMS_Limits', 'maxDischargeKw');
@@ -405,10 +427,10 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     const motorRadS = rpmToRads(inbox.read('MCU_Status', 'motorSpeedRpm') as number);
     const w = Math.abs(motorRadS);
     let availableNm = motorMaxTorqueNm(p, motorRadS);
-    if (w > 0) availableNm = Math.min(availableNm, ((maxDischargeKw as number) * 1000) / w);
+    if (w > 0) availableNm = Math.min(availableNm, (Math.min(maxDischargeKw as number, decision.powerCapKw) * 1000) / w);
 
     const direction = vcu.gear === 'D' ? 1 : -1;
-    const limitKmh = vcu.gear === 'D' ? speedLimitKmh : REVERSE_SPEED_LIMIT_KMH;
+    const limitKmh = vcu.gear === 'D' ? decision.speedCapKmh : Math.min(REVERSE_SPEED_LIMIT_KMH, decision.speedCapKmh);
     const speedKmh = motorRadS * kmhPerRadS * direction;
     const limiter = Math.min(Math.max((limitKmh - speedKmh) / LIMITER_BAND_KMH, 0), 1);
     if (limiter === 0) return 0;
@@ -417,6 +439,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
 
   /** ADR 0009: generator torque opposes travel only with fresh charge and inverter status. */
   function liftOffTorqueNm(t: number, brake = 0): number {
+    if (driveDecision(t).regenDisabled) return 0;
     const freshSince = Math.max(wakeAtS, t - LIVE_S);
     if (!isFresh(inbox, 'MCU_Status', freshSince) || !isFresh(inbox, 'MCU_Vehicle', freshSince)) return 0;
     if (!isFresh(inbox, 'BMS_Limits', Math.max(wakeAtS, t - BMS_LIVE_S))) return 0;
@@ -457,12 +480,13 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     const accepted = isFresh(inbox, 'BMS_Charge', freshSince) &&
       inbox.read('BMS_Charge', 'accepted') === 'yes' &&
       (inbox.read('BMS_Charge', 'maxExternalChargeKw') as number) > 0;
-    vcu.chargeAuthorized = eligible && accepted && !shuttingDown && (vcu.powerState === 'READY' || vcu.powerState === 'CHARGING' || vcu.powerState === 'ACCESSORY');
+    vcu.chargeAuthorized = eligible && accepted && !shuttingDown && faultStatus('low12V') !== 'active' && driveDecision(t).reason !== 'insulationFault' && (vcu.powerState === 'READY' || vcu.powerState === 'CHARGING' || vcu.powerState === 'ACCESSORY');
     if (vcu.chargeAuthorized) vcu.powerState = 'CHARGING';
     else if (vcu.powerState === 'CHARGING' && !requested) vcu.powerState = 'ACCESSORY';
     chargeFrame
       .set('requested', requested ? 'yes' : 'no')
       .set('authorized', vcu.chargeAuthorized ? 'yes' : 'no')
+      .set('faultBlock', faultStatus('low12V') === 'active' || driveDecision(t).reason === 'insulationFault' ? 'yes' : 'no')
       .set('source', driver.chargeSource ?? 'none')
       .set('targetSoc', driver.chargeTargetSoc * 100)
       .set('connected', driver.cableConnected ? 'yes' : 'no')
@@ -501,8 +525,10 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
       .set('powerState', vcu.powerState)
       .set('gear', vcu.gear)
       .set('ready', vcu.powerState === 'READY' ? 'yes' : 'no')
-      .set('speedLimitKmh', vcu.gear === 'R' ? REVERSE_SPEED_LIMIT_KMH : speedLimitKmh)
+      .set('speedLimitKmh', vcu.gear === 'R' ? Math.min(REVERSE_SPEED_LIMIT_KMH, driveDecision(t).speedCapKmh) : driveDecision(t).speedCapKmh)
       .set('startupStep', current >= 0 ? STARTUP_STEPS[current]! : 'none');
+    const decision = driveDecision(t);
+    decisionFrame.set('reason', decision.reason).set('powerCapKw', decision.powerCapKw).set('speedCapKmh', decision.speedCapKmh);
 
     // Remaining usable energy from the SOC the BMS reports, over the consumption.
     // Until a BMS_Status has arrived since waking there is no SOC, so the range is flagged invalid.

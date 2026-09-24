@@ -50,14 +50,14 @@ Notes: Preserve the existing BMS limit to VCU torque path and normal regen behav
 
 ## T-005: Apply limp and safety responses
 
-Status: open
+Status: done
 Blocked by: T-003, T-004
 Slice: Apply the ADR's severe limp and safe startup/charging responses for the remaining fault types.
 Test seam: Public `createSim()` snapshots and bus trace for drive, startup and AC/DC sessions
 Acceptance:
-- [ ] At least one ADR-designated fault gives a distinct stronger limp cap and a traceable VCU decision
-- [ ] Unsafe startup, traction or charging paths are refused or stopped as the ADR specifies
-- [ ] Clearing a log cannot restore unsafe power while a condition is active; fault-free charge/regen regressions pass
+- [x] At least one ADR-designated fault gives a distinct stronger limp cap and a traceable VCU decision
+- [x] Unsafe startup, traction or charging paths are refused or stopped as the ADR specifies
+- [x] Clearing a log cannot restore unsafe power while a condition is active; fault-free charge/regen regressions pass
 Notes: Keep BMS driving regen allowance separate from external charge permission.
 
 ## T-006: Show bus-derived driver warning

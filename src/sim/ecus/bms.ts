@@ -76,6 +76,7 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
   }
 
   function contactorRequest(t: number): string {
+    if (options.faultStatus('insulationFault') === 'active') return 'open';
     const commandT = inbox.frameTimeS('VCU_Command');
     if (commandT === undefined || commandT < boot.bootedAtS - TIME_EPS_S || t - commandT > COMMAND_TIMEOUT_S + TIME_EPS_S) {
       return 'open';
@@ -187,18 +188,20 @@ export function createBms(bus: Bus, p: Readonly<VehicleParams>, options: BmsOpti
         .set('contactorState', contactorState(hv))
         .set('prechargeState', prechargeState);
       const cellOverTemperature = options.faultStatus('cellOverTemperature') === 'active';
+      const insulationFault = options.faultStatus('insulationFault') === 'active';
       limits
-        .set('maxDischargeKw', cellOverTemperature ? maxDischargeKw * 0.5 : maxDischargeKw)
-        .set('maxChargeKw', cellOverTemperature ? 0 : maxChargeKw());
+        .set('maxDischargeKw', insulationFault ? 0 : cellOverTemperature ? maxDischargeKw * 0.5 : maxDischargeKw)
+        .set('maxChargeKw', cellOverTemperature || insulationFault ? 0 : maxChargeKw());
       const chargeRequested = isFresh(inbox, 'VCU_Charge', Math.max(boot.bootedAtS, t - COMMAND_TIMEOUT_S)) &&
         inbox.read('VCU_Charge', 'requested') === 'yes';
       const targetPct = inbox.read('VCU_Charge', 'targetSoc') as number | undefined;
-      const accepted = chargeRequested && phase === 'closed' &&
+      const accepted = chargeRequested && phase === 'closed' && !cellOverTemperature && !insulationFault &&
         bms.soc < 1 && targetPct !== undefined && bms.soc * 100 < targetPct &&
         hv.packTerminalV > 0 && hv.packTerminalV < 620;
       // ADR 0010: separate external allowance; BMS_Limits.maxChargeKw remains regen-only.
       chargeFrame
         .set('accepted', accepted ? 'yes' : 'no')
+        .set('faultBlock', cellOverTemperature || insulationFault ? 'yes' : 'no')
         .set('maxExternalChargeKw', accepted ? Math.min(150, 300 * hv.packTerminalV / 1000) : 0);
     },
   };

@@ -33,6 +33,7 @@ const failReasons: Record<StartupFailReason, string> = {
   prechargeTimeout: 'Pre-charge took too long.',
   contactorTimeout: 'The contactors did not close in time.',
   readyTimeout: 'The car did not reach READY in time.',
+  faultActive: 'Startup is unavailable while a fault is active.',
 };
 
 function refusalHint(refusal: GearRefusal, gear: Gear): string {

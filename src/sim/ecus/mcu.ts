@@ -8,6 +8,7 @@
  */
 
 import type { Bus } from '../bus';
+import type { FaultKey } from '../faults';
 import type { VehicleParams } from '../vehicle';
 import { motorMaxTorqueNm } from '../vehicle';
 import { msToKmh, radsToRpm } from '../units';
@@ -39,7 +40,7 @@ export interface Mcu {
   step(t: number, powered: boolean, sensors: McuSensors): void;
 }
 
-export function createMcu(bus: Bus, p: Readonly<VehicleParams>): Mcu {
+export function createMcu(bus: Bus, p: Readonly<VehicleParams>, faultStatus: (key: FaultKey) => 'active' | 'stored' | null): Mcu {
   const boot = createBootTracker(BOOT_S);
   const bootFrame = bus.writer('MCU', 'MCU_Boot');
   const status = bus.writer('MCU', 'MCU_Status');
@@ -78,7 +79,7 @@ export function createMcu(bus: Bus, p: Readonly<VehicleParams>): Mcu {
       if (run) {
         const request = inbox.read('VCU_Command', 'torqueRequest') as number;
         const limit = motorMaxTorqueNm(p, motorSpeedRadS);
-        mcu.torqueNm = Math.min(Math.max(request, -limit), limit);
+        mcu.torqueNm = faultStatus('motorOverTemperature') === 'active' && request * motorSpeedRadS < 0 ? 0 : Math.min(Math.max(request, -limit), limit);
       } else {
         mcu.torqueNm = 0;
       }

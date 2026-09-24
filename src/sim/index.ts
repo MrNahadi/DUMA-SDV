@@ -80,7 +80,7 @@ export interface SimInputs {
   chargeTargetSoc: number;
 }
 
-export type ChargeRefusal = 'notPlugged' | 'alreadyPlugged' | 'notParked' | 'moving' | 'targetNotAboveSoc' | 'sessionActive' | 'notCharging' | 'noSource';
+export type ChargeRefusal = 'notPlugged' | 'alreadyPlugged' | 'notParked' | 'moving' | 'targetNotAboveSoc' | 'sessionActive' | 'notCharging' | 'noSource' | 'faultActive';
 export interface ChargeSnapshot {
   source: 'AC' | 'DC' | null;
   connected: boolean;
@@ -202,10 +202,10 @@ export function createSim(options: SimOptions = {}): Sim {
   // The ECUs, talking over the bus.
   const bus = createBus(busCatalogue, { tickMs: TICK_MS });
   const chargePath = bus.subscribe('ChargePath', ['VCU_Charge', 'BMS_Charge']);
-  const vcu = createVcu(bus, p, TICK_S);
   const faultRecords = createFaultRecords();
+  const vcu = createVcu(bus, p, TICK_S, faultRecords.statusOf);
   const bms = createBms(bus, p, { tickS: TICK_S, initialSoc: soc, faultStatus: faultRecords.statusOf });
-  const mcu = createMcu(bus, p);
+  const mcu = createMcu(bus, p, faultRecords.statusOf);
   const ic = createIc(bus, p.usableEnergyJ);
   const obc = createObc(bus, p);
   const diagnosticBus = createDiagnosticBus(bus, faultRecords.statusOf);
@@ -221,6 +221,8 @@ export function createSim(options: SimOptions = {}): Sim {
   let chargeCommand: SimInputs['chargeCommand'] | null = null;
   let faultCommand: FaultCommand | null = null;
   const charge: ChargeSnapshot = { source: null, connected: false, session: 'idle', authorized: false, targetSoc: 1, powerW: 0, inputPowerW: 0, obcOutputPowerW: 0, lossPowerW: 0, refusal: null };
+  const chargeBlockingFault = (t: number) => isFresh(chargePath, 'VCU_Charge', t - 0.1) && chargePath.read('VCU_Charge', 'faultBlock') === 'yes' ||
+    isFresh(chargePath, 'BMS_Charge', t - 0.1) && chargePath.read('BMS_Charge', 'faultBlock') === 'yes';
 
   function applyChargeCommand() {
     const command = chargeCommand;
@@ -245,6 +247,7 @@ export function createSim(options: SimOptions = {}): Sim {
       else if (!parked) charge.refusal = 'notParked';
       else if (!stopped) charge.refusal = 'moving';
       else if (charge.targetSoc <= pack.soc) charge.refusal = 'targetNotAboveSoc';
+      else if (chargeBlockingFault(tick * TICK_S)) charge.refusal = 'faultActive';
       else charge.session = 'charging';
     } else if (command === 'stop') {
       if (charge.session !== 'charging') charge.refusal = 'notCharging';
@@ -277,6 +280,10 @@ export function createSim(options: SimOptions = {}): Sim {
       isFresh(chargePath, 'BMS_Charge', since) &&
       chargePath.read('BMS_Charge', 'accepted') === 'yes' &&
       (chargePath.read('BMS_Charge', 'maxExternalChargeKw') as number) > 0;
+    if (charge.session === 'charging' && chargeBlockingFault(t)) {
+      charge.session = 'stopped';
+      charge.authorized = false;
+    }
   }
 
   /**

@@ -16,6 +16,7 @@ const refusalText = {
   sessionActive: 'Stop charging before unplugging.',
   notCharging: 'There is no active session.',
   noSource: 'Choose AC or DC.',
+  faultActive: 'Charging is unavailable while a fault is active.',
 };
 
 export function ChargePanel() {
