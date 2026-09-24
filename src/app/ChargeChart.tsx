@@ -54,8 +54,8 @@ export function ChargeChart({ snapshot }: { snapshot: SimSnapshot }) {
         axes: [{ label: 'Sim time (min)' }, { label: 'SOC (%)' }],
         series: [
           {},
-          { label: 'AC', stroke: style.getPropertyValue('--accent').trim(), spanGaps: false },
-          { label: 'DC', stroke: style.getPropertyValue('--ok').trim(), spanGaps: false },
+          { label: 'AC', stroke: style.getPropertyValue('--data-ac').trim(), spanGaps: false },
+          { label: 'DC', stroke: style.getPropertyValue('--data-dc').trim(), spanGaps: false },
         ],
       }, data, host.current);
     });

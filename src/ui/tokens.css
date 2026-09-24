@@ -21,6 +21,10 @@
   --warn-soft: #f8f1e8;
   --fault-soft: #f7e9e8;
 
+  /* Chart data: distinct from UI accent and status colours (DESIGN-RULES.md). */
+  --data-ac: #0072b2;
+  --data-dc: #c65300;
+
   /* Type */
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'Geist Mono Variable', ui-monospace, 'SFMono-Regular', monospace;

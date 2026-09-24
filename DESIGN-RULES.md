@@ -37,7 +37,7 @@ Tokens are defined once on `:root` in `src/ui/tokens.css`. Hex values are never 
 | `--*-soft` | same hue at ~10% on white | Status backgrounds (badges, highlighted rows) |
 
 - Status is **never shown by colour alone**. It always comes with an icon or a word.
-- Chart series colours follow the dataviz skill's palette, validated in the feature that adds charts. They are data colours, not UI colours.
+- Chart series use dedicated data colours, separate from UI accent and status colours. The Charge curve uses `--data-ac` for AC (`#0072B2`, blue) and `--data-dc` for DC (`#C65300`, orange). Both are legible against the white chart surface; series must also be identified in words. Add new data series colours here before using them in another chart.
 - The 3D highlight colours for faults and energy flow use `--warn`, `--fault`, `--ok` and `--accent`, and nothing else.
 
 ## 4. Type
