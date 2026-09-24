@@ -110,12 +110,12 @@ Notes: The existing module meshes add no new geometry or draw calls. The static 
 
 ## T-010: End-to-end Fault scenario
 
-Status: in-progress
+Status: done
 Blocked by: T-004, T-005, T-006, T-007, T-008, T-009
 Slice: Add headless and Chromium fault-during-driving flows from injection through DTC, warning, power cap, x-ray location, recovery and confirmed log clear.
 Test seam: Public `createSim()` scenario and `e2e/faults.spec.ts` user actions
 Acceptance:
-- [ ] Repeated headless runs produce identical snapshots and trace, including BMS DTC and VCU derate
-- [ ] Chromium flow shows visible fault feedback within 60 s from first click and clears it through the user controls without console errors
-- [ ] All five Feedback commands pass with unchanged startup, drive, regen and charge reference checks
+- [x] Repeated headless runs produce identical snapshots and trace, including BMS DTC and VCU derate
+- [x] Chromium flow shows visible fault feedback within 60 s from first click and clears it through the user controls without console errors
+- [x] All five Feedback commands pass with unchanged startup, drive, regen and charge reference checks
 Notes: Guided demo playback is scheduled for phase 10.
