@@ -144,3 +144,89 @@ Acceptance:
 - [x] The spec passes in headless Chromium
 - [x] The downloaded CSV has the expected header and at least one row per 0.1 s of the cycle
 Notes: Add the scenario to `src/sim/scenarios` if the guided demo (phase 10) can reuse it.
+
+## T-013: Cycle runs honour the time scale
+
+Status: open
+Blocked by:
+Slice: `step(seconds)` on the cycle runner advances sim time by exactly the requested amount, carrying any part-step over to the next call, so a cycle in the Cycles view runs at the selected time scale. The driver still updates the pedals every 0.1 s of sim time. (Review finding #1.)
+Test seam: Cycle runner public API (step, status)
+Acceptance:
+- [ ] 100 calls of `step(0.01)` give the same elapsed time and snapshot as one `step(1)`
+- [ ] Elapsed sim time never runs ahead of the total requested time by more than one sim tick
+- [ ] The T-004 tracking, determinism and speed tests and the T-005 Wh/km tests pass with unchanged tolerances
+Notes: Review of 696546a..07e4493. The UI calls advance(1–2 ticks) per frame at 1×, so the current behaviour makes a cycle run about 6× real time.
+
+## T-014: Cycle runs start from rest and fail cleanly
+
+Status: open
+Blocked by: T-013
+Slice: A run started while the car is moving first brings it to rest, then starts the cycle clock, so results don't depend on earlier driving. During a run, if the car leaves READY or D (power off, a fault response, or a gear request), the run ends as `failed` with a reason, the pedals are released, and no result is reported. A run that covers no distance reports no result. The Cycles view shows the failure reason. (Review findings #2 and #4.)
+Test seam: Cycle runner public API; CyclesPanel component test
+Acceptance:
+- [ ] Starting Urban at 80 km/h gives the same Wh/km as starting from rest
+- [ ] Power off, an injected fault that drops READY, and a shift to N mid-run each end the run as failed with a reason and no result
+- [ ] A result is never reported with zero distance or a non-finite Wh/km
+- [ ] The Cycles view shows the failure reason instead of a result
+Notes: R8, R9 and R11.
+
+## T-015: Drive mode is locked during a run and shown when chosen
+
+Status: open
+Blocked by:
+Slice: While a cycle is running, the mode can't change from any view: the store ignores mode changes and every mode control is disabled. The mode control shows the mode the driver last chose as selected, including while the car is OFF, and the bus mode still appears in the snapshot and trace. (Review findings #3 and #8.)
+Test seam: simStore actions; ModeControl, DrivePanel and CyclesPanel component tests
+Acceptance:
+- [ ] During a run, setting the mode through the store or clicking the Drive view control leaves the mode unchanged
+- [ ] Clicking Eco while the car is OFF shows Eco as selected (`aria-pressed`), and it's still selected after READY
+- [ ] Existing mode control, DrivePanel and CyclesPanel tests pass
+Notes: R10 and R15. The T-001 bus behaviour stays as it is. Only what the control shows changes.
+
+## T-016: Enforce the Eco battery discharge cap
+
+Status: open
+Blocked by:
+Slice: In Eco, battery discharge power is limited to `ECO_DISCHARGE_CAP_W` in the torque path, alongside the existing BMS discharge limit, not only checked in a test. (Review finding #6.)
+Test seam: `createSim()` public API
+Acceptance:
+- [ ] Full pedal in Eco with high motor and inverter losses (hot motor, low pack voltage) keeps battery discharge power at or below the cap
+- [ ] Normal and Sport snapshots are unchanged, and the 0–100, range and regen reference tests pass with unchanged tolerances
+Notes: R4, ADR 0013. Do not change official parameters.
+
+## T-017: Free-drive telemetry and export from the Drive view
+
+Status: open
+Blocked by: T-015
+Slice: The app keeps a recorder for free driving that samples every 0.1 s of sim time while no cycle is running, with target speed empty. The Drive view gets **Export CSV** for that log. Export file names use the run's length (last sample time minus first), not the absolute sim time. The free-run label is `drive`. (Review findings #5 and #7.)
+Test seam: simStore state; ExportCsvButton and DrivePanel component tests with a stubbed download function
+Acceptance:
+- [ ] After 60 s of free driving, the Drive view export passes CSV text with about 600 rows and a `drive-<mode>-60s.csv` file name
+- [ ] A cycle export after earlier free driving is named with the cycle's length, not the absolute sim time
+- [ ] An empty free-drive log shows a message and saves nothing
+- [ ] Reset clears the free-drive log
+Notes: R12, R13, R17 and the T-010 slice. Keep the one-hour cap.
+
+## T-018: Cycle chart: SOC axis, reset and redraw cost
+
+Status: open
+Blocked by: T-013
+Slice: SOC gets its own labelled 0–100 % axis. The chart clears when there are no samples (after a reset). Chart data and mode lists are rebuilt only when they change, not on every frame. (Review findings #9 and #10.)
+Test seam: CycleChart component test and its pure series-building function; `createSim()` snapshot
+Acceptance:
+- [ ] The SOC scale has a labelled axis with a fixed 0–100 % range
+- [ ] With no samples, the chart shows no series data
+- [ ] Series data isn't rebuilt when the sample count hasn't changed
+- [ ] `snapshot.driveModes` is the same array between snapshots while availability is unchanged
+Notes: R16 and R18.
+
+## T-019: Review follow-up regression sweep
+
+Status: open
+Blocked by: T-013, T-014, T-015, T-016, T-017, T-018
+Slice: Run every Feedback command and every reference and e2e test. Extend `e2e/cycles.spec.ts` to check that the exported file name ends with the cycle's length in seconds (±1 s). Fix any breakage without widening tolerances.
+Test seam: `npm test` and `npm run e2e`
+Acceptance:
+- [ ] typecheck, lint, test, build and e2e all pass
+- [ ] The cycles e2e test checks the file name duration
+- [ ] Reference test tolerances are unchanged
+Notes:
