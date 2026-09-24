@@ -102,6 +102,13 @@ export const busCatalogue: Catalogue = Object.freeze([
     ],
   },
   {
+    id: 0x105, name: 'VCU_DTC', sender: 'VCU', periodMs: 100,
+    signals: [
+      { name: 'activeBits', unit: 'bits', scale: 1 },
+      { name: 'storedBits', unit: 'bits', scale: 1 },
+    ],
+  },
+  {
     id: 0x200,
     name: 'BMS_Status',
     sender: 'BMS',
@@ -135,6 +142,13 @@ export const busCatalogue: Catalogue = Object.freeze([
     ],
   },
   {
+    id: 0x203, name: 'BMS_DTC', sender: 'BMS', periodMs: 100,
+    signals: [
+      { name: 'activeBits', unit: 'bits', scale: 1 },
+      { name: 'storedBits', unit: 'bits', scale: 1 },
+    ],
+  },
+  {
     id: 0x300,
     name: 'MCU_Status',
     sender: 'MCU',
@@ -152,5 +166,12 @@ export const busCatalogue: Catalogue = Object.freeze([
     sender: 'MCU',
     periodMs: 20,
     signals: [{ name: 'vehicleSpeedKmh', unit: 'km/h', scale: 0.01 }],
+  },
+  {
+    id: 0x302, name: 'MCU_DTC', sender: 'MCU', periodMs: 100,
+    signals: [
+      { name: 'activeBits', unit: 'bits', scale: 1 },
+      { name: 'storedBits', unit: 'bits', scale: 1 },
+    ],
   },
 ]);

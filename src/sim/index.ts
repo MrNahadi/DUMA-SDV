@@ -7,6 +7,7 @@ import { createHvCircuit, createPack, type ContactorStates } from './battery';
 import { GEARS, busCatalogue, createBus, type Frame } from './bus';
 import { isFresh } from './ecus/ecu';
 import { createFaultRecords, type DiagnosticsSnapshot, type FaultCommand } from './faults';
+import { createDiagnosticBus } from './faults/bus';
 import { createObc } from './ecus/obc';
 import {
   STARTUP_STEPS,
@@ -207,6 +208,7 @@ export function createSim(options: SimOptions = {}): Sim {
   const ic = createIc(bus, p.usableEnergyJ);
   const obc = createObc(bus, p);
   const faultRecords = createFaultRecords();
+  const diagnosticBus = createDiagnosticBus(bus, faultRecords.statusOf);
 
   let tick = 0;
   let powerButton = false;
@@ -317,6 +319,7 @@ export function createSim(options: SimOptions = {}): Sim {
     mcuSensors.dcLinkV = hv.dcLinkV;
     mcuSensors.motorSpeedRadS = dynamics.motorSpeedRadS;
     mcu.step(t, vcu.kl15, mcuSensors);
+    diagnosticBus.publish();
     ic.step(t, vcu.kl15);
     updateChargePath(t);
 
@@ -405,7 +408,7 @@ export function createSim(options: SimOptions = {}): Sim {
       return {
         tick,
         timeS: tick * TICK_S,
-        diagnostics: faultRecords.snapshot(),
+        diagnostics: { ...faultRecords.snapshot(), busStatus: diagnosticBus.snapshot(tick * TICK_S) },
         powerState: vcu.powerState,
         charge: { ...charge },
         chargeDisplay: { ...ic.chargeDisplay },

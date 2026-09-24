@@ -26,14 +26,14 @@ Notes: History is bounded to one record per catalogue key and uses sim time only
 
 ## T-003: Publish ECU DTCs on the bus
 
-Status: open
+Status: done
 Blocked by: T-002
 Slice: Have the owning ECUs publish fault status on catalogue-declared CAN frames and expose it through the public trace.
 Test seam: `createSim().trace()`, `snapshot()` and `setMessageDropped()`
 Acceptance:
-- [ ] The BMS, MCU and VCU publish only their own fault status with unique catalogue IDs and declared signals
-- [ ] Active and stored transitions are visible in the trace with deterministic timestamps
-- [ ] Dropped diagnostic messages do not masquerade as fresh healthy state
+- [x] The BMS, MCU and VCU publish only their own fault status with unique catalogue IDs and declared signals
+- [x] Active and stored transitions are visible in the trace with deterministic timestamps
+- [x] Dropped diagnostic messages do not masquerade as fresh healthy state
 Notes: The Architecture trace UI remains phase 06.
 
 ## T-004: Derate drive power for cell over-temperature

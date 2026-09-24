@@ -17,6 +17,7 @@ export type FaultRecord = (typeof faultCatalogue)[number] & {
 export interface DiagnosticsSnapshot {
   records: FaultRecord[];
   lastAction: { command: FaultCommand; result: FaultActionResult } | null;
+  busStatus: import('./bus').DiagnosticBusStatus;
 }
 
 export function createFaultRecords() {
@@ -59,7 +60,10 @@ export function createFaultRecords() {
 
   return {
     apply,
-    snapshot(): DiagnosticsSnapshot {
+    statusOf(key: FaultKey): 'active' | 'stored' | null {
+      return records.get(key)?.status ?? null;
+    },
+    snapshot(): Pick<DiagnosticsSnapshot, 'records' | 'lastAction'> {
       return {
         records: faultCatalogue.flatMap((fault) => {
           const record = records.get(fault.key);
