@@ -99,7 +99,7 @@ Blocked by: T-004, T-008
 Slice: Run the full suites and fix anything the new messages or panel broke, without widening tolerances.
 Test seam: Existing test suites
 Acceptance:
-- [ ] `npm run typecheck`, `lint`, `test`, `build` and `e2e` all pass
+- [x] `npm run typecheck`, `lint`, `test`, `build` and `e2e` all pass
 Notes:
 
 ## T-010: Energy end-to-end scenario
