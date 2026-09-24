@@ -128,6 +128,7 @@ describe('IC dashboard model (T-005, R4)', () => {
     sim.step(100);
     const d = sim.snapshot().dashboard;
     expect(d).toEqual({
+      diagnostics: { availability: 'unavailable', warning: null, driveStatus: 'unavailable' },
       speedMs: null,
       powerW: null,
       maxChargeKw: null,

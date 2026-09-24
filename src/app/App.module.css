@@ -18,7 +18,7 @@
 }
 
 .withDashboard {
-  grid-template-rows: var(--topbar-h) minmax(0, 1fr) 112px;
+  grid-template-rows: var(--topbar-h) minmax(0, 1fr) 120px;
   grid-template-areas:
     'top top top'
     'rail stage panel'

@@ -45,3 +45,29 @@ it('keeps off and stale power unavailable with no live segment', () => {
   expect(metric.textContent).not.toContain('Regen');
   expect((metric.querySelector('[data-testid="power-fill"]') as HTMLElement).style.width).toBe('0%');
 });
+
+it('shows a plain-language reduced-power warning, limp cue and unavailable status', () => {
+  render(<DashboardStrip />);
+  const previous = useSimStore.getState().snapshot;
+  act(() => useSimStore.setState({ snapshot: {
+    ...previous, timeS: previous.timeS + 1, powerState: 'READY',
+    dashboard: { ...previous.dashboard, diagnostics: { availability: 'available', warning: { severity: 'amber', text: 'Battery too hot' }, driveStatus: 'reducedPower' } },
+  } }));
+  expect(screen.getByRole('status').textContent).toContain('Battery too hot');
+  expect(screen.getByRole('status').textContent).toContain('Reduced power');
+  expect(screen.getByRole('status').textContent).not.toContain('P0A7E');
+
+  const faulted = useSimStore.getState().snapshot;
+  act(() => useSimStore.setState({ snapshot: {
+    ...faulted, timeS: faulted.timeS + 1,
+    dashboard: { ...faulted.dashboard, diagnostics: { availability: 'available', warning: { severity: 'amber', text: 'Drive motor too hot' }, driveStatus: 'limp' } },
+  } }));
+  expect(screen.getByRole('status').textContent).toContain('Limp mode');
+
+  const stale = useSimStore.getState().snapshot;
+  act(() => useSimStore.setState({ snapshot: {
+    ...stale, timeS: stale.timeS + 1,
+    dashboard: { ...stale.dashboard, diagnostics: { availability: 'unavailable', warning: null, driveStatus: 'unavailable' } },
+  } }));
+  expect(screen.getByRole('status').textContent).toContain('Diagnostic data unavailable');
+});

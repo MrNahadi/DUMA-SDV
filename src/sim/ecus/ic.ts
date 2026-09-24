@@ -19,6 +19,12 @@ type StartupStep = 'none' | (typeof STARTUP_STEPS)[number];
 
 /** What the driver dashboard shows, in SI units. Null means no live value ("—"). */
 export interface DashboardModel {
+  /** Warning and drive restriction from fresh ECU diagnostic and VCU decision frames. */
+  diagnostics: {
+    availability: 'available' | 'unavailable';
+    warning: { severity: 'amber' | 'red'; text: string } | null;
+    driveStatus: 'normal' | 'reducedPower' | 'limp' | 'unavailable';
+  };
   /** Vehicle speed, m/s, forward positive (MCU_Vehicle). */
   speedMs: number | null;
   /** Pack power, W, positive for discharge: packVoltage × packCurrent (BMS_Status). */
@@ -65,7 +71,7 @@ export interface Ic {
   step(t: number, powered: boolean): void;
 }
 
-const SOURCES = ['VCU_Status', 'VCU_Range', 'VCU_Recovery', 'VCU_Charge', 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Vehicle'] as const;
+const SOURCES = ['VCU_Status', 'VCU_Range', 'VCU_Recovery', 'VCU_Charge', 'VCU_DriveDecision', 'VCU_DTC', 'BMS_DTC', 'MCU_DTC', 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Vehicle'] as const;
 type Source = (typeof SOURCES)[number];
 
 export function createIc(bus: Bus, usableEnergyJ: number): Ic {
@@ -78,10 +84,12 @@ export function createIc(bus: Bus, usableEnergyJ: number): Ic {
   for (const name of SOURCES) {
     const def = bus.catalogue.find((m) => m.name === name);
     if (def === undefined || def.periodMs === 'event') throw new Error(`IC: ${name} must be a periodic message`);
-    staleAfterS[name] = (STALE_PERIODS * def.periodMs) / 1000;
+    staleAfterS[name] = name.endsWith('_DTC') || name === 'VCU_DriveDecision'
+      ? 0.25 : (STALE_PERIODS * def.periodMs) / 1000;
   }
 
   const dashboard: DashboardModel = {
+    diagnostics: { availability: 'unavailable', warning: null, driveStatus: 'unavailable' },
     speedMs: null,
     powerW: null,
     maxChargeKw: null,
@@ -105,6 +113,7 @@ export function createIc(bus: Bus, usableEnergyJ: number): Ic {
   }
 
   function clear() {
+    dashboard.diagnostics = { availability: 'unavailable', warning: null, driveStatus: 'unavailable' };
     chargeDisplay.soc = null;
     chargeDisplay.source = null;
     chargeDisplay.connected = null;
@@ -127,6 +136,24 @@ export function createIc(bus: Bus, usableEnergyJ: number): Ic {
   }
 
   function update(t: number) {
+    const diagnosticsFresh = live(t, 'VCU_DTC') && live(t, 'BMS_DTC') &&
+      live(t, 'MCU_DTC') && live(t, 'VCU_DriveDecision');
+    if (!diagnosticsFresh) {
+      dashboard.diagnostics = { availability: 'unavailable', warning: null, driveStatus: 'unavailable' };
+    } else {
+      const bms = inbox.read('BMS_DTC', 'activeBits') as number;
+      const mcu = inbox.read('MCU_DTC', 'activeBits') as number;
+      const vcu = inbox.read('VCU_DTC', 'activeBits') as number;
+      const reason = inbox.read('VCU_DriveDecision', 'reason');
+      const warning = bms & 2 ? { severity: 'red' as const, text: 'High-voltage system fault' }
+        : mcu & 1 ? { severity: 'amber' as const, text: 'Drive motor too hot' }
+          : vcu & 1 ? { severity: 'amber' as const, text: '12 V battery low' }
+            : bms & 1 ? { severity: 'amber' as const, text: 'Battery too hot' } : null;
+      const driveStatus = reason === 'unavailable' || reason === 'insulationFault' ? 'unavailable'
+        : reason === 'motorOverTemperature' || reason === 'low12V' ? 'limp'
+          : reason === 'cellOverTemperature' ? 'reducedPower' : 'normal';
+      dashboard.diagnostics = { availability: 'available', warning, driveStatus };
+    }
     if (live(t, 'MCU_Vehicle')) {
       dashboard.speedMs = kmhToMs(inbox.read('MCU_Vehicle', 'vehicleSpeedKmh') as number);
     } else {

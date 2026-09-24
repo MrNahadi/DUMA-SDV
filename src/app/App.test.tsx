@@ -40,6 +40,7 @@ describe('app shell', () => {
           gear: 'P',
           pack: { ...previous.pack, soc: 0.9 },
           dashboard: {
+            diagnostics: { availability: 'available', warning: null, driveStatus: 'normal' },
             speedMs: 20,
             powerW: 42_000,
             maxChargeKw: 60,

@@ -3,11 +3,12 @@
   display: grid;
   grid-template-columns: 150px minmax(100px, 1fr) minmax(80px, 0.8fr) minmax(80px, 0.8fr) 48px auto;
   align-items: center;
-  gap: var(--s-4);
+  column-gap: var(--s-4);
+  row-gap: 0;
   position: relative;
   min-width: 0;
-  height: 112px;
-  padding: var(--s-3) var(--s-5);
+  height: 120px;
+  padding: var(--s-1) var(--s-5);
   background: var(--surface);
   border-top: 1px solid var(--line);
 }
@@ -27,3 +28,6 @@
 .socBar span { left: 0; background: var(--ok); }
 .ready { display: flex; align-items: center; gap: var(--s-1); color: var(--ok); font: var(--text-label); white-space: nowrap; }
 .hint { margin: 0; max-width: 120px; color: var(--ink-2); font: var(--text-small); white-space: normal; }
+.warning { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--s-2); color: var(--warn); font: var(--text-small); min-height: 20px; }
+.warning strong { margin-left: var(--s-2); font: var(--text-label); text-transform: uppercase; letter-spacing: var(--tracking-label); }
+.severe { color: var(--fault); }

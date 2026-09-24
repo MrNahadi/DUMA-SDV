@@ -62,14 +62,14 @@ Notes: Keep BMS driving regen allowance separate from external charge permission
 
 ## T-006: Show bus-derived driver warning
 
-Status: open
+Status: done
 Blocked by: T-003, T-004, T-005
 Slice: Add IC warning/severity and derate/limp status from received bus frames, then show concise plain-language text on Drive.
 Test seam: `createSim().snapshot().dashboard` and rendered `DashboardStrip`
 Acceptance:
-- [ ] Cell over-temperature produces an amber warning and reduced-power status with no DTC code required to understand it
-- [ ] Limp state has a distinct text/icon warning; fresh recovery removes active warning while the record remains stored
-- [ ] Missing or stale fault frames show unavailable data rather than a healthy assertion
+- [x] Cell over-temperature produces an amber warning and reduced-power status with no DTC code required to understand it
+- [x] Limp state has a distinct text/icon warning; fresh recovery removes active warning while the record remains stored
+- [x] Missing or stale fault frames show unavailable data rather than a healthy assertion
 Notes: Keep dashboard information calm and limited to driver-relevant status.
 
 ## T-007: Build Diagnostics actions and DTC list

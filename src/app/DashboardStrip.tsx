@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react';
+import { AlertTriangle, Check, Gauge } from 'lucide-react';
 import { useSimStore } from './simStore';
 import styles from './DashboardStrip.module.css';
 
@@ -19,6 +19,12 @@ export function DashboardStrip() {
   const powerLimitKw = regen ? dashboard.maxChargeKw : dashboard.maxDischargeKw;
   const powerFraction = dashboard.powerW === null || off || powerLimitKw === null || powerLimitKw <= 0
     ? 0 : Math.min(1, Math.abs(dashboard.powerW) / (powerLimitKw * 1000));
+  const diagnostic = dashboard.diagnostics;
+  const warningText = off ? null : diagnostic.availability === 'unavailable'
+    ? 'Diagnostic data unavailable'
+    : diagnostic.warning?.text ?? (diagnostic.driveStatus === 'unavailable' ? 'Drive status unavailable' : null);
+  const restriction = diagnostic.driveStatus === 'limp' ? 'Limp mode'
+    : diagnostic.driveStatus === 'reducedPower' ? 'Reduced power' : null;
 
   return <section className={styles.strip} aria-label="Driver dashboard">
     <div className={styles.speed} data-testid="dashboard-speed">
@@ -43,5 +49,9 @@ export function DashboardStrip() {
       {ready && <><Check aria-hidden="true" size={16} /> READY</>}
       {off && <p className={styles.hint}>Power on to see live values</p>}
     </div>
+    {warningText && <div role="status" className={`${styles.warning} ${diagnostic.warning?.severity === 'red' ? styles.severe : ''}`}>
+      {restriction === 'Limp mode' ? <Gauge aria-hidden="true" size={16} /> : <AlertTriangle aria-hidden="true" size={16} />}
+      <span>{warningText}</span>{restriction && <strong>{restriction}</strong>}
+    </div>}
   </section>;
 }
