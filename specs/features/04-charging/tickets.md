@@ -38,15 +38,15 @@ Notes: `charge.authorized` exposes the bus-checked permission. External power re
 
 ## T-004: Charge the pack through the AC OBC
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Add the AC-only OBC behavior and external AC power path to the existing HV/pack plant, reporting actual terminal charge.
 Test seam: `createSim()` AC session snapshot and `trace()`
 Acceptance:
-- [ ] AC input stays at or below 11 kW and SOC rises only from delivered negative pack current
-- [ ] Documented OBC loss is accounted for; Stop charging and Unplug remove external current
-- [ ] Pack upper bound, no-propulsion gate and existing regen/discharge tests pass
-Notes:
+- [x] AC input stays at or below 11 kW and SOC rises only from delivered negative pack current
+- [x] Documented OBC loss is accounted for; Stop charging and Unplug remove external current
+- [x] Pack upper bound, no-propulsion gate and existing regen/discharge tests pass
+Notes: OBC reads fresh VCU/BMS bus permission; output is capped by the pack's tick acceptance and auxiliary demand. All five Feedback commands pass.
 
 ## T-005: Charge the pack through the DC path
 

@@ -6,6 +6,7 @@
 import { createHvCircuit, createPack, type ContactorStates } from './battery';
 import { GEARS, busCatalogue, createBus, type Frame } from './bus';
 import { isFresh } from './ecus/ecu';
+import { createObc } from './ecus/obc';
 import {
   STARTUP_STEPS,
   createBms,
@@ -64,6 +65,10 @@ export interface ChargeSnapshot {
   authorized: boolean;
   targetSoc: number;
   powerW: number;
+  /** AC wallbox input and OBC conversion, W; zero outside AC charging. */
+  inputPowerW: number;
+  obcOutputPowerW: number;
+  lossPowerW: number;
   refusal: ChargeRefusal | null;
 }
 
@@ -173,6 +178,7 @@ export function createSim(options: SimOptions = {}): Sim {
   const bms = createBms(bus, p, { tickS: TICK_S, initialSoc: soc });
   const mcu = createMcu(bus, p);
   const ic = createIc(bus);
+  const obc = createObc(bus, p);
 
   let tick = 0;
   let powerButton = false;
@@ -183,7 +189,7 @@ export function createSim(options: SimOptions = {}): Sim {
   };
   let selectedSource: 'AC' | 'DC' | null = null;
   let chargeCommand: SimInputs['chargeCommand'] | null = null;
-  const charge: ChargeSnapshot = { source: null, connected: false, session: 'idle', authorized: false, targetSoc: 1, powerW: 0, refusal: null };
+  const charge: ChargeSnapshot = { source: null, connected: false, session: 'idle', authorized: false, targetSoc: 1, powerW: 0, inputPowerW: 0, obcOutputPowerW: 0, lossPowerW: 0, refusal: null };
 
   function applyChargeCommand() {
     const command = chargeCommand;
@@ -290,8 +296,20 @@ export function createSim(options: SimOptions = {}): Sim {
     const pedalForceScaleN = BRAKE_MAX_DECEL_G * p.testMassKg * GRAVITY_MS2;
     const frictionPedal = pedalForceScaleN > 0 ? Math.min(Math.max((demandN - electricN) / pedalForceScaleN, 0), 1) : 0;
     dynamics.step(mcu.torqueNm, frictionPedal);
-    hv.step(pack.ocvV, hvLoadW(mcu.torqueNm, (omegaBefore + dynamics.motorSpeedRadS) / 2), pack.maxChargeCurrentA);
+    const remainingSoc = Math.max(0, Math.min(charge.targetSoc, 1) - pack.soc);
+    const targetCurrentA = remainingSoc * (p.usableEnergyJ / p.packNominalVoltageV) / TICK_S;
+    const voltageCurrentA = Math.max(0, (620 - pack.ocvV) / p.packInternalResistanceOhm);
+    const acceptedCurrentA = Math.min(pack.maxChargeCurrentA, targetCurrentA, 300, voltageCurrentA);
+    const loadW = hvLoadW(mcu.torqueNm, (omegaBefore + dynamics.motorSpeedRadS) / 2);
+    const maxOutputW = loadW + (pack.ocvV + acceptedCurrentA * p.packInternalResistanceOhm) * acceptedCurrentA;
+    obc.step(t, charge.authorized && charge.source === 'AC' && hv.closed.mainNeg && hv.closed.mainPos, maxOutputW);
+    const externalW = obc.outputPowerW;
+    hv.step(pack.ocvV, loadW - externalW, externalW > 0 ? acceptedCurrentA : pack.maxChargeCurrentA);
     pack.step(hv.packCurrentA);
+    charge.inputPowerW = obc.inputPowerW;
+    charge.obcOutputPowerW = obc.outputPowerW;
+    charge.lossPowerW = obc.lossPowerW;
+    charge.powerW = externalW > 0 ? Math.max(0, -hv.packTerminalV * hv.packCurrentA) : 0;
     tripEnergyJ += hv.packTerminalV * hv.packCurrentA * TICK_S;
     bus.transmit(tick);
     tick++;

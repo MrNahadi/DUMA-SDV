@@ -452,8 +452,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number): 
     const eligible = requested && vcu.gear === 'P' && Math.abs(speedKmh) < STANDSTILL_KMH &&
       driver.chargeTargetSoc > 0 && driver.chargeTargetSoc <= 1 &&
       isFresh(inbox, 'BMS_Status', freshSince) &&
-      inbox.read('BMS_Status', 'contactorState') === 'closed' &&
-      (inbox.read('BMS_Status', 'soc') as number) < Math.min(100, driver.chargeTargetSoc * 100);
+      inbox.read('BMS_Status', 'contactorState') === 'closed';
     const accepted = isFresh(inbox, 'BMS_Charge', freshSince) &&
       inbox.read('BMS_Charge', 'accepted') === 'yes' &&
       (inbox.read('BMS_Charge', 'maxExternalChargeKw') as number) > 0;
