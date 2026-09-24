@@ -12,3 +12,7 @@
 .flowing { animation-name: flow; animation-timing-function: linear; animation-iteration-count: infinite; }
 @keyframes flow { from { stroke-dashoffset: 12; } to { stroke-dashoffset: 0; } }
 @media (prefers-reduced-motion: reduce) { .flowing { animation: none; } }
+.readout { border-collapse: collapse; font: var(--text-small); }
+.readout th { text-align: left; font-weight: normal; padding-right: var(--s-3); }
+.value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+.loops { margin: 0; padding: 0; list-style: none; font: var(--text-small); }

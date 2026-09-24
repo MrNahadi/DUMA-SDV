@@ -83,3 +83,20 @@ it('does not animate edges under reduced motion', () => {
   expect(edge.getAttribute('data-animated')).toBe('false');
   expect(edge.style.animationDuration).toBe('');
 }, 15_000);
+
+it('shows bus temperatures and coolant loops, marking stale values in text', () => {
+  render(<EnergyPanel />);
+  const temps = () => screen.getByRole('table', { name: /temperatures/i });
+  for (const name of ['Pack', 'Motor', 'Inverter']) {
+    expect(within(temps()).getByRole('row', { name: new RegExp(name) }).textContent).toMatch(/unavailable/);
+  }
+  expect(screen.getByTestId('loop-battery').textContent).toMatch(/pump off/i);
+  act(() => drive());
+  const snap = useSimStore.getState().sim.snapshot();
+  const d = snap.thermalDisplay;
+  expect(screen.getByTestId('temp-pack').textContent).toBe(`${d.packC!.toFixed(1)} °C`);
+  expect(screen.getByTestId('temp-motor').textContent).toBe(`${d.motorC!.toFixed(1)} °C`);
+  expect(screen.getByTestId('temp-inverter').textContent).toBe(`${d.inverterC!.toFixed(1)} °C`);
+  expect(screen.getByTestId('loop-battery').textContent).toMatch(/pump on/i);
+  expect(screen.getByTestId('loop-drive').textContent).toMatch(/pump on/i);
+}, 15_000);

@@ -84,12 +84,12 @@ Notes: Use tokens only (DESIGN-RULES colours and motion).
 
 ## T-008: Temperature readout
 
-Status: open
+Status: done
 Blocked by: T-004, T-006
 Slice: Show pack, motor and inverter temperatures (°C, tabular numbers) and the coolant loop states in the Energy panel, from the bus-built model.
 Test seam: EnergyPanel component and store
 Acceptance:
-- [ ] Values match the store snapshot, and stale values are marked in text, not only by colour
+- [x] Values match the store snapshot, and stale values are marked in text, not only by colour
 Notes:
 
 ## T-009: Regression sweep

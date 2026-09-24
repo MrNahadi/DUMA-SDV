@@ -19,6 +19,8 @@ const DASH_PERIOD = 12;
 const NODE_W = 88;
 const NODE_H = 32;
 
+const TEMPS = [['packC', 'Pack'], ['motorC', 'Motor'], ['inverterC', 'Inverter']] as const;
+
 function arrow(edge: FlowEdge): string {
   if (edge.direction === 'forward') return '→ ';
   if (edge.direction === 'reverse') return '← ';
@@ -53,8 +55,15 @@ export function EnergyPanel() {
   const reducedMotion = useReducedMotion();
   const sim = useSimStore((s) => s.sim);
   const bucket = useSimStore((s) => Math.floor(s.snapshot.timeS * REFRESH_HZ));
-  const edges = useMemo(
-    () => flowEdges(sim.snapshot().power),
+  const { edges, temps, loops } = useMemo(
+    () => {
+      const snap = sim.snapshot();
+      return {
+        edges: flowEdges(snap.power),
+        temps: snap.thermalDisplay,
+        loops: { battery: snap.thermal.batteryLoop.pumpOn, drive: snap.thermal.driveLoop.pumpOn },
+      };
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bucket throttles re-reads of the mutable sim
     [sim, bucket],
   );
@@ -88,6 +97,22 @@ export function EnergyPanel() {
           </g>
         ))}
       </svg>
+      <table className={styles.readout} aria-label="Temperatures">
+        <tbody>
+          {TEMPS.map(([key, name]) => (
+            <tr key={key}>
+              <th scope="row">{name}</th>
+              <td className={styles.value} data-testid={`temp-${name.toLowerCase()}`}>
+                {temps[key] === null ? '— unavailable (stale)' : `${temps[key].toFixed(1)} °C`}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <ul className={styles.loops} aria-label="Coolant loops">
+        <li data-testid="loop-battery">Battery loop: pump {loops.battery ? 'on' : 'off'}</li>
+        <li data-testid="loop-drive">Drive loop: pump {loops.drive ? 'on' : 'off'}</li>
+      </ul>
     </div>
   );
 }
