@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import { createSim, type DriveMode, type FaultCommand, type Gear, type Sim, type SimSnapshot } from '../sim';
+import { createSim, TICK_S, type DriveMode, type FaultCommand, type Gear, type Sim, type SimSnapshot } from '../sim';
+import { createCycleRunner, type CycleId, type CycleRunner, type CycleRunStatus } from '../sim/scenarios';
+import type { CycleResult } from '../sim/scenarios/cycle-runner';
+
+export interface CycleRun {
+  runner: CycleRunner;
+  status: CycleRunStatus;
+  result: CycleResult | null;
+}
 
 interface SimState {
   sim: Sim;
@@ -14,6 +22,9 @@ interface SimState {
   setPedal: (pedal: 'accelerator' | 'brake', value: number) => void;
   commandFault: (command: FaultCommand) => void;
   reset: () => void;
+  cycleRun: CycleRun | null;
+  runCycle: (cycleId: CycleId) => void;
+  stopCycle: () => void;
   advance: (ticks: number) => void;
 }
 
@@ -22,6 +33,7 @@ const initialSim = createSim();
 export const useSimStore = create<SimState>((set, get) => ({
   sim: initialSim,
   snapshot: initialSim.snapshot(),
+  cycleRun: null,
   powerOn: () => {
     const { sim, snapshot } = get();
     if (snapshot.powerState === 'OFF') sim.setInputs({ powerButton: true });
@@ -45,11 +57,30 @@ export const useSimStore = create<SimState>((set, get) => ({
   },
   reset: () => {
     const sim = createSim();
-    set({ sim, snapshot: sim.snapshot() });
+    set({ sim, snapshot: sim.snapshot(), cycleRun: null });
+  },
+  runCycle: (cycleId) => {
+    const { sim, cycleRun } = get();
+    if (cycleRun?.status.state === 'running') return;
+    const runner = createCycleRunner(sim, cycleId);
+    set({ snapshot: sim.snapshot(), cycleRun: { runner, status: runner.status(), result: null } });
+  },
+  stopCycle: () => {
+    const { sim, cycleRun } = get();
+    if (!cycleRun) return;
+    cycleRun.runner.stop();
+    set({ snapshot: sim.snapshot(), cycleRun: { runner: cycleRun.runner, status: cycleRun.runner.status(), result: null } });
   },
   advance: (ticks) => {
     if (ticks <= 0) return;
-    const { sim, snapshot } = get();
+    const { sim, snapshot, cycleRun } = get();
+    if (cycleRun?.status.state === 'running') {
+      // A cycle run drives the sim itself, so the time scale still sets the pace.
+      const { runner } = cycleRun;
+      runner.step(ticks * TICK_S);
+      set({ snapshot: sim.snapshot(), cycleRun: { runner, status: runner.status(), result: runner.result() } });
+      return;
+    }
     sim.step(ticks);
     const next = sim.snapshot();
     if (next.timeS !== snapshot.timeS) set({ snapshot: next });

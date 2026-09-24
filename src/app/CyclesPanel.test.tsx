@@ -1,0 +1,39 @@
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { beforeEach, expect, it } from 'vitest';
+import { CyclesPanel } from './CyclesPanel';
+import { useSimStore } from './simStore';
+
+beforeEach(() => useSimStore.getState().reset());
+
+const advanceS = (seconds: number) => {
+  for (let s = 0; s < seconds; s += 10) act(() => useSimStore.getState().advance(1000));
+};
+
+it('runs a cycle, locks mode and cycle, and shows the Wh/km result on completion', () => {
+  render(<CyclesPanel />);
+  fireEvent.change(screen.getByLabelText('Cycle'), { target: { value: 'highway' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Run cycle' }));
+  expect(screen.getByRole('button', { name: 'Stop cycle' })).toBeTruthy();
+  expect((screen.getByLabelText('Cycle') as HTMLSelectElement).disabled).toBe(true);
+  for (const b of screen.getAllByRole('button', { name: /^(Eco|Normal|Sport)$/ })) expect(b.hasAttribute('disabled')).toBe(true);
+  advanceS(30);
+  const progress = screen.getByRole('progressbar', { name: 'Cycle progress' });
+  expect(Number(progress.getAttribute('aria-valuenow'))).toBeGreaterThan(0);
+  advanceS(330);
+  expect(useSimStore.getState().cycleRun?.status.state).toBe('completed');
+  expect(screen.getByText('Wh/km')).toBeTruthy();
+  expect(screen.getByText(/km$/, { selector: 'strong' })).toBeTruthy();
+  expect(screen.getByText(/kWh$/, { selector: 'strong' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Run cycle' })).toBeTruthy();
+  expect((screen.getByLabelText('Cycle') as HTMLSelectElement).disabled).toBe(false);
+}, 30_000);
+
+it('stopping a run shows no result', () => {
+  render(<CyclesPanel />);
+  fireEvent.click(screen.getByRole('button', { name: 'Run cycle' }));
+  advanceS(20);
+  fireEvent.click(screen.getByRole('button', { name: 'Stop cycle' }));
+  expect(useSimStore.getState().cycleRun?.status.state).toBe('stopped');
+  expect(screen.queryByText('Wh/km')).toBeNull();
+  expect(screen.getByText('Cycle stopped. No result.')).toBeTruthy();
+});

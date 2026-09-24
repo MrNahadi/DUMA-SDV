@@ -6,11 +6,12 @@ import { Button } from '../ui/Button';
 import { useSimStore } from './simStore';
 import { DrivePanel } from './DrivePanel';
 import { ChargePanel } from './ChargePanel';
+import { CyclesPanel } from './CyclesPanel';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { ArchitecturePanel } from './ArchitecturePanel';
 import { EnergyPanel } from './EnergyPanel';
 
-const PANELS = new Set(['drive', 'charge', 'energy', 'diagnostics', 'architecture']);
+const PANELS = new Set(['drive', 'charge', 'energy', 'diagnostics', 'architecture', 'cycles']);
 
 export function ViewPanel() {
   const view = useAppStore((s) => s.view);
@@ -37,6 +38,7 @@ export function ViewPanel() {
       ) : null}
       {view === 'drive' && <DrivePanel />}
       {view === 'charge' && <ChargePanel />}
+      {view === 'cycles' && <CyclesPanel />}
       {view === 'diagnostics' && <DiagnosticsPanel />}
       {view === 'energy' && <EnergyPanel />}
       {view === 'architecture' && <ArchitecturePanel />}

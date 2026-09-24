@@ -91,14 +91,14 @@ Notes: Reuse the control in the Cycles view (T-008).
 
 ## T-008: Cycles panel: run, stop and result
 
-Status: open
+Status: done
 Blocked by: T-005, T-007
 Slice: The Cycles view shows the mode control, an Urban / Highway picker, **Run cycle** / **Stop cycle**, progress, and Wh/km as the primary number once complete. It runs through the sim loop and honours the time scale.
 Test seam: CyclesPanel component test with a stubbed store
 Acceptance:
-- [ ] Run cycle starts a run, the button becomes Stop cycle, and progress advances
-- [ ] Completion shows Wh/km, distance and energy, and stopping shows no result
-- [ ] The mode and cycle cannot change while a run is in progress
+- [x] Run cycle starts a run, the button becomes Stop cycle, and progress advances
+- [x] Completion shows Wh/km, distance and energy, and stopping shows no result
+- [x] The mode and cycle cannot change while a run is in progress
 Notes: Use DESIGN-RULES §8 words.
 
 ## T-009: Cycle chart
