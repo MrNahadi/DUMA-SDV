@@ -1,5 +1,5 @@
 import { act, render, screen, within } from '@testing-library/react';
-import { beforeEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it } from 'vitest';
 import { EnergyPanel } from './EnergyPanel';
 import { useSimStore } from './simStore';
 
@@ -33,4 +33,53 @@ it('updates kW labels while the sim runs', () => {
   act(() => useSimStore.getState().advance(100));
   expect(label()).not.toBe(first);
   expect(screen.getByTestId('flow-pack-dcdc').textContent).toMatch(/kW$/);
+}, 15_000);
+
+function drive() {
+  const s = useSimStore.getState();
+  s.powerOn();
+  s.advance(300);
+  s.setPedal('brake', 1);
+  s.requestGear('D');
+  s.advance(20);
+  s.setPedal('brake', 0);
+  s.setPedal('accelerator', 1);
+  s.advance(200);
+}
+
+function mockReducedMotion(reduce: boolean) {
+  window.matchMedia = ((query: string) => ({
+    matches: reduce && query.includes('reduce'), media: query, onchange: null,
+    addEventListener: () => {}, removeEventListener: () => {},
+    addListener: () => {}, removeListener: () => {}, dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+
+afterEach(() => { delete (window as { matchMedia?: unknown }).matchMedia; });
+
+it('reverses the dash direction when power changes sign (drive → regen)', () => {
+  mockReducedMotion(false);
+  render(<EnergyPanel />);
+  const edge = () => screen.getByTestId('edge-inverter-motor');
+  act(drive);
+  expect(edge().getAttribute('data-flow')).toBe('forward');
+  expect(edge().getAttribute('data-animated')).toBe('true');
+  act(() => {
+    const s = useSimStore.getState();
+    s.setPedal('accelerator', 0);
+    s.setPedal('brake', 0.3);
+    s.advance(20);
+  });
+  expect(edge().getAttribute('data-flow')).toBe('reverse');
+  expect(edge().getAttribute('data-animated')).toBe('true');
+}, 15_000);
+
+it('does not animate edges under reduced motion', () => {
+  mockReducedMotion(true);
+  render(<EnergyPanel />);
+  act(drive);
+  const edge = screen.getByTestId('edge-inverter-motor');
+  expect(edge.getAttribute('data-flow')).toBe('forward');
+  expect(edge.getAttribute('data-animated')).toBe('false');
+  expect(edge.style.animationDuration).toBe('');
 }, 15_000);

@@ -73,13 +73,13 @@ Notes: No packages. Throttle refreshes.
 
 ## T-007: Animated flow
 
-Status: open
+Status: done
 Blocked by: T-006
 Slice: Animate the edge dashes in the direction of power at the view-model rate, with a static fallback under `prefers-reduced-motion`.
 Test seam: EnergyPanel component
 Acceptance:
-- [ ] Dash direction reverses when power changes sign (drive → regen)
-- [ ] With reduced motion on, the edges do not animate
+- [x] Dash direction reverses when power changes sign (drive → regen)
+- [x] With reduced motion on, the edges do not animate
 Notes: Use tokens only (DESIGN-RULES colours and motion).
 
 ## T-008: Temperature readout
