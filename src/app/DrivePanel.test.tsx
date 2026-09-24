@@ -54,3 +54,16 @@ it('shows the current drive mode and changes it by click or keyboard', async () 
   await user.keyboard('{Enter}');
   expect(setInputs).toHaveBeenLastCalledWith({ driveMode: 'normal' });
 });
+
+it('locks the mode during a cycle run from the store and the Drive view', async () => {
+  const user = userEvent.setup();
+  render(<DrivePanel />);
+  act(() => useSimStore.getState().runCycle('urban'));
+  const setInputs = vi.spyOn(useSimStore.getState().sim, 'setInputs');
+  act(() => useSimStore.getState().setDriveMode('sport'));
+  const sport = within(screen.getByRole('group', { name: 'Drive mode' })).getByRole('button', { name: 'Sport' });
+  expect((sport as HTMLButtonElement).disabled).toBe(true);
+  await user.click(sport);
+  expect(setInputs).not.toHaveBeenCalledWith({ driveMode: 'sport' });
+  expect(sport.getAttribute('aria-pressed')).toBe('false');
+});

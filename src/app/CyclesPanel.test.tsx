@@ -1,4 +1,5 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, it } from 'vitest';
 import { CyclesPanel } from './CyclesPanel';
 import { useSimStore } from './simStore';
@@ -47,4 +48,19 @@ it('a failed run shows the failure reason instead of a result', () => {
   expect(useSimStore.getState().cycleRun?.status.state).toBe('failed');
   expect(screen.queryByText('Wh/km')).toBeNull();
   expect(screen.getByText(/Cycle failed: The gear left D/)).toBeTruthy();
+});
+
+it('shows Eco as selected when chosen while OFF, and keeps it after READY', async () => {
+  const user = userEvent.setup();
+  render(<CyclesPanel />);
+  const control = screen.getByRole('group', { name: 'Drive mode' });
+  const eco = () => within(control).getByRole('button', { name: 'Eco' });
+  await user.click(eco());
+  expect(eco().getAttribute('aria-pressed')).toBe('true');
+  act(() => {
+    useSimStore.getState().powerOn();
+    useSimStore.getState().advance(200);
+  });
+  expect(useSimStore.getState().snapshot.powerState).toBe('READY');
+  expect(eco().getAttribute('aria-pressed')).toBe('true');
 });

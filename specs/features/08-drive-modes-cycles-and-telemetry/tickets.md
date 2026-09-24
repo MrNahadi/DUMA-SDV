@@ -172,13 +172,13 @@ Notes: R8, R9 and R11.
 
 ## T-015: Drive mode is locked during a run and shown when chosen
 
-Status: open
+Status: done
 Blocked by:
 Slice: While a cycle is running, the mode can't change from any view: the store ignores mode changes and every mode control is disabled. The mode control shows the mode the driver last chose as selected, including while the car is OFF, and the bus mode still appears in the snapshot and trace. (Review findings #3 and #8.)
 Test seam: simStore actions; ModeControl, DrivePanel and CyclesPanel component tests
 Acceptance:
-- [ ] During a run, setting the mode through the store or clicking the Drive view control leaves the mode unchanged
-- [ ] Clicking Eco while the car is OFF shows Eco as selected (`aria-pressed`), and it's still selected after READY
+- [x] During a run, setting the mode through the store or clicking the Drive view control leaves the mode unchanged
+- [x] Clicking Eco while the car is OFF shows Eco as selected (`aria-pressed`), and it's still selected after READY
 - [ ] Existing mode control, DrivePanel and CyclesPanel tests pass
 Notes: R10 and R15. The T-001 bus behaviour stays as it is. Only what the control shows changes.
 

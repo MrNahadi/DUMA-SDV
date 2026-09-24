@@ -15,6 +15,8 @@ interface SimState {
   powerOn: () => void;
   powerOff: () => void;
   requestGear: (gear: Gear) => void;
+  /** The mode the driver last chose; null until they choose one (the bus mode is shown instead). */
+  chosenDriveMode: DriveMode | null;
   setDriveMode: (mode: DriveMode) => void;
   selectChargeSource: (source: 'AC' | 'DC') => void;
   setChargeTarget: (soc: number) => void;
@@ -34,6 +36,7 @@ export const useSimStore = create<SimState>((set, get) => ({
   sim: initialSim,
   snapshot: initialSim.snapshot(),
   cycleRun: null,
+  chosenDriveMode: null,
   powerOn: () => {
     const { sim, snapshot } = get();
     if (snapshot.powerState === 'OFF') sim.setInputs({ powerButton: true });
@@ -44,7 +47,13 @@ export const useSimStore = create<SimState>((set, get) => ({
     sim.setInputs({ accelerator: 0, brake: 0, powerButton: true });
   },
   requestGear: (gear) => get().sim.setInputs({ gearRequest: gear }),
-  setDriveMode: (mode) => get().sim.setInputs({ driveMode: mode }),
+  setDriveMode: (mode) => {
+    const { sim, cycleRun } = get();
+    // The mode is locked while a cycle runs so the result belongs to one mode.
+    if (cycleRun?.status.state === 'running') return;
+    sim.setInputs({ driveMode: mode });
+    set({ chosenDriveMode: mode });
+  },
   selectChargeSource: (source) => get().sim.setInputs({ chargeSource: source }),
   setChargeTarget: (soc) => get().sim.setInputs({ chargeTargetSoc: soc }),
   commandCharge: (command) => get().sim.setInputs({ chargeCommand: command }),
@@ -57,7 +66,7 @@ export const useSimStore = create<SimState>((set, get) => ({
   },
   reset: () => {
     const sim = createSim();
-    set({ sim, snapshot: sim.snapshot(), cycleRun: null });
+    set({ sim, snapshot: sim.snapshot(), cycleRun: null, chosenDriveMode: null });
   },
   runCycle: (cycleId) => {
     const { sim, cycleRun } = get();

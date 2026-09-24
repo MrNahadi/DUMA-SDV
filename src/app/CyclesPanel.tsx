@@ -47,7 +47,7 @@ export function CyclesPanel() {
       </section>
       <section className={styles.controls} aria-label="Cycle controls">
         <span className={styles.label}>Mode</span>
-        <ModeControl locked={running} />
+        <ModeControl />
         <label htmlFor="cycle-picker">Cycle</label>
         <select id="cycle-picker" value={cycleId} disabled={running} onChange={(e) => setCycleId(e.target.value as CycleId)}>
           <option value="urban">Urban</option>
