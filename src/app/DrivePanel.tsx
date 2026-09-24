@@ -7,6 +7,7 @@ import { Modal } from '../ui/Modal';
 import { Toast } from '../ui/Toast';
 import type { Gear, GearRefusal, SimSnapshot, StartupFailReason, StartupStepStatus } from '../sim';
 import { useSimStore } from './simStore';
+import { ModeControl } from './ModeControl';
 import { setPedalHeld } from './useDriveInput';
 import styles from './DrivePanel.module.css';
 
@@ -183,6 +184,10 @@ export function DrivePanel() {
                 {refusalHint(gearRefusal, gear)}
               </small>
             )}
+          </section>
+          <section aria-label="Drive mode selector" className={styles.section}>
+            <h2>Mode</h2>
+            <ModeControl />
           </section>
           <section aria-label="Pedals" className={styles.section}>
             <h2>Pedals</h2>

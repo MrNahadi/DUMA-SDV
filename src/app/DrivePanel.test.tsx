@@ -1,5 +1,6 @@
-import { act, render, screen } from '@testing-library/react';
-import { beforeEach, expect, it } from 'vitest';
+import { act, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { beforeEach, expect, it, vi } from 'vitest';
 import { DrivePanel } from './DrivePanel';
 import { useSimStore } from './simStore';
 
@@ -33,4 +34,23 @@ it('marks stale recovery telemetry unavailable', () => {
   const tracker = screen.getByRole('region', { name: 'Energy recovered' });
   expect(tracker.textContent).toContain('Unavailable');
   expect(tracker.textContent).not.toContain('1.50 kWh');
+});
+
+it('shows the current drive mode and changes it by click or keyboard', async () => {
+  const user = userEvent.setup();
+  render(<DrivePanel />);
+  const previous = useSimStore.getState().snapshot;
+  act(() => useSimStore.setState({ snapshot: { ...previous, powerState: 'READY', driveMode: 'sport' } }));
+  const control = screen.getByRole('group', { name: 'Drive mode' });
+  const button = (name: string) => within(control).getByRole('button', { name });
+  expect(button('Sport').getAttribute('aria-pressed')).toBe('true');
+  expect(button('Normal').getAttribute('aria-pressed')).toBe('false');
+
+  const setInputs = vi.spyOn(useSimStore.getState().sim, 'setInputs');
+  await user.click(button('Eco'));
+  expect(setInputs).toHaveBeenLastCalledWith({ driveMode: 'eco' });
+
+  button('Normal').focus();
+  await user.keyboard('{Enter}');
+  expect(setInputs).toHaveBeenLastCalledWith({ driveMode: 'normal' });
 });

@@ -78,13 +78,13 @@ Notes: Lives in `src/sim/telemetry/` and is covered by the sim purity lint rule.
 
 ## T-007: Mode control in the Drive view
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: A keyboard-operable Eco / Normal / Sport segmented control in the Drive panel sends the mode input and shows the current mode from the snapshot.
 Test seam: DrivePanel component test
 Acceptance:
-- [ ] The control shows the current mode and changes it with a click or the keyboard
-- [ ] Existing DrivePanel tests pass
+- [x] The control shows the current mode and changes it with a click or the keyboard
+- [x] Existing DrivePanel tests pass
 Notes: Reuse the control in the Cycles view (T-008).
 
 ## T-008: Cycles panel: run, stop and result

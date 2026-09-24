@@ -54,24 +54,28 @@
   gap: var(--s-2);
   align-items: center;
 }
-.gears {
+.gears,
+.modes {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   overflow: hidden;
 }
-.gears button {
+.gears button,
+.modes button {
   height: var(--control-h);
   border: 0;
   border-right: 1px solid var(--line);
   background: var(--surface);
   cursor: pointer;
 }
-.gears button:last-child {
+.gears button:last-child,
+.modes button:last-child {
   border-right: 0;
 }
-.gears button[aria-pressed='true'] {
+.gears button[aria-pressed='true'],
+.modes button[aria-pressed='true'] {
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 600;
@@ -144,4 +148,7 @@
   margin-top: 1px;
   stroke-width: 1.5;
   color: var(--fault);
+}
+.modes {
+  grid-template-columns: repeat(3, 1fr);
 }

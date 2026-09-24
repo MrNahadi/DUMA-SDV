@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createSim, type FaultCommand, type Gear, type Sim, type SimSnapshot } from '../sim';
+import { createSim, type DriveMode, type FaultCommand, type Gear, type Sim, type SimSnapshot } from '../sim';
 
 interface SimState {
   sim: Sim;
@@ -7,6 +7,7 @@ interface SimState {
   powerOn: () => void;
   powerOff: () => void;
   requestGear: (gear: Gear) => void;
+  setDriveMode: (mode: DriveMode) => void;
   selectChargeSource: (source: 'AC' | 'DC') => void;
   setChargeTarget: (soc: number) => void;
   commandCharge: (command: 'plugIn' | 'unplug' | 'start' | 'stop') => void;
@@ -31,6 +32,7 @@ export const useSimStore = create<SimState>((set, get) => ({
     sim.setInputs({ accelerator: 0, brake: 0, powerButton: true });
   },
   requestGear: (gear) => get().sim.setInputs({ gearRequest: gear }),
+  setDriveMode: (mode) => get().sim.setInputs({ driveMode: mode }),
   selectChargeSource: (source) => get().sim.setInputs({ chargeSource: source }),
   setChargeTarget: (soc) => get().sim.setInputs({ chargeTargetSoc: soc }),
   commandCharge: (command) => get().sim.setInputs({ chargeCommand: command }),
