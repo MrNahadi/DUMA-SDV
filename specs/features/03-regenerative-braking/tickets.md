@@ -100,12 +100,12 @@ Acceptance:
 Notes: DrivePanel reads IC recovery values, converts joules to kWh and metres to km, and shows unavailable when telemetry is stale.
 ## T-009: End-to-end Regen scenario
 
-Status: open
+Status: done
 Blocked by: T-004, T-007, T-008
 Slice: Add a deterministic headless Regen sequence and a Playwright test of the complete driver flow.
 Test seam: public sim scenario helper and `e2e/regen.spec.ts` user actions
 Acceptance:
-- [ ] Power on → READY → brake and D → accelerate → lift off → brake to zero shows negative power and increasing kWh and km recovered
-- [ ] The Chromium flow completes within 60 s at 1366×768, without console errors or horizontal scroll
-- [ ] All five Feedback commands pass, including the unchanged physics reference bands
-Notes:
+- [x] Power on → READY → brake and D → accelerate → lift off → brake to zero shows negative power and increasing kWh and km recovered
+- [x] The Chromium flow completes within 60 s at 1366×768, without console errors or horizontal scroll
+- [x] All five Feedback commands pass, including the unchanged physics reference bands
+Notes: The Chromium flow completed in 17.4 s; the headless helper and browser test cover the complete recovery stop.
