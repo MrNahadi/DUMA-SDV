@@ -57,13 +57,13 @@ Notes: Use the labels exactly as DESIGN-RULES.md §8 gives them.
 
 ## T-006: Frame signal detail
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Selecting a trace row opens a detail panel that lists the frame's signals with value, unit and value-table name.
 Test seam: Architecture panel component
 Acceptance:
-- [ ] Selecting a row by mouse or keyboard shows every signal in that frame
-- [ ] Enumerated signals such as power state and gear show names, not indexes
+- [x] Selecting a row by mouse or keyboard shows every signal in that frame
+- [x] Enumerated signals such as power state and gear show names, not indexes
 Notes:
 
 ## T-007: ECU diagram

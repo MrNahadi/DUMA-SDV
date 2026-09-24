@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSimStore } from './simStore';
-import { clearMark, formatCanId, pauseSnapshot, visibleFrames } from './traceModel';
-import type { Frame } from '../sim/bus';
+import { clearMark, formatCanId, formatSignals, pauseSnapshot, visibleFrames } from './traceModel';
+import { busCatalogue, type Frame } from '../sim/bus';
 import styles from './ArchitecturePanel.module.css';
 
 export const TRACE_ROW_LIMIT = 100;
@@ -15,6 +15,7 @@ export function ArchitecturePanel() {
   const [message, setMessage] = useState('');
   const [paused, setPaused] = useState<readonly Frame[] | null>(null);
   const [clearedAt, setClearedAt] = useState<number | undefined>(undefined);
+  const [selected, setSelected] = useState<Frame | null>(null);
   const edges = useMemo(() => sim.topology().edges, [sim]);
   const senders = useMemo(() => [...new Set(edges.map((e) => e.sender))].sort(), [edges]);
   const rows = useMemo(
@@ -73,12 +74,39 @@ export function ArchitecturePanel() {
           </thead>
           <tbody>
             {rows.map((f, i) => (
-              <tr key={`${f.t}-${f.id}-${i}`}>
+              <tr
+                key={`${f.t}-${f.id}-${i}`}
+                tabIndex={0}
+                aria-selected={f === selected}
+                className={f === selected ? styles.selected : undefined}
+                onClick={() => setSelected(f)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelected(f);
+                  }
+                }}
+              >
                 <td>{f.t.toFixed(3)}</td><td>{formatCanId(f.id)}</td><td>{f.name}</td><td>{f.sender}</td>
               </tr>
             ))}
           </tbody>
         </table>
+      )}
+      {selected && (
+        <section className={styles.detail} aria-labelledby="signal-title">
+          <h3 id="signal-title">Signals: {selected.name}</h3>
+          <table className={styles.table}>
+            <thead>
+              <tr><th scope="col">Signal</th><th scope="col">Value</th><th scope="col">Unit</th></tr>
+            </thead>
+            <tbody>
+              {formatSignals(selected, busCatalogue).map((s) => (
+                <tr key={s.name}><td>{s.name}</td><td>{s.value}</td><td>{s.unit ?? ''}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
       )}
     </div>
   );

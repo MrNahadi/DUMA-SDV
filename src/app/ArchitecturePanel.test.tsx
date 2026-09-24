@@ -100,3 +100,27 @@ it('clears the displayed trace without touching the sim trace', async () => {
   act(() => useSimStore.getState().advance(100));
   expect(Math.min(...column(0).map(Number))).toBeGreaterThan(before);
 }, 15_000);
+
+it('shows every signal of a selected frame by mouse or keyboard, with enum names', async () => {
+  const user = userEvent.setup();
+  render(<ArchitecturePanel />);
+  act(() => {
+    useSimStore.getState().powerOn();
+    useSimStore.getState().advance(200);
+  });
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Message' }), 'VCU_Status');
+  await user.click(bodyRows()[0]!);
+  const detail = screen.getByRole('region', { name: /Signals/ });
+  expect(within(detail).getByText('gear')).toBeTruthy();
+  expect(within(detail).getByText('powerState')).toBeTruthy();
+  const cells = within(detail).getAllByRole('cell').map((c) => c.textContent);
+  expect(cells).toContain('P');
+  expect(cells.some((c) => ['OFF', 'ACCESSORY', 'STARTING', 'READY'].includes(c ?? ''))).toBe(true);
+
+  await user.selectOptions(screen.getByRole('combobox', { name: 'Message' }), '');
+  const other = bodyRows().find((r) => within(r).getAllByRole('cell')[2]!.textContent !== 'VCU_Status')!;
+  const name = within(other).getAllByRole('cell')[2]!.textContent!;
+  other.focus();
+  await user.keyboard('{Enter}');
+  expect(screen.getByRole('region', { name: `Signals: ${name}` })).toBeTruthy();
+}, 15_000);

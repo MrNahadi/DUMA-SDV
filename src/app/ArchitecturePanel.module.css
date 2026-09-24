@@ -7,3 +7,11 @@
 .empty { margin: 0; font: var(--text-small); color: var(--ink-2); }
 .filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-3); font: var(--text-small); }
 .filters label { display: flex; align-items: center; gap: var(--s-2); color: var(--ink-2); }
+
+.selected {
+  background: var(--color-surface-selected, rgba(127, 127, 127, 0.15));
+}
+
+.detail {
+  margin-top: 1rem;
+}
