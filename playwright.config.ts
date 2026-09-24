@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: 'http://localhost:4273',
     viewport: { width: 1366, height: 768 },
   },
   projects: [
@@ -18,9 +18,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run build && npm run preview',
-    url: 'http://localhost:4173',
-    reuseExistingServer: !process.env.CI,
+    command: 'npm run build && npm run preview -- --port 4273',
+    url: 'http://localhost:4273',
+    // Own port, never reused: a foreign server on 4173 once served 403s to every spec.
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });
