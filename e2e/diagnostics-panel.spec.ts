@@ -19,6 +19,8 @@ test('Diagnostics controls fit the desktop viewport and accept keyboard input', 
 test('Clear all faults requires confirmation and preserves active records', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Power on' }).click();
+  // Faults injected mid-startup fail it; the ECUs then sleep and stop sending DTC frames.
+  await expect(page.getByRole('status', { name: 'Power state' })).toContainText('READY');
   await page.getByRole('button', { name: 'Diagnostics', exact: true }).click();
 
   await page.getByRole('button', { name: 'Inject fault' }).click();

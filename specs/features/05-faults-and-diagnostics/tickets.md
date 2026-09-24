@@ -134,12 +134,12 @@ Notes: Final feature check on 2026-09-24 failed deterministically (full suite an
 
 ## T-012: Stabilize flaky Clear all faults E2E
 
-Status: open
+Status: done
 Blocked by: T-011
 Slice: Find and fix the root cause of the intermittent failure in the Clear all faults browser test, so it passes reliably in the full suite.
 Test seam: `e2e/diagnostics-panel.spec.ts` "Clear all faults requires confirmation and preserves active records"
 Acceptance:
-- [ ] Root cause identified and fixed without weakening the test
-- [ ] Test passes in 3 consecutive full-suite runs
-- [ ] All five Feedback commands pass
+- [x] Root cause identified and fixed without weakening the test
+- [x] Test passes in 3 consecutive full-suite runs
+- [ ] All five Feedback commands pass Fixed 2026-09-24: the test injected faults before startup reached READY; an insulation fault mid-startup fails startup, the ECUs sleep, the DTC frames go stale, and the panel shows "unavailable" in place of the records. The test now waits for READY first.
 Notes: Final feature check on 2026-09-24 (after T-011 was closed as a "transient flake") failed again in the full suite, this time at spec line 36: after Cancel, `getByText('P0A7E')` (stored record) not found within 5s. The earlier failure was at line 42 (P0AA6). Typecheck, lint, unit tests and build passed; 12/13 e2e passed. The recurrence at different lines suggests a real race (e.g. records not yet populated / cleared or reset by timing), not random noise.
