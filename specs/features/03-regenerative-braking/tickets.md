@@ -2,14 +2,15 @@
 
 ## T-001: Decide Normal-mode regen and brake blend
 
-Status: open
+Status: done
 Blocked by:
 Slice: Record a focused ADR for lift-off deceleration, pedal blend, low-speed fade, charge acceptance, grip and saturation. Cite existing physics and identify every new estimate.
 Test seam: ADR decision checked against the public `createSim()` and vehicle parameter contracts
 Acceptance:
-- [ ] An accepted ADR states the rules and reasons without claiming unpublished reference-car figures
-- [ ] The decision preserves the existing full-pedal friction limit and reference test conditions
+- [x] An accepted ADR states the rules and reasons without claiming unpublished reference-car figures
+- [x] The decision preserves the existing full-pedal friction limit and reference test conditions
 Notes:
+- ADR 0009 records estimated Normal-mode control, charge and blend rules; all Feedback commands pass.
 
 ## T-002: Permit controlled pack charging
 
