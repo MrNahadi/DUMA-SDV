@@ -2,15 +2,15 @@
 
 ## T-001: Record the charging control decision
 
-Status: open
+Status: done
 Blocked by:
 Slice: Add a focused ADR for charging handshake, AC efficiency, DC taper, BMS limits, target completion and power-state behavior, citing ADR 0001's published values and marking estimates.
 Test seam: ADR decision reviewed against public `createSim()` and vehicle parameter contracts
 Acceptance:
-- [ ] An accepted ADR distinguishes the 11 kW OBC route from the 150 kW DC route and the existing driving regen allowance
-- [ ] The ADR specifies the 10–80% reference conditions and unchanged 33.3–40.7 min band, with no invented reference figures
-- [ ] Any proposed pack-resistance change is justified and recorded in a separate ADR
-Notes:
+- [x] An accepted ADR distinguishes the 11 kW OBC route from the 150 kW DC route and the existing driving regen allowance
+- [x] The ADR specifies the 10–80% reference conditions and unchanged 33.3–40.7 min band, with no invented reference figures
+- [x] Any proposed pack-resistance change is justified and recorded in a separate ADR
+Notes: ADR 0010 retains the ADR 0004 pack-resistance estimate; no resistance change is proposed.
 
 ## T-002: Expose charge controls and port state
 

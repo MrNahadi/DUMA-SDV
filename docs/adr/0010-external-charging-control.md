@@ -1,0 +1,30 @@
+# 0010. External charging control and estimated charge envelope
+
+Status: accepted
+Decided-by: builder (feature 04 T-001)
+
+Question: How do AC and DC sessions obtain permission, transfer energy and stop at a target while preserving the existing drive and regen contracts?
+
+Decision: Use the control and plant rules below for the fictional vehicle. All charge curves, losses and thresholds in this ADR are engineering estimates, not published reference-car figures. ADR 0001 rows 26-28 supply only the official 11 kW AC OBC rating, official 150 kW DC peak and measured 37 min 10-80% target.
+
+## Session and power state
+
+- The port is unplugged, plugged into AC, or plugged into DC. Plug in selects one source while stationary in P; Unplug is allowed after Stop charging or completion. A cable blocks gear selection and propulsion even if charge permission becomes stale. An accelerator request cannot energize the MCU while plugged.
+- Plugging does not deliver energy. Start charging requires a connected source, stationary P, a target strictly above current SOC and at most 100%, fresh VCU and BMS permissions, and a BMS-accepted pack. Invalid requests are refused with a stable reason visible in the public snapshot. Stop charging removes the request and external current on the next tick. Reaching the target or 100% completes the session and removes current; another Start requires a new reachable target. Unplug cannot leave an active power path.
+- OFF and ACCESSORY may permit a plugged, inactive cable. An accepted Start wakes the required low-voltage control and moves the VCU to CHARGING after the BMS establishes its permitted HV path. CHARGING is mutually exclusive with READY and torque authorization. Stop or completion returns to the prior non-driving powered state; Power off stops charging before opening contactors. Power on while plugged cannot reach drive-ready propulsion. The BMS retains control of contactors and pre-charge; external energy never bypasses its permission.
+- The VCU supervises port, stationarity, P, target and session request. The BMS senses pack SOC, voltage, current and contactors and publishes a separate external charge allowance. The OBC acts on fresh bus authorization for AC only. The DC EVSE is an external plant path, not an ECU; it acts only on fresh VCU/BMS bus permission. Required frames carry catalogue IDs, sender, period or event declaration, units and scaling. Expiry or loss of any required authorization sets external power to zero. No ECU reads another ECU's private state.
+
+## Power and pack acceptance
+
+- AC: the wallbox provides at most 11,000 W at the OBC input (ADR 0001 row 26). Estimated OBC efficiency is 92% at rated input, giving at most 10,120 W DC output; the remaining power is conversion heat. This constant efficiency is a first-order estimate, not a reference measurement. The OBC is inactive in DC mode.
+- DC: the EVSE delivers at most 150,000 W at the pack-side terminal (ADR 0001 row 27), bypassing the OBC. The estimated vehicle-side DC connection loss is 1% of EVSE input, so pack terminal charge power is at most 99% of the EVSE request. Report EVSE input, connection loss and delivered pack terminal power separately. No thermal preconditioning is assumed.
+- The provisional DC EVSE input taper is linear between these estimated SOC knots: 10%: 150 kW, 30%: 145 kW, 50%: 120 kW, 70%: 80 kW, 80%: 55 kW. Below 10%, cap at 150 kW; above 80%, continue linearly toward zero at 100%. The BMS may lower the requested power at any SOC. This is a deterministic calibration shape, not a claim about the reference car's curve. T-006 checks and, if needed, changes estimates in a new ADR without changing ADR 0001's measured target or tolerance.
+- External acceptance is estimated as the lesser of the source taper, 300 A charge current, 620 V pack terminal voltage and remaining usable SOC this 10 ms tick. Refuse charge at 100% SOC or without a confirmed safe contactor path. Use the existing signed pack convention: charging current is negative, terminal voltage is OCV plus charge current magnitude times internal resistance, and SOC rises only from actual delivered negative current. Bound a tick to the target as well as 100% SOC. The 400 W auxiliary load remains a positive demand; it is not counted as charge delivered to the cells.
+- Keep the ADR 0004 row 8 pack resistance estimate of 0.08 ohm. At 10% SOC the existing 172s OCV model gives about 554 V. A 150 kW terminal charge implies about 260 A and roughly 21 V resistive rise, below the estimated 300 A and 620 V bounds. Resistance need not change to make the DC path physically plausible. If later tests justify a different resistance, record that change and its driving and regen effects in a separate ADR before editing the parameter.
+- ADR 0009's 60 kW `BMS_Limits.maxChargeKw` is the transient motor regen allowance in READY while driving. It is not the external charge limit and must remain unchanged. External acceptance has its own bus signal and authorization path. External charging never increments the regen-only Energy recovered tally.
+
+## Reference and checks
+
+The reference run starts at 10% SOC, targets 80%, uses DC, no preconditioning, a stationary car in P and the existing 82.5 kWh usable pack. The wall/EVSE input peak remains at or below 150 kW. The elapsed 10-80% time must stay within 33.3-40.7 min around ADR 0001 row 28's 37 min; no new reference figure is asserted here. T-006 will measure that result through `createSim({ initialSoc: 0.1 })`, while AC and DC tickets verify terminal current, SOC, bus expiry and stop behavior. The 0-100, steady-speed range, top-speed, startup and regen reference conditions and bands remain unchanged.
+
+Consequences: Later implementation constants for AC efficiency, DC connection loss, taper and external acceptance cite this ADR. Calibration changes to estimates require a subsequent ADR. `vehicleParams.obcMaxPowerW` and `vehicleParams.dcPeakPowerW` retain ADR 0001 rows 26-27. The existing `createSim()` signed-current and `snapshot().pack` contracts govern reported charge; display charge data are derived from fresh bus telemetry.
