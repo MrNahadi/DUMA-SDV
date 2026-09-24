@@ -109,3 +109,14 @@ Acceptance:
 - [x] The new architecture spec passes
 - [x] Existing e2e specs still pass, and `npm run typecheck`, `lint`, `test` and `build` pass
 Notes: Wait for READY before injecting faults (see phase 05 T-012).
+
+## T-011: Final feedback run fails (e2e 403s, unit test timeouts)
+
+Status: open
+Blocked by:
+Slice: Make the full Feedback command set pass on the finished feature.
+Test seam: `npm test` and `npm run e2e`
+Acceptance:
+- [ ] `npm run e2e` passes: every spec's console-error check currently gets two "Failed to load resource: 403 (Forbidden)" errors (14 specs fail, 5 pass)
+- [ ] `npm test` passes as a full suite: `startup.test.ts` determinism (5 s), `dc-reference.test.ts` (30 s) and `energy.test.ts` (60 s) time out in the full run but pass alone
+Notes: Found in the completion check on 2026-09-24. The same result came up twice. `playwright.config.ts` uses `reuseExistingServer: !process.env.CI` on port 4173, so a stale or foreign server on that port could be serving the 403s. Check for that first, then find which URL returns 403. The timeouts look like load or contention. Don't weaken the tests.
