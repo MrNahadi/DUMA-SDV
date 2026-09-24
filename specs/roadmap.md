@@ -9,7 +9,7 @@ Each phase gets `specs/features/NN-slug/` and a `feature/NN-slug` branch.
 - [x] **04 · Charging** [2]. Plug into AC (OBC) or DC fast charge, charge-curve chart, time-to-target, charge port state on the 3D car. Includes the 10–80% DC reference test.
 - [x] **05 · Faults and diagnostics** [3]. Fault injection panel, DTCs (active / stored), derate and limp mode, plain-language warnings, affected module highlighted on the x-ray car. Clearing the fault log asks for confirmation.
 - [x] **06 · Architecture and bus trace** [4]. ECU architecture diagram with live activity and a CAN trace you can filter by ECU or message and pause. Clicking a message shows its signals.
-- [ ] **07 · Energy flow and thermal** [8]. Live power-flow diagram (pack ↔ inverter ↔ motor, charger → pack, DC-DC → 12 V). Pack, motor and inverter temperatures from a lumped thermal model with coolant loops.
+- [x] **07 · Energy flow and thermal** [8]. Live power-flow diagram (pack ↔ inverter ↔ motor, charger → pack, DC-DC → 12 V). Pack, motor and inverter temperatures from a lumped thermal model with coolant loops.
 - [ ] **08 · Drive modes, drive cycles, telemetry export** [7, 9]. Eco / Normal / Sport; run an urban or highway cycle to get a speed/power/SOC chart and Wh/km; export the run as CSV.
 - [ ] **09 · OTA software update** [6]. Software view with ECU versions; download → verify → install → reboot flow with confirmation; the update visibly changes behaviour (e.g. unlocks a mode or raises regen strength).
 - [ ] **10 · Guided demo mode** [5]. One button plays each scenario with captions. "Start here" onboarding for first-time judges. Includes one e2e test per scenario, which closes the DoD scenario check.
