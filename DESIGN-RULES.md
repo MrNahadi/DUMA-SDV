@@ -37,7 +37,7 @@ Tokens are defined once on `:root` in `src/ui/tokens.css`. Hex values are never 
 | `--*-soft` | same hue at ~10% on white | Status backgrounds (badges, highlighted rows) |
 
 - Status is **never shown by colour alone**. It always comes with an icon or a word.
-- Chart series use dedicated data colours, separate from UI accent and status colours. The Charge curve uses `--data-ac` for AC (`#0072B2`, blue) and `--data-dc` for DC (`#C65300`, orange). Both are legible against the white chart surface; series must also be identified in words. Add new data series colours here before using them in another chart.
+- Chart series use dedicated data colours, separate from UI accent and status colours. The Charge curve uses `--data-ac` for AC (`#0072B2`, blue) and `--data-dc` for DC (`#C65300`, orange). Both are legible against the white chart surface; series must also be identified in words. Add new data series colours here before using them in another chart. The Cycle chart uses `--data-speed` for speed (`#0072B2`, blue), `--data-target` for target speed (`#5A5A5A`, grey, dashed), `--data-power` for battery power (`#C65300`, orange) and `--data-soc` for SOC (`#007A5E`, bluish green); each series is named in words and the chart sits in the Cycles view, never beside the Charge curve.
 - The 3D highlight colours for faults and energy flow use `--warn`, `--fault`, `--ok` and `--accent`, and nothing else.
 
 ## 4. Type

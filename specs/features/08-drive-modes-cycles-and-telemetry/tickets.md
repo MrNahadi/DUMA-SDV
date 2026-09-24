@@ -103,13 +103,13 @@ Notes: Use DESIGN-RULES §8 words.
 
 ## T-009: Cycle chart
 
-Status: open
+Status: done
 Blocked by: T-006, T-008
 Slice: A uPlot chart in the Cycles view plots speed and target speed, battery power and SOC against sim time, from the recorder. New data colours are added to DESIGN-RULES §2 first.
 Test seam: CycleChart component test and its pure series-building function
 Acceptance:
-- [ ] Series are built from recorder samples with UI units (km/h, kW, %)
-- [ ] Each series has a text label, and the colours come from new DESIGN-RULES tokens
+- [x] Series are built from recorder samples with UI units (km/h, kW, %)
+- [x] Each series has a text label, and the colours come from new DESIGN-RULES tokens
 Notes: Follow the ChargeChart pattern.
 
 ## T-010: Export CSV button

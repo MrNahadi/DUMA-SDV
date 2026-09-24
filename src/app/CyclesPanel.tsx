@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Route, Square } from 'lucide-react';
 import { Button } from '../ui/Button';
 import type { CycleId } from '../sim/scenarios';
 import { useSimStore } from './simStore';
 import { ModeControl } from './ModeControl';
+import { CycleChart } from './CycleChart';
 import styles from './ChargePanel.module.css';
 
 const cycleNames: Record<CycleId, string> = { urban: 'Urban', highway: 'Highway' };
@@ -13,6 +14,7 @@ export function CyclesPanel() {
   const runCycle = useSimStore((s) => s.runCycle);
   const stopCycle = useSimStore((s) => s.stopCycle);
   const [cycleId, setCycleId] = useState<CycleId>('urban');
+  const samples = useMemo(() => [...(cycleRun?.runner.telemetry() ?? [])], [cycleRun]);
   const running = cycleRun?.status.state === 'running';
   const status = cycleRun?.status;
   const result = cycleRun?.result ?? null;
@@ -57,6 +59,7 @@ export function CyclesPanel() {
           <Button variant="primary" icon={<Route />} onClick={() => runCycle(cycleId)}>Run cycle</Button>
         )}
       </section>
+      <CycleChart samples={samples} />
     </div>
   );
 }

@@ -24,6 +24,10 @@
   /* Chart data: distinct from UI accent and status colours (DESIGN-RULES.md). */
   --data-ac: #0072b2;
   --data-dc: #c65300;
+  --data-speed: #0072b2;
+  --data-target: #5a5a5a;
+  --data-power: #c65300;
+  --data-soc: #007a5e;
 
   /* Type */
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
