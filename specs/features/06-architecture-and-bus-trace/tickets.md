@@ -35,13 +35,13 @@ Notes: Throttle refreshes. Add no packages.
 
 ## T-004: Trace filters
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Add ECU and message filters to the trace, with a way to clear them and an empty state.
 Test seam: Architecture panel component
 Acceptance:
-- [ ] Filtering by ECU, by message or by both shows only matching rows
-- [ ] Clearing the filters brings back all rows, and a filter with no matches shows the empty state
+- [x] Filtering by ECU, by message or by both shows only matching rows
+- [x] Clearing the filters brings back all rows, and a filter with no matches shows the empty state
 Notes:
 
 ## T-005: Pause, Resume and Clear trace

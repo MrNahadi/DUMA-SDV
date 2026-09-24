@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useSimStore } from './simStore';
 import { formatCanId, visibleFrames } from './traceModel';
 import styles from './ArchitecturePanel.module.css';
@@ -10,14 +10,43 @@ const REFRESH_HZ = 4;
 export function ArchitecturePanel() {
   const sim = useSimStore((s) => s.sim);
   const bucket = useSimStore((s) => Math.floor(s.snapshot.timeS * REFRESH_HZ));
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- bucket throttles re-reads of the mutable trace
-  const rows = useMemo(() => visibleFrames(sim.trace(), { limit: TRACE_ROW_LIMIT }), [sim, bucket]);
+  const [ecu, setEcu] = useState('');
+  const [message, setMessage] = useState('');
+  const edges = useMemo(() => sim.topology().edges, [sim]);
+  const senders = useMemo(() => [...new Set(edges.map((e) => e.sender))].sort(), [edges]);
+  const rows = useMemo(
+    () => visibleFrames(sim.trace(), { limit: TRACE_ROW_LIMIT, ecu: ecu || undefined, message: message || undefined }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bucket throttles re-reads of the mutable trace
+    [sim, bucket, ecu, message],
+  );
+  const filtered = ecu !== '' || message !== '';
 
   return (
     <div className={styles.content}>
       <h2 id="trace-title">CAN trace</h2>
+      <div className={styles.filters}>
+        <label>
+          ECU
+          <select value={ecu} onChange={(e) => setEcu(e.target.value)}>
+            <option value="">All</option>
+            {senders.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+        <label>
+          Message
+          <select value={message} onChange={(e) => setMessage(e.target.value)}>
+            <option value="">All</option>
+            {edges.map((m) => <option key={m.message} value={m.message}>{m.message}</option>)}
+          </select>
+        </label>
+        <button type="button" disabled={!filtered} onClick={() => { setEcu(''); setMessage(''); }}>
+          Clear filters
+        </button>
+      </div>
       {rows.length === 0 ? (
-        <p className={styles.empty}>No frames yet. Power on to start bus traffic.</p>
+        <p className={styles.empty}>
+          {filtered ? 'No frames match the filters.' : 'No frames yet. Power on to start bus traffic.'}
+        </p>
       ) : (
         <table className={styles.table} aria-labelledby="trace-title">
           <thead>
