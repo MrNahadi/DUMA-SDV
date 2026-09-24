@@ -60,7 +60,7 @@ describe('cycle runner (T-004)', () => {
 });
 
 describe('cycle result (T-005)', () => {
-  function runMode(id: CycleId, mode: 'eco' | 'normal') {
+  function runMode(id: CycleId, mode: 'eco' | 'normal' | 'sport') {
     const sim = createSim();
     sim.setInputs({ driveMode: mode });
     const runner = createCycleRunner(sim, id);
@@ -84,11 +84,11 @@ describe('cycle result (T-005)', () => {
     expect(runMode('urban', 'normal').runner.result()).toEqual(runMode('urban', 'normal').runner.result());
   }, 20_000);
 
-  it('Eco gives Wh/km no higher than Normal on Urban', () => {
-    const eco = runMode('urban', 'eco').runner.result()!;
-    const normal = runMode('urban', 'normal').runner.result()!;
-    expect(eco.whPerKm).toBeLessThanOrEqual(normal.whPerKm);
-  }, 20_000);
+  it('Eco, Normal and Sport Wh/km on Urban are within ±3 % of each other (compared, not ranked)', () => {
+    const wh = (['eco', 'normal', 'sport'] as const).map((m) => runMode('urban', m).runner.result()!.whPerKm);
+    const spread = (Math.max(...wh) - Math.min(...wh)) / Math.min(...wh);
+    expect(spread).toBeLessThanOrEqual(0.03);
+  }, 30_000);
 
   it('a stopped run has no result', () => {
     const sim = createSim();

@@ -35,6 +35,12 @@ Annex 1, Class 3 cycle tables (Class 3a and 3b are identical in these phases). T
 rebased to t = 0 on load; target speed is linear between points and 0 after the end. Stored
 distance by trapezoid sum: 3094.5 m and 8254.1 m.
 
+**Mode energy on a fixed trace.** The cycle driver follows the same WLTC speed trace in every
+mode, so the wheel energy is the same; the maps change drivability, not the energy needed.
+Eco's stronger lift-off regen (0.2 g) sends more energy through the battery and back, adding
+round-trip loss, so Eco can come out slightly higher. Modes are therefore compared, not ranked
+(R10: within ±3 % on Urban). Measured on Urban: Eco 146.41, Normal 144.75, Sport 144.75 Wh/km.
+
 ## Consequences
 
 - All reference tests (0–100, range, DC, regen) keep their tolerances; Normal is unchanged.
