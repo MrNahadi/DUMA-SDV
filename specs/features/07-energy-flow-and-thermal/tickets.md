@@ -14,13 +14,13 @@ Notes: Read-only tap. Do not change energy integration.
 
 ## T-002: Lumped thermal masses
 
-Status: open
+Status: done
 Blocked by:
 Slice: A new thermal plant module with pack, motor and inverter masses heated by given losses and a simple path to ambient, plus estimate parameters and ADR 0012.
 Test seam: Thermal module public functions (create, step, state)
 Acceptance:
-- [ ] Idle at ambient stays within 0.1 °C for 600 s
-- [ ] A constant loss gives a monotonic rise to a bounded steady state, then decay after removal
+- [x] Idle at ambient stays within 0.1 °C for 600 s
+- [x] A constant loss gives a monotonic rise to a bounded steady state, then decay after removal
 - [ ] Every parameter is marked `// estimate` and listed in ADR 0012
 Notes: Plant model, not an ECU. SI units, °C for temperature.
 
