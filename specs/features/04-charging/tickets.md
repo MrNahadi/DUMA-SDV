@@ -124,15 +124,15 @@ Notes: Exterior port uses a closed flap, inserted plug and static charging marke
 
 ## T-011: Accelerate the charging demonstration
 
-Status: open
+Status: done
 Blocked by: T-008
 Slice: Add a 1×–120× app time-scale control and bounded frame batching, advancing the existing 10 ms sim tick.
 Test seam: public app time-scale control and `createSim().snapshot().timeS`
 Acceptance:
-- [ ] Sim time advances at the selected scale in whole 10 ms ticks; changing scale never changes a deterministic headless replay
-- [ ] Display updates no faster than animation frames, and Stop charging remains responsive at 120×
-- [ ] Existing 1× driving and startup interactions remain usable
-Notes:
+- [x] Sim time advances at the selected scale in whole 10 ms ticks; changing scale never changes a deterministic headless replay
+- [x] Display updates no faster than animation frames, and Stop charging remains responsive at 120×
+- [x] Existing 1× driving and startup interactions remain usable
+Notes: Charge panel exposes 1×, 10×, 30×, 60× and 120×. Loop caps each frame at 200 ticks and publishes one snapshot. All five Feedback commands pass.
 
 ## T-012: End-to-end Charging scenario
 

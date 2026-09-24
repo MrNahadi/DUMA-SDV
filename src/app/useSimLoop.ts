@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 import { useSimStore } from './simStore';
+import { useAppStore } from './store';
 
 const TICK_MS = 10;
 const MAX_CATCH_UP_MS = 250;
+const MAX_TICKS_PER_FRAME = 200;
 
 export function useSimLoop(): void {
   useEffect(() => {
@@ -15,8 +17,10 @@ export function useSimLoop(): void {
         previous = now;
         accumulator = 0;
       } else if (previous !== 0) {
-        accumulator += Math.min(now - previous, MAX_CATCH_UP_MS);
-        const ticks = Math.floor(accumulator / TICK_MS);
+        const scale = useAppStore.getState().timeScale;
+        accumulator += Math.min(now - previous, MAX_CATCH_UP_MS) * scale;
+        accumulator = Math.min(accumulator, MAX_TICKS_PER_FRAME * TICK_MS);
+        const ticks = Math.min(MAX_TICKS_PER_FRAME, Math.floor(accumulator / TICK_MS));
         if (ticks > 0) {
           accumulator -= ticks * TICK_MS;
           useSimStore.getState().advance(ticks);

@@ -3,6 +3,7 @@ import { PlugZap } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { wToKw } from '../sim/units';
 import { useSimStore } from './simStore';
+import { useAppStore } from './store';
 import { ChargeChart } from './ChargeChart';
 import styles from './ChargePanel.module.css';
 
@@ -22,6 +23,8 @@ export function ChargePanel() {
   const selectChargeSource = useSimStore((s) => s.selectChargeSource);
   const setChargeTarget = useSimStore((s) => s.setChargeTarget);
   const commandCharge = useSimStore((s) => s.commandCharge);
+  const timeScale = useAppStore((s) => s.timeScale);
+  const setTimeScale = useAppStore((s) => s.setTimeScale);
   const [source, setSource] = useState<'AC' | 'DC'>('AC');
   const [target, setTarget] = useState(90);
   const { charge, chargeDisplay: display } = snapshot;
@@ -51,6 +54,10 @@ export function ChargePanel() {
       </section>
       <ChargeChart snapshot={snapshot} />
       <section className={styles.controls} aria-label="Charging controls">
+        <label htmlFor="simulation-speed">Simulation speed</label>
+        <select id="simulation-speed" value={timeScale} onChange={(event) => setTimeScale(Number(event.target.value) as typeof timeScale)}>
+          {[1, 10, 30, 60, 120].map((scale) => <option key={scale} value={scale}>{scale}×</option>)}
+        </select>
         <label htmlFor="charge-source">Charge source</label>
         <select id="charge-source" value={source} disabled={charge.connected} onChange={(event) => setSource(event.target.value as 'AC' | 'DC')}>
           <option value="AC">AC</option><option value="DC">DC</option>
