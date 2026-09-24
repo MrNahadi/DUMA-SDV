@@ -110,7 +110,7 @@ Notes: The existing module meshes add no new geometry or draw calls. The static 
 
 ## T-010: End-to-end Fault scenario
 
-Status: open
+Status: in-progress
 Blocked by: T-004, T-005, T-006, T-007, T-008, T-009
 Slice: Add headless and Chromium fault-during-driving flows from injection through DTC, warning, power cap, x-ray location, recovery and confirmed log clear.
 Test seam: Public `createSim()` scenario and `e2e/faults.spec.ts` user actions
