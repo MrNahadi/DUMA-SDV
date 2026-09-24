@@ -15,3 +15,30 @@ test('Diagnostics controls fit the desktop viewport and accept keyboard input', 
   await expect(page.getByText('P0562')).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });
+
+test('Clear all faults requires confirmation and preserves active records', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Power on' }).click();
+  await page.getByRole('button', { name: 'Diagnostics', exact: true }).click();
+
+  await page.getByRole('button', { name: 'Inject fault' }).click();
+  await expect(page.getByText('P0A7E')).toBeVisible();
+  await page.getByRole('button', { name: 'Restore Cell over-temperature' }).click();
+  await page.getByLabel('Fault type').selectOption('insulationFault');
+  await page.getByRole('button', { name: 'Inject fault' }).click();
+  await expect(page.getByText('P0AA6')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Clear all faults' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Clear all faults' });
+  await expect(dialog).toContainText('stored');
+  await dialog.getByRole('button', { name: 'Cancel' }).click();
+  await expect(dialog).not.toBeVisible();
+  await expect(page.getByText('P0A7E')).toBeVisible();
+  await expect(page.getByText('P0AA6')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Clear all faults' }).click();
+  await dialog.getByRole('button', { name: 'Clear all faults' }).click();
+  await expect(page.getByText('P0A7E')).not.toBeVisible();
+  await expect(page.getByText('P0AA6')).toBeVisible();
+  await expect(page.getByText('Fault log cleared')).toBeVisible();
+});

@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { faultCatalogue, type FaultKey } from '../sim';
 import { Button } from '../ui/Button';
+import { Modal } from '../ui/Modal';
+import { Toast } from '../ui/Toast';
 import { useSimStore } from './simStore';
 import styles from './DiagnosticsPanel.module.css';
 
@@ -13,10 +15,36 @@ const faultNames: Record<FaultKey, string> = {
 
 export function DiagnosticsPanel() {
   const [selected, setSelected] = useState<FaultKey>(faultCatalogue[0].key);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const clearButton = useRef<HTMLButtonElement>(null);
+  const cancelButton = useRef<HTMLButtonElement>(null);
   const diagnostics = useSimStore((s) => s.snapshot.diagnostics);
   const commandFault = useSimStore((s) => s.commandFault);
   const available = Object.values(diagnostics.busStatus).every((owner) => owner.available);
   const selectedActive = diagnostics.records.some((record) => record.key === selected && record.status === 'active');
+
+  useEffect(() => {
+    if (confirmClear) cancelButton.current?.focus();
+    else if (showToast) clearButton.current?.focus();
+  }, [confirmClear, showToast]);
+
+  useEffect(() => {
+    if (!showToast) return;
+    const timer = window.setTimeout(() => setShowToast(false), 4000);
+    return () => window.clearTimeout(timer);
+  }, [showToast]);
+
+  function cancelClear() {
+    setConfirmClear(false);
+    clearButton.current?.focus();
+  }
+
+  function clearAll() {
+    commandFault({ action: 'clearAll' });
+    setConfirmClear(false);
+    setShowToast(true);
+  }
 
   return (
     <div className={styles.content}>
@@ -46,7 +74,18 @@ export function DiagnosticsPanel() {
             ))}
           </ul>
         )}
+        {diagnostics.records.length > 0 && <Button ref={clearButton} variant="secondary" onClick={() => { setShowToast(false); setConfirmClear(true); }}>Clear all faults</Button>}
       </section>
+      {confirmClear && (
+        <Modal title="Clear all faults">
+          <p>Clear stored fault records? Active faults and their records will remain until their conditions are restored.</p>
+          <div className={styles.modalActions}>
+            <Button ref={cancelButton} variant="secondary" onClick={cancelClear}>Cancel</Button>
+            <Button variant="primary" onClick={clearAll}>Clear all faults</Button>
+          </div>
+        </Modal>
+      )}
+      {showToast && <Toast>Fault log cleared</Toast>}
     </div>
   );
 }

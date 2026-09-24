@@ -86,14 +86,14 @@ Notes: Use existing tokens, primitives and one primary action.
 
 ## T-008: Confirm Clear all faults
 
-Status: open
+Status: done
 Blocked by: T-007
 Slice: Add the centered confirmation modal and completion feedback for **Clear all faults**.
 Test seam: Diagnostics panel user actions and public sim snapshot
 Acceptance:
-- [ ] Cancel leaves every record unchanged; confirm clears eligible stored records only
-- [ ] Active conditions and their records remain active after confirmation
-- [ ] The modal states the consequence and confirmation shows a tick/toast
+- [x] Cancel leaves every record unchanged; confirm clears eligible stored records only
+- [x] Active conditions and their records remain active after confirmation
+- [x] The modal states the consequence and confirmation shows a tick/toast
 Notes: The action wording must match `DESIGN-RULES.md` exactly.
 
 ## T-009: Highlight the faulty module on the car
