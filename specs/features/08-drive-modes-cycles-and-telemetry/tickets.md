@@ -147,14 +147,14 @@ Notes: Add the scenario to `src/sim/scenarios` if the guided demo (phase 11) can
 
 ## T-013: Cycle runs honour the time scale
 
-Status: open
+Status: done
 Blocked by:
 Slice: `step(seconds)` on the cycle runner advances sim time by exactly the requested amount, carrying any part-step over to the next call, so a cycle in the Cycles view runs at the selected time scale. The driver still updates the pedals every 0.1 s of sim time. (Review finding #1.)
 Test seam: Cycle runner public API (step, status)
 Acceptance:
-- [ ] 100 calls of `step(0.01)` give the same elapsed time and snapshot as one `step(1)`
-- [ ] Elapsed sim time never runs ahead of the total requested time by more than one sim tick
-- [ ] The T-004 tracking, determinism and speed tests and the T-005 Wh/km tests pass with unchanged tolerances
+- [x] 100 calls of `step(0.01)` give the same elapsed time and snapshot as one `step(1)`
+- [x] Elapsed sim time never runs ahead of the total requested time by more than one sim tick
+- [x] The T-004 tracking, determinism and speed tests and the T-005 Wh/km tests pass with unchanged tolerances
 Notes: Review of 696546a..07e4493. The UI calls advance(1–2 ticks) per frame at 1×, so the current behaviour makes a cycle run about 6× real time.
 
 ## T-014: Cycle runs start from rest and fail cleanly

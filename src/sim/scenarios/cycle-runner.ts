@@ -73,6 +73,8 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
   let state: CycleRunState = 'running';
   let elapsedS = 0;
   let integral = 0;
+  let requestedS = 0;
+  let ticks = 0;
 
   if (sim.snapshot().powerState !== 'READY' && !powerOnToReady(sim)) state = 'failed';
   if (state === 'running' && sim.snapshot().gear !== 'D' && !shiftWithBrake(sim, 'D')) state = 'failed';
@@ -111,14 +113,17 @@ export function createCycleRunner(sim: Sim, cycleId: CycleId, options: CycleRunn
 
   return {
     step(seconds) {
-      const endS = Math.min(elapsedS + seconds, cycle.durationS);
-      while (state === 'running' && elapsedS < endS - 1e-9) {
-        drive(sim.snapshot());
-        sim.step(DRIVER_TICKS);
+      // Sim time is requested in any amount; the part-tick remainder carries over to the next call.
+      requestedS = Math.min(requestedS + seconds, cycle.durationS);
+      while (state === 'running' && ticks * TICK_S < requestedS - 1e-9) {
+        if (ticks % DRIVER_TICKS === 0) drive(sim.snapshot());
+        sim.step(1);
+        ticks++;
         const s = sim.snapshot();
         elapsedS = s.timeS - t0;
-        recorder.record(s, targetSpeedMs(cycleId, elapsedS));
-        if (elapsedS >= cycle.durationS - 1e-9) {
+        const done = elapsedS >= cycle.durationS - 1e-9;
+        if (ticks % DRIVER_TICKS === 0 || done) recorder.record(s, targetSpeedMs(cycleId, elapsedS));
+        if (done) {
           state = 'completed';
           const distanceKm = (s.odometerM - start.odometerM) / 1000;
           const netEnergyKWh = (s.tripEnergyJ - start.tripEnergyJ) / 3.6e6;

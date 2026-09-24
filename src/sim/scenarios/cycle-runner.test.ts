@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSim } from '../index';
+import { createSim, TICK_S } from '../index';
 import { msToKmh } from '../units';
 import { createCycleRunner } from './cycle-runner';
 import { getCycle, targetSpeedMs, type CycleId } from './cycles';
@@ -97,5 +97,31 @@ describe('cycle result (T-005)', () => {
     runner.step(60);
     runner.stop();
     expect(runner.result()).toBeNull();
+  });
+});
+
+describe('cycle runner time scale (T-013)', () => {
+  it('100 calls of step(0.01) match one step(1)', () => {
+    const simA = createSim();
+    const a = createCycleRunner(simA, 'urban');
+    for (let i = 0; i < 100; i++) a.step(0.01);
+    const simB = createSim();
+    const b = createCycleRunner(simB, 'urban');
+    b.step(1);
+    expect(a.status().elapsedS).toBeCloseTo(1, 6);
+    expect(a.status().elapsedS).toBe(b.status().elapsedS);
+    expect(simA.snapshot()).toEqual(simB.snapshot());
+  });
+
+  it('elapsed time never runs ahead of the requested time by more than one tick', () => {
+    const sim = createSim();
+    const runner = createCycleRunner(sim, 'urban');
+    let requested = 0;
+    for (const dt of [0.004, 0.013, 0.05, 0.001, 0.2, 0.037, 1.5]) {
+      runner.step(dt);
+      requested += dt;
+      expect(runner.status().elapsedS).toBeLessThanOrEqual(requested + TICK_S + 1e-9);
+      expect(runner.status().elapsedS).toBeGreaterThan(requested - TICK_S - 1e-9);
+    }
   });
 });
