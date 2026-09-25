@@ -8,7 +8,7 @@
  * in ADR 0008.
  */
 
-import { DRIVE_MODES, GEARS, POWER_STATES, STARTUP_STEPS, type Bus } from '../bus';
+import { DRIVE_MODES, GEARS, POWER_STATES, STARTUP_STEPS, swVersionCode, type Bus } from '../bus';
 import type { VehicleParams } from '../vehicle';
 import { GRAVITY_MS2, motorLossW, motorMaxTorqueNm } from '../vehicle';
 import { jPerMToWhPerKm, kmhToMs, msToKmh, rpmToRads } from '../units';
@@ -19,7 +19,7 @@ export type PowerState = (typeof POWER_STATES)[number];
 export type Gear = (typeof GEARS)[number];
 export type DriveMode = (typeof DRIVE_MODES)[number];
 /** Why a gear request was refused (ADR 0006). */
-export type GearRefusal = 'brakeRequired' | 'speedTooHigh' | 'notReady' | 'cableConnected';
+export type GearRefusal = 'brakeRequired' | 'speedTooHigh' | 'notReady' | 'cableConnected' | 'updating';
 
 /** What the VCU senses from the driver each tick. */
 export interface DriverInputs {
@@ -95,6 +95,16 @@ const TRIP_BLEND_START_M = 5_000;
 const TRIP_BLEND_SPAN_M = 20_000;
 /** Floor on the consumption behind the estimate, as a fraction of WLTP: guards the division. */
 const MIN_CONSUMPTION_RATIO = 0.5;
+/** ADR 0015: VCU firmware offers Sport from this version on. */
+const SPORT_FROM_VERSION = swVersionCode(1, 1, 0);
+/** A TCU_Ota frame (100 ms) older than this counts as lost. */
+const OTA_LIVE_S = 0.25;
+
+/** Whether VCU firmware `swVersion` offers drive mode `mode` (ADR 0015). */
+export function modeAvailable(mode: DriveMode, swVersion: number): boolean {
+  return mode !== 'sport' || swVersion >= SPORT_FROM_VERSION;
+}
+
 /** ADR 0009: Normal lift-off reaches 0.15 g above 5 m/s and vanishes below 0.5 m/s. */
 const REGEN_DECEL_G = 0.15;
 const REGEN_START_MS = 0.5;
@@ -135,10 +145,18 @@ export interface Vcu {
   /** Why the latest gear request was refused, or null if it was accepted. */
   readonly gearRefusal: GearRefusal | null;
   readonly chargeAuthorized: boolean;
+  /** Firmware version in the active bank (ADR 0015). */
+  readonly swVersion: number;
   step(t: number, powerButtonPressed: boolean, driver: Readonly<DriverInputs>): void;
 }
 
-export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, faultStatus: (key: FaultKey) => 'active' | 'stored' | null): Vcu {
+export function createVcu(
+  bus: Bus,
+  p: Readonly<VehicleParams>,
+  tickS: number,
+  faultStatus: (key: FaultKey) => 'active' | 'stored' | null,
+  swVersion: number = INITIAL_SW_VERSION,
+): Vcu {
   const boot = createBootTracker(VCU_WAKE_S);
   const bootFrame = bus.writer('VCU', 'VCU_Boot');
   const command = bus.writer('VCU', 'VCU_Command');
@@ -148,7 +166,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
   const chargeFrame = bus.writer('VCU', 'VCU_Charge');
   const decisionFrame = bus.writer('VCU', 'VCU_DriveDecision');
   const modeFrame = bus.writer('VCU', 'VCU_Mode');
-  const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Status', 'MCU_Vehicle', 'BMS_DTC', 'MCU_DTC']);
+  const inbox = bus.subscribe('VCU', [...REMOTE_BOOTS, 'BMS_Status', 'BMS_Limits', 'BMS_Charge', 'MCU_Status', 'MCU_Vehicle', 'BMS_DTC', 'MCU_DTC', 'TCU_Ota']);
   bus.setSenderActive('VCU', false);
 
   const packVMin = p.seriesCells * 2.5;
@@ -162,6 +180,10 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
 
   let awake = false;
   const modeWeight: Record<DriveMode, number> = { eco: 0, normal: 1, sport: 0 };
+  /** The selected mode the firmware offers; a locked mode leaves it unchanged. */
+  let appliedMode: DriveMode = 'normal';
+  /** Image in the inactive bank, activated at the next sleep (ADR 0015), or null. */
+  let stagedVersion: number | null = null;
   let pendingPress = false;
   let wakeAtS = 0;
   let current = -1;
@@ -188,12 +210,20 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
     gear: 'P' as Gear,
     gearRefusal: null as GearRefusal | null,
     chargeAuthorized: false,
+    swVersion,
     step(t: number, buttonPressed: boolean, driver: Readonly<DriverInputs>) {
+      if (boot.running && !shuttingDown && otaRebootRequested()) {
+        // ADR 0015: power down, switch banks while asleep, then power on again.
+        stagedVersion = inbox.read('TCU_Ota', 'version') as number;
+        powerOff(t);
+        pendingPress = true;
+      }
+      if (modeAvailable(driver.driveMode, vcu.swVersion)) appliedMode = driver.driveMode;
       const running = updatePower(t, buttonPressed, driver.chargeRequested && driver.cableConnected);
       if (driver.gearRequest !== null) requestGear(t, driver.gearRequest, driver.brake, driver.cableConnected);
       if (running) {
         updateCharge(t, driver);
-        publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake, driver.cableConnected, driver.driveMode);
+        publish(t, driver.cableConnected ? 0 : driver.accelerator, driver.brake, driver.cableConnected, appliedMode);
       } else vcu.chargeAuthorized = false;
     },
   };
@@ -230,7 +260,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
 
     if (boot.update(awake, t) === 'booted') {
       bus.setSenderActive('VCU', true);
-      bootFrame.set('selfCheck', 'pass').set('swVersion', INITIAL_SW_VERSION).raise();
+      bootFrame.set('selfCheck', 'pass').set('swVersion', vcu.swVersion).raise();
     }
     if (!boot.running) return false;
 
@@ -310,6 +340,10 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
   }
 
   function sleep(t: number) {
+    if (stagedVersion !== null) {
+      vcu.swVersion = stagedVersion;
+      stagedVersion = null;
+    }
     awake = false;
     shuttingDown = false;
     vcu.kl15 = false;
@@ -404,12 +438,31 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
       vcu.gearRefusal = 'cableConnected';
       return;
     }
+    if (target !== 'P' && updating(t)) {
+      vcu.gearRefusal = 'updating';
+      return;
+    }
     if (target === vcu.gear) {
       vcu.gearRefusal = null;
       return;
     }
     vcu.gearRefusal = gearRefusal(t, target, brake);
     if (vcu.gearRefusal === null) selectGear(target);
+  }
+
+  /** True while the TCU writes the inactive bank or the VCU restarts into it (ADR 0015). */
+  function updating(t: number): boolean {
+    if (stagedVersion !== null) return true;
+    if (!isFresh(inbox, 'TCU_Ota', t - OTA_LIVE_S)) return false;
+    const state = inbox.read('TCU_Ota', 'state');
+    return state === 'installing' || state === 'rebooting';
+  }
+
+  /** A fresh TCU_Ota asks this VCU to restart into a different image. */
+  function otaRebootRequested(): boolean {
+    if (!isFresh(inbox, 'TCU_Ota', wakeAtS)) return false;
+    const version = inbox.read('TCU_Ota', 'version') as number;
+    return inbox.read('TCU_Ota', 'state') === 'rebooting' && inbox.read('TCU_Ota', 'target') === 'VCU' && version > 0 && version !== vcu.swVersion;
   }
 
   function selectGear(gear: Gear) {

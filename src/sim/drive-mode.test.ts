@@ -1,23 +1,27 @@
 import { describe, expect, it } from 'vitest';
 import { busCatalogue } from './bus';
-import { TICK_S, createSim } from './index';
+import { TICK_S, UPDATE_PACKAGE, createSim } from './index';
 import { powerOnToReady } from './scenarios';
 
 const PERIOD_TICKS = Math.round(0.1 / TICK_S);
 
 describe('drive mode input over the bus (T-001)', () => {
-  it('defaults to Normal and lists all three modes as available', () => {
+  it('defaults to Normal, with Sport locked on VCU 1.0.0 (ADR 0015)', () => {
     const sim = createSim();
     expect(sim.snapshot().driveMode).toBe('normal');
     expect(sim.snapshot().driveModes).toEqual([
       { id: 'eco', available: true },
       { id: 'normal', available: true },
-      { id: 'sport', available: true },
+      { id: 'sport', available: false },
     ]);
   });
 
+  it('lists all three modes as available on VCU 1.1.0', () => {
+    expect(createSim({ vcuSwVersion: UPDATE_PACKAGE.version }).snapshot().driveModes.every((m) => m.available)).toBe(true);
+  });
+
   it('reports a newly set mode from the bus within one message period', () => {
-    const sim = createSim();
+    const sim = createSim({ vcuSwVersion: UPDATE_PACKAGE.version });
     expect(powerOnToReady(sim)).toBe(true);
     sim.setInputs({ driveMode: 'eco' });
     sim.step(PERIOD_TICKS + 1);

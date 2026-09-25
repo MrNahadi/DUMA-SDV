@@ -16,7 +16,7 @@ describe('bus topology', () => {
     const { nodes, edges } = createSim().topology();
     const expected = new Set(edges.flatMap((e) => [e.sender, ...e.subscribers]));
     expect(new Set(nodes)).toEqual(expected);
-    expect(nodes).toEqual(expect.arrayContaining(['VCU', 'BMS', 'MCU', 'IC']));
+    expect(nodes).toEqual(expect.arrayContaining(['VCU', 'BMS', 'MCU', 'IC', 'TCU']));
     expect(nodes).not.toContain('ChargePath');
     expect(nodes).not.toContain('Diagnostics');
   });

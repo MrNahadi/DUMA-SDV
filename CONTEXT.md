@@ -16,6 +16,7 @@ Words used in specs, code, UI and paper. Use them exactly. If code names differ 
 | OBC | On-Board Charger: AC charging only. DC charging goes around it to the pack. |
 | DC-DC | Converter that keeps the 12 V low-voltage (LV) system charged from the high-voltage (HV) pack. |
 | TMS | Thermal Management System: pumps, radiator fan, chiller and heater loops for pack, motor and inverter. |
+| TCU | Telematics Control Unit: the car's link to the update server. Runs the OTA client (check, download, verify, install) and reports progress on `TCU_Ota`. |
 | Charge port / EVSE | The car's inlet / the external charger it connects to (AC wallbox or DC fast charger). |
 | HV / LV | High-voltage traction system / 12 V low-voltage system. |
 | Contactors | The HV relays (main +, main −, pre-charge) that connect the pack to the rest of the car. |
@@ -32,6 +33,8 @@ Words used in specs, code, UI and paper. Use them exactly. If code names differ 
 | Drive cycle | Standard speed-vs-time profile (e.g. WLTP-like urban / highway) played through the car to measure consumption in Wh/km. |
 | OTA | Over-the-air software update, simulated: download → verify → install → reboot ECU → new behaviour. |
 | Software version | The version string of each ECU's firmware, shown in the Software view and changed by OTA. |
+| Firmware bank | One of an ECU's two firmware slots (A/B). OTA writes the inactive bank; the ECU switches to it only when it restarts, so a failed install leaves the running version untouched. |
+| Update package | The firmware image the update server offers: target ECU, version, size and a one-line note on what changes. |
 
 ## Simulation and app
 

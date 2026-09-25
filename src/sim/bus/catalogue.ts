@@ -7,12 +7,14 @@
 
 import type { Catalogue, MessageDef } from './bus';
 
-/** ECUs on the bus in this feature. Later features add OBC, DC-DC, TMS and the gateway. */
-export type EcuId = 'VCU' | 'BMS' | 'MCU' | 'IC';
+/** ECUs that send on the bus. The OBC only listens. */
+export type EcuId = 'VCU' | 'BMS' | 'MCU' | 'IC' | 'TCU';
 
 export const POWER_STATES = ['OFF', 'ACCESSORY', 'STARTING', 'READY', 'CHARGING', 'FAULT'] as const;
 export const GEARS = ['P', 'R', 'N', 'D'] as const;
 export const DRIVE_MODES = ['eco', 'normal', 'sport'] as const;
+/** The TCU's over-the-air update states (ADR 0015). */
+export const OTA_STATES = ['idle', 'checking', 'upToDate', 'downloading', 'verifying', 'readyToInstall', 'installing', 'rebooting', 'installed', 'failed'] as const;
 /** The VCU's startup steps, in order (requirements R4). */
 export const STARTUP_STEPS = ['wake', 'selfCheck', 'precharge', 'contactors', 'ready'] as const;
 
@@ -44,6 +46,7 @@ export const busCatalogue: Catalogue = Object.freeze([
   bootMessage(0x0f2, 'BMS'),
   bootMessage(0x0f3, 'MCU'),
   bootMessage(0x0f4, 'IC'),
+  bootMessage(0x0f5, 'TCU'),
   {
     id: 0x100,
     name: 'VCU_Command',
@@ -200,6 +203,16 @@ export const busCatalogue: Catalogue = Object.freeze([
     signals: [
       { name: 'motorTemperature', unit: '°C', scale: 0.1 },
       { name: 'inverterTemperature', unit: '°C', scale: 0.1 },
+    ],
+  },
+  {
+    // OTA client progress from the TCU (ADR 0015). `version` is the package's, 0 when none.
+    id: 0x400, name: 'TCU_Ota', sender: 'TCU', periodMs: 100,
+    signals: [
+      { name: 'state', values: OTA_STATES },
+      { name: 'progress', unit: '%', scale: 0.1 },
+      { name: 'version', unit: 'major.minor.patch (encoded)' },
+      { name: 'target', values: ['none', 'VCU'] },
     ],
   },
 ]);

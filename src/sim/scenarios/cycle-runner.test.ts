@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSim, TICK_S } from '../index';
+import { createSim, TICK_S, UPDATE_PACKAGE } from '../index';
 import { msToKmh } from '../units';
 import { createCycleRunner } from './cycle-runner';
 import { getCycle, targetSpeedMs, type CycleId } from './cycles';
@@ -63,7 +63,7 @@ describe('cycle runner (T-004)', () => {
 
 describe('cycle result (T-005)', () => {
   function runMode(id: CycleId, mode: 'eco' | 'normal' | 'sport') {
-    const sim = createSim();
+    const sim = createSim({ vcuSwVersion: UPDATE_PACKAGE.version });
     sim.setInputs({ driveMode: mode });
     const runner = createCycleRunner(sim, id);
     const start = sim.snapshot();

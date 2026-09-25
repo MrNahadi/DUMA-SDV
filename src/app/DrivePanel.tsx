@@ -50,6 +50,8 @@ function refusalHint(refusal: GearRefusal, gear: Gear): string {
       return 'Power on the car before shifting';
     case 'cableConnected':
       return 'Unplug the charge cable before shifting';
+    case 'updating':
+      return 'Wait for the software update to finish';
   }
 }
 

@@ -237,6 +237,7 @@ describe('feature catalogue', () => {
       ['BMS_Boot', 'event', ['selfCheck', 'swVersion']],
       ['MCU_Boot', 'event', ['selfCheck', 'swVersion']],
       ['IC_Boot', 'event', ['selfCheck', 'swVersion']],
+      ['TCU_Boot', 'event', ['selfCheck', 'swVersion']],
       ['VCU_Command', 10, ['torqueRequest', 'contactorRequest', 'powerState']],
       ['VCU_Status', 100, ['powerState', 'gear', 'ready', 'speedLimitKmh', 'startupStep']],
       ['VCU_Range', 1000, ['rangeKm', 'avgConsumptionWhKm', 'rangeValid']],
@@ -258,7 +259,7 @@ describe('feature catalogue', () => {
   });
 
   it('has each ECU send its own boot message', () => {
-    for (const ecu of ['VCU', 'BMS', 'MCU', 'IC']) {
+    for (const ecu of ['VCU', 'BMS', 'MCU', 'IC', 'TCU']) {
       expect(byName.get(`${ecu}_Boot`)?.sender).toBe(ecu);
     }
   });

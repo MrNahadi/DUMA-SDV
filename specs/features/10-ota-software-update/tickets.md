@@ -2,53 +2,53 @@
 
 ## T-001: TCU on the bus
 
-Status: open
+Status: done
 Blocked by:
 Slice: Add the TCU ECU with `TCU_Boot` and a periodic `TCU_Ota` frame reporting idle. It is powered by KL15 and boots like the others, but READY does not wait for it.
 Test seam: `createSim()` public API, `trace()` and `topology()`
 Acceptance:
-- [ ] `TCU_Boot` and `TCU_Ota` are in the catalogue and trace, and the TCU is a topology node
-- [ ] Startup reaches READY at the same time as before
-- [ ] Tests that list boot frames include the TCU
+- [x] `TCU_Boot` and `TCU_Ota` are in the catalogue and trace, and the TCU is a topology node
+- [x] Startup reaches READY at the same time as before
+- [x] Tests that list boot frames include the TCU
 Notes: Write ADR 0015.
 
 ## T-002: VCU firmware version gates Sport
 
-Status: open
+Status: done
 Blocked by:
 Slice: The VCU runs a firmware version (default 1.0.0, `SimOptions.vcuSwVersion` to override) and reports it in `VCU_Boot`. Sport is available only from 1.1.0. A request for a locked mode is ignored.
 Test seam: `createSim()` public API
 Acceptance:
-- [ ] Default `driveModes` has Sport unavailable; with 1.1.0 all three are available
-- [ ] Requesting Sport on 1.0.0 leaves the mode unchanged
-- [ ] Existing Sport tests run with 1.1.0 and pass unchanged otherwise
-- [ ] Snapshot lists every ECU's running version
+- [x] Default `driveModes` has Sport unavailable; with 1.1.0 all three are available
+- [x] Requesting Sport on 1.0.0 leaves the mode unchanged
+- [x] Existing Sport tests run with 1.1.0 and pass unchanged otherwise
+- [x] Snapshot lists every ECU's running version
 
 ## T-003: Check, download and verify
 
-Status: open
+Status: done
 Blocked by: T-001, T-002
 Slice: `otaCommand: 'check'` runs checking → downloading → verifying → readyToInstall with ADR 0015 timings, or upToDate when the VCU already runs the package. Power loss pauses the download and restarts verification.
 Test seam: `createSim()` public API
 Acceptance:
-- [ ] Each step's duration matches ADR 0015 within one frame period
-- [ ] Progress is reported on `TCU_Ota` and in the snapshot
-- [ ] Download keeps going while driving
-- [ ] A power cycle mid-download resumes from the same progress
-- [ ] Check with the car off is refused as offline
+- [x] Each step's duration matches ADR 0015 within one frame period
+- [x] Progress is reported on `TCU_Ota` and in the snapshot
+- [x] Download keeps going while driving
+- [x] A power cycle mid-download resumes from the same progress
+- [x] Check with the car off is refused as offline
 
 ## T-004: Install and reboot
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: `otaCommand: 'install'` checks preconditions from the bus, streams the image into the VCU's inactive bank, then the VCU reboots into it and the car returns to READY on 1.1.0. The VCU refuses to leave P during install and reboot.
 Test seam: `createSim()` public API
 Acceptance:
-- [ ] Each refusal reason (notReady, notParked, charging, lowSoc, notDownloaded) leaves everything unchanged
-- [ ] After install the trace shows the power-down and `VCU_Boot` with 1.1.0, the car reaches READY and the state is installed
-- [ ] Shifting out of P during install is refused as `updating`
-- [ ] Power loss during install keeps 1.0.0 running and returns to readyToInstall
-- [ ] Sport becomes available after the reboot
+- [x] Each refusal reason (notReady, notParked, charging, lowSoc, notDownloaded) leaves everything unchanged
+- [x] After install the trace shows the power-down and `VCU_Boot` with 1.1.0, the car reaches READY and the state is installed
+- [x] Shifting out of P during install is refused as `updating`
+- [x] Power loss during install keeps 1.0.0 running and returns to readyToInstall
+- [x] Sport becomes available after the reboot
 
 ## T-005: Software view
 

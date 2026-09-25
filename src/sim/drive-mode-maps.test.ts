@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { TICK_S, createSim, type DriveMode, type Sim } from './index';
+import { TICK_S, UPDATE_PACKAGE, createSim, type DriveMode, type Sim } from './index';
 import { powerOnToReady, shiftWithBrake } from './scenarios';
 import { ECO_DISCHARGE_CAP_W, MODE_RAMP_S } from './ecus/vcu';
 import { vehicleParams as p } from './vehicle';
 
 /** Drive in D at full pedal up to the speed, then hold the pedal and mode for 1 s. */
 function driveAt(mode: DriveMode, speedMs: number, accelerator: number): Sim {
-  const sim = createSim();
+  // VCU 1.1.0 offers Sport (ADR 0015); Eco and Normal are the same on either version.
+  const sim = createSim({ vcuSwVersion: UPDATE_PACKAGE.version });
   expect(powerOnToReady(sim)).toBe(true);
   expect(shiftWithBrake(sim, 'D')).toBe(true);
   sim.setInputs({ brake: 0, accelerator: 1 });

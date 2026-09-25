@@ -4,17 +4,20 @@
  */
 
 import { createHvCircuit, createPack, type ContactorStates } from './battery';
-import { DRIVE_MODES, GEARS, busCatalogue, createBus, type Frame } from './bus';
-import { isFresh } from './ecus/ecu';
+import { DRIVE_MODES, GEARS, busCatalogue, createBus, formatSwVersion, type EcuId, type Frame } from './bus';
+import { INITIAL_SW_VERSION, isFresh } from './ecus/ecu';
 import { createFaultRecords, type DiagnosticsSnapshot, type FaultCommand } from './faults';
 import { createDiagnosticBus } from './faults/bus';
 import { createObc } from './ecus/obc';
+import { createTcu, type OtaCommand, type OtaRefusal, type OtaState } from './ecus/tcu';
+import { UPDATE_PACKAGE } from './ota';
 import {
   STARTUP_STEPS,
   createBms,
   createIc,
   createMcu,
   createVcu,
+  modeAvailable,
   type DashboardModel,
   type ChargeDisplayModel,
   type ThermalDisplayModel,
@@ -35,6 +38,8 @@ export type { Frame } from './bus';
 export type { ChargeDisplayModel, DashboardModel, ThermalDisplayModel, DriveMode, Gear, GearRefusal, PowerState, StartupFailReason, StartupStepId, StartupStepStatus } from './ecus';
 export { faultCatalogue } from './faults';
 export type { CoolantLoopState, ThermalState } from './thermal';
+export type { OtaCommand, OtaRefusal, OtaState } from './ecus/tcu';
+export { OTA_MIN_SOC, OTA_TIMING, UPDATE_PACKAGE } from './ota';
 export type { DiagnosticsSnapshot, FaultCommand, FaultKey, FaultRecord } from './faults';
 
 /** Fixed simulation step: 10 ms (100 Hz). */
@@ -46,8 +51,16 @@ const DC_TAPER: readonly (readonly [number, number])[] = [
   [0.7, 80_000], [0.8, 55_000], [1, 0],
 ];
 const DC_CONNECTION_EFFICIENCY = 0.99; // ADR 0010
-/** Every drive mode is always available today, so the snapshot shares one list until availability can change. */
-const DRIVE_MODE_LIST: { id: DriveMode; available: boolean }[] = DRIVE_MODES.map((id) => ({ id, available: true }));
+/** Drive mode availability for each VCU firmware version seen, so snapshots share one list per version. */
+const driveModeLists = new Map<number, { id: DriveMode; available: boolean }[]>();
+function driveModeList(vcuVersion: number): { id: DriveMode; available: boolean }[] {
+  let list = driveModeLists.get(vcuVersion);
+  if (list === undefined) {
+    list = DRIVE_MODES.map((id) => ({ id, available: modeAvailable(id, vcuVersion) }));
+    driveModeLists.set(vcuVersion, list);
+  }
+  return list;
+}
 
 function dcTaperPowerW(soc: number): number {
   for (let i = 1; i < DC_TAPER.length; i++) {
@@ -65,6 +78,8 @@ export interface SimOptions {
   params?: Readonly<VehicleParams>;
   /** Traction pack state of charge at creation, 0..1. Default 0.8. */
   initialSoc?: number;
+  /** VCU firmware in the active bank at creation, encoded like `swVersion`. Default 1.0.0 (ADR 0015). */
+  vcuSwVersion?: number;
 }
 
 export interface SimInputs {
@@ -86,6 +101,27 @@ export interface SimInputs {
   chargeCommand: 'plugIn' | 'unplug' | 'start' | 'stop';
   /** Desired SOC, 0..1. Start requires it to exceed current SOC. */
   chargeTargetSoc: number;
+  /** One-shot OTA command from the car's screen to the TCU (ADR 0015). */
+  otaCommand: OtaCommand;
+}
+
+/** The TCU's OTA client state (ADR 0015). */
+export interface OtaSnapshot {
+  state: OtaState;
+  /** Progress of the current step, 0..1. */
+  progress: number;
+  /** The package found by the last check as `major.minor.patch`, or null. */
+  packageVersion: string | null;
+  /** What the package changes, or null before a check finds it. */
+  notes: string | null;
+  /** Why the latest OTA command was refused, or null. */
+  refusal: OtaRefusal | null;
+}
+
+export interface EcuSoftware {
+  ecu: EcuId;
+  /** Running firmware version, `major.minor.patch`. */
+  version: string;
 }
 
 export type ChargeRefusal = 'notPlugged' | 'alreadyPlugged' | 'notParked' | 'moving' | 'targetNotAboveSoc' | 'sessionActive' | 'notCharging' | 'noSource' | 'faultActive';
@@ -164,8 +200,11 @@ export interface SimSnapshot {
   gearRefusal: GearRefusal | null;
   /** Drive mode the MCU last received on VCU_Mode. */
   driveMode: DriveMode;
-  /** Drive modes in order, with whether each can be selected (phase 09 OTA may gate one). */
+  /** Drive modes in order, with whether the running VCU firmware offers each (ADR 0015). */
   driveModes: { id: DriveMode; available: boolean }[];
+  /** Running firmware of every ECU on the bus. */
+  software: EcuSoftware[];
+  ota: OtaSnapshot;
   /** Driver pedal positions, 0..1. */
   pedals: { accelerator: number; brake: number };
   /** Vehicle speed, m/s, forward positive. */
@@ -275,12 +314,14 @@ export function createSim(options: SimOptions = {}): Sim {
   const bus = createBus(busCatalogue, { tickMs: TICK_MS });
   const chargePath = bus.subscribe('ChargePath', ['VCU_Charge', 'BMS_Charge']);
   const faultRecords = createFaultRecords();
-  const vcu = createVcu(bus, p, TICK_S, faultRecords.statusOf);
+  const vcu = createVcu(bus, p, TICK_S, faultRecords.statusOf, options.vcuSwVersion ?? INITIAL_SW_VERSION);
   const bms = createBms(bus, p, { tickS: TICK_S, initialSoc: soc, faultStatus: faultRecords.statusOf });
   const mcu = createMcu(bus, p, faultRecords.statusOf);
   const ic = createIc(bus, p.usableEnergyJ);
   const obc = createObc(bus, p);
   const diagnosticBus = createDiagnosticBus(bus, faultRecords.statusOf);
+  const tcu = createTcu(bus, TICK_S);
+  let otaCommand: OtaCommand | null = null;
 
   let tick = 0;
   let powerButton = false;
@@ -409,6 +450,8 @@ export function createSim(options: SimOptions = {}): Sim {
     mcu.step(t, vcu.kl15, mcuSensors);
     diagnosticBus.publish();
     ic.step(t, vcu.kl15);
+    tcu.step(t, vcu.kl15, otaCommand);
+    otaCommand = null;
     updateChargePath(t);
 
     // ADR 0009: friction fills the pedal demand left by actual MCU generator torque.
@@ -504,6 +547,9 @@ export function createSim(options: SimOptions = {}): Sim {
       if (inputs.chargeTargetSoc !== undefined && !(inputs.chargeTargetSoc > 0 && inputs.chargeTargetSoc <= 1)) {
         throw new RangeError('chargeTargetSoc must be within (0, 1]');
       }
+      if (inputs.otaCommand !== undefined && inputs.otaCommand !== 'check' && inputs.otaCommand !== 'install') {
+        throw new RangeError('otaCommand must be check or install');
+      }
       if (inputs.powerButton) powerButton = true;
       if (inputs.accelerator !== undefined) driver.accelerator = inputs.accelerator;
       if (inputs.brake !== undefined) driver.brake = inputs.brake;
@@ -513,6 +559,7 @@ export function createSim(options: SimOptions = {}): Sim {
       if (inputs.chargeTargetSoc !== undefined) charge.targetSoc = inputs.chargeTargetSoc;
       if (inputs.chargeCommand !== undefined) chargeCommand = inputs.chargeCommand;
       if (inputs.faultCommand !== undefined) faultCommand = inputs.faultCommand;
+      if (inputs.otaCommand !== undefined) otaCommand = inputs.otaCommand;
     },
     snapshot() {
       return {
@@ -537,7 +584,21 @@ export function createSim(options: SimOptions = {}): Sim {
         gear: vcu.gear,
         gearRefusal: vcu.gearRefusal,
         driveMode: mcu.driveMode,
-        driveModes: DRIVE_MODE_LIST,
+        driveModes: driveModeList(vcu.swVersion),
+        software: [
+          { ecu: 'VCU', version: formatSwVersion(vcu.swVersion) },
+          { ecu: 'BMS', version: formatSwVersion(INITIAL_SW_VERSION) },
+          { ecu: 'MCU', version: formatSwVersion(INITIAL_SW_VERSION) },
+          { ecu: 'IC', version: formatSwVersion(INITIAL_SW_VERSION) },
+          { ecu: 'TCU', version: formatSwVersion(INITIAL_SW_VERSION) },
+        ],
+        ota: {
+          state: tcu.state,
+          progress: tcu.progress,
+          packageVersion: tcu.packageVersion === null ? null : formatSwVersion(tcu.packageVersion),
+          notes: tcu.packageVersion === null ? null : UPDATE_PACKAGE.notes,
+          refusal: tcu.refusal,
+        },
         pedals: { accelerator: driver.accelerator, brake: driver.brake },
         speedMs: dynamics.speedMs,
         accelMs2: dynamics.accelMs2,

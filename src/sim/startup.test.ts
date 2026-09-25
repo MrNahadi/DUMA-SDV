@@ -105,7 +105,7 @@ describe('startup on the bus (T-003)', () => {
     sim.step(100);
     const frames = sim.trace();
     const names = new Set(frames.map((f) => f.name));
-    for (const name of ['VCU_Boot', 'BMS_Boot', 'MCU_Boot', 'IC_Boot', 'VCU_Command', 'BMS_Status', 'MCU_Status']) {
+    for (const name of ['VCU_Boot', 'BMS_Boot', 'MCU_Boot', 'IC_Boot', 'TCU_Boot', 'VCU_Command', 'BMS_Status', 'MCU_Status']) {
       expect(names.has(name), name).toBe(true);
     }
     for (const boot of frames.filter((f) => f.name.endsWith('_Boot'))) {
@@ -122,7 +122,7 @@ describe('startup on the bus (T-003)', () => {
     const sim = createSim();
     powerOnToReady(sim);
     const boots = sim.trace().filter((f) => f.name.endsWith('_Boot'));
-    expect(boots).toHaveLength(4);
+    expect(boots).toHaveLength(5);
     for (const boot of boots) expect(boot.t, boot.name).toBeLessThanOrEqual(0.35);
     expect(sim.snapshot().startup.steps[0]!.doneS).toBeLessThanOrEqual(0.4);
   });
