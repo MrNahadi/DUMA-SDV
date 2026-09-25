@@ -31,14 +31,39 @@ export function cycleChartSeries(samples: readonly TelemetrySample[]): { data: u
   };
 }
 
+export const CYCLE_CHART_SCALES = { x: { time: false }, pct: { range: [0, 100] as [number, number] } };
+
+export const CYCLE_CHART_AXES: uPlot.Axis[] = [
+  { label: 'Sim time (s)' },
+  { scale: 'kmh', label: 'Speed (km/h)' },
+  { scale: 'kw', label: 'Power (kW)', side: 1, grid: { show: false } },
+  { scale: 'pct', label: 'SOC (%)', side: 1, grid: { show: false } },
+];
+
+const EMPTY_DATA: uPlot.AlignedData = [[], [], [], [], []];
+
+/** Identity of a sample list for redraw purposes: same length and same first sample means no new data. */
+export function samplesKey(samples: readonly TelemetrySample[]): string {
+  return `${samples.length}:${samples[0]?.timeS ?? ''}`;
+}
+
 export function CycleChart({ samples }: { samples: readonly TelemetrySample[] }) {
   const host = useRef<HTMLDivElement>(null);
   const plot = useRef<uPlot | null>(null);
+  const drawnKey = useRef('');
+  const key = samplesKey(samples);
 
   useEffect(() => {
+    if (key === drawnKey.current) return;
+    if (plot.current && samples.length < 2) {
+      drawnKey.current = key;
+      plot.current.setData(EMPTY_DATA);
+      return;
+    }
     if (!host.current || samples.length < 2 || typeof window.matchMedia !== 'function') return;
     const { data, series } = cycleChartSeries(samples);
     if (plot.current) {
+      drawnKey.current = key;
       plot.current.setData(data);
       return;
     }
@@ -49,19 +74,16 @@ export function CycleChart({ samples }: { samples: readonly TelemetrySample[] })
       plot.current = new UPlot({
         width: Math.max(240, host.current.clientWidth), height: 180,
         legend: { show: false }, cursor: { show: false },
-        scales: { x: { time: false } },
-        axes: [
-          { label: 'Sim time (s)' },
-          { scale: 'kmh', label: 'Speed (km/h)' },
-          { scale: 'kw', label: 'Power (kW)', side: 1, grid: { show: false } },
-        ],
+        scales: CYCLE_CHART_SCALES,
+        axes: CYCLE_CHART_AXES,
         series: [{}, ...series.map((s) => ({
           label: s.label, scale: s.scale, stroke: style.getPropertyValue(s.token).trim(), dash: s.dash, spanGaps: false,
         }))],
       }, data, host.current);
+      drawnKey.current = key;
     });
     return () => { cancelled = true; };
-  }, [samples]);
+  }, [key, samples]);
 
   useEffect(() => () => {
     plot.current?.destroy();

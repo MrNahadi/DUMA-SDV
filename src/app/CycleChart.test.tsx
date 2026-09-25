@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { expect, it } from 'vitest';
 import type { TelemetrySample } from '../sim/telemetry';
-import { CycleChart, cycleChartSeries } from './CycleChart';
+import { CYCLE_CHART_AXES, CYCLE_CHART_SCALES, CycleChart, cycleChartSeries, samplesKey } from './CycleChart';
 
 const sample = (timeS: number, targetSpeedMs: number | null): TelemetrySample => ({
   timeS, speedMs: 10, targetSpeedMs, accelerator: 0.2, brake: 0, batteryPowerW: 12_500, motorPowerW: 12_000,
@@ -28,4 +28,21 @@ it('names the series in words with an accessible summary', () => {
 it('waits for telemetry when there are no samples', () => {
   render(<CycleChart samples={[]} />);
   expect(screen.getByRole('img', { name: /waiting for cycle telemetry/i })).toBeTruthy();
+});
+
+it('gives SOC its own labelled axis with a fixed 0-100 % range', () => {
+  expect(CYCLE_CHART_AXES.find((a) => a.scale === 'pct')?.label).toBe('SOC (%)');
+  expect(CYCLE_CHART_SCALES.pct.range).toEqual([0, 100]);
+});
+
+it('shows no series data with no samples', () => {
+  const { data } = cycleChartSeries([]);
+  expect(data.every((d) => d.length === 0)).toBe(true);
+});
+
+it('keys redraws on sample count so unchanged data is not rebuilt', () => {
+  const a = [sample(0, 5), sample(0.1, 5)];
+  expect(samplesKey([...a])).toBe(samplesKey(a));
+  expect(samplesKey([...a, sample(0.2, 5)])).not.toBe(samplesKey(a));
+  expect(samplesKey([])).not.toBe(samplesKey(a));
 });

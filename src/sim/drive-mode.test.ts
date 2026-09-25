@@ -42,3 +42,10 @@ describe('drive mode input over the bus (T-001)', () => {
     expect(() => createSim().setInputs({ driveMode: 'turbo' })).toThrow(RangeError);
   });
 });
+
+it('keeps snapshot.driveModes the same array while availability is unchanged', () => {
+  const sim = createSim();
+  const before = sim.snapshot().driveModes;
+  sim.step(1);
+  expect(sim.snapshot().driveModes).toBe(before);
+});

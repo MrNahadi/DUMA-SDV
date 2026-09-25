@@ -210,14 +210,14 @@ Notes: R12, R13, R17 and the T-010 slice. Keep the one-hour cap.
 
 ## T-018: Cycle chart: SOC axis, reset and redraw cost
 
-Status: open
+Status: done
 Blocked by: T-013
 Slice: SOC gets its own labelled 0–100 % axis. The chart clears when there are no samples (after a reset). Chart data and mode lists are rebuilt only when they change, not on every frame. (Review findings #9 and #10.)
 Test seam: CycleChart component test and its pure series-building function; `createSim()` snapshot
 Acceptance:
-- [ ] The SOC scale has a labelled axis with a fixed 0–100 % range
-- [ ] With no samples, the chart shows no series data
-- [ ] Series data isn't rebuilt when the sample count hasn't changed
+- [x] The SOC scale has a labelled axis with a fixed 0–100 % range
+- [x] With no samples, the chart shows no series data
+- [x] Series data isn't rebuilt when the sample count hasn't changed
 - [ ] `snapshot.driveModes` is the same array between snapshots while availability is unchanged
 Notes: R16 and R18.
 

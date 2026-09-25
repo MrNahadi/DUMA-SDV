@@ -46,6 +46,8 @@ const DC_TAPER: readonly (readonly [number, number])[] = [
   [0.7, 80_000], [0.8, 55_000], [1, 0],
 ];
 const DC_CONNECTION_EFFICIENCY = 0.99; // ADR 0010
+/** Every drive mode is always available today, so the snapshot shares one list until availability can change. */
+const DRIVE_MODE_LIST: { id: DriveMode; available: boolean }[] = DRIVE_MODES.map((id) => ({ id, available: true }));
 
 function dcTaperPowerW(soc: number): number {
   for (let i = 1; i < DC_TAPER.length; i++) {
@@ -533,7 +535,7 @@ export function createSim(options: SimOptions = {}): Sim {
         gear: vcu.gear,
         gearRefusal: vcu.gearRefusal,
         driveMode: mcu.driveMode,
-        driveModes: DRIVE_MODES.map((id) => ({ id, available: true })),
+        driveModes: DRIVE_MODE_LIST,
         pedals: { accelerator: driver.accelerator, brake: driver.brake },
         speedMs: dynamics.speedMs,
         accelMs2: dynamics.accelMs2,
