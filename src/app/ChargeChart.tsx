@@ -54,6 +54,8 @@ export function ChargeChart({ snapshot }: { snapshot: SimSnapshot }) {
       plot.current = new UPlot({
         width: Math.max(240, host.current.clientWidth), height: 120,
         legend: { show: false }, cursor: { show: false },
+        // Sim minutes, not timestamps: a time scale would print a 1970 date under the axis.
+        scales: { x: { time: false } },
         axes: [{ label: 'Sim time (min)' }, { label: 'SOC (%)' }],
         series: [
           {},
