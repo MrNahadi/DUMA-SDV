@@ -17,11 +17,19 @@
 }
 
 .mark {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
   background: var(--ink);
-  border-right: 6px solid var(--accent);
+  color: var(--surface);
+}
+
+.mark svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2;
 }
 
 .name {

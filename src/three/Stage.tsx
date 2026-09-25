@@ -5,6 +5,7 @@ import { Mesh, MeshStandardMaterial } from 'three';
 import { useSimStore } from '../app/simStore';
 import { tokens } from '../ui/tokens';
 import { applyCarVisualState, buildCar, visualStateFromSnapshot } from './car';
+import { solidMaterial } from './car/animation';
 import { Road } from './road/Road';
 import './Stage.css';
 
@@ -19,10 +20,11 @@ function Car() {
       // Forward is +X and Z points left, so rolling forward is a negative rotation about Z.
       if (wheel) wheel.rotation.z = -visual.wheelAngleRad;
     }
-    const brake = model.getObjectByName('brake-lights') as Mesh;
-    const head = model.getObjectByName('headlights') as Mesh;
-    (brake.material as MeshStandardMaterial).emissiveIntensity = visual.brakeLightIntensity * 2.5;
-    (head.material as MeshStandardMaterial).emissiveIntensity = visual.headlightsOn ? 1.6 : 0;
+    // The lamps' own materials, even while the fault x-ray view has swapped them out.
+    const brake = solidMaterial(model.getObjectByName('brake-lights') as Mesh) as MeshStandardMaterial;
+    const head = solidMaterial(model.getObjectByName('headlights') as Mesh) as MeshStandardMaterial;
+    brake.emissiveIntensity = visual.brakeLightIntensity * 2.5;
+    head.emissiveIntensity = visual.headlightsOn ? 1.6 : 0;
     applyCarVisualState(model, visual);
   });
   return <primitive object={model} />;

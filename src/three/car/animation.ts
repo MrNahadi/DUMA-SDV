@@ -1,5 +1,5 @@
 import type { SimSnapshot } from '../../sim';
-import { Mesh, MeshStandardMaterial, type Object3D } from 'three';
+import { Color, Mesh, MeshStandardMaterial, ShaderMaterial, type Material, type Object3D } from 'three';
 import { faultCatalogue } from '../../sim/faults';
 import { tokens } from '../../ui/tokens';
 import type { CarPart } from './index';
@@ -33,28 +33,77 @@ export function visualStateFromSnapshot(snapshot: SimSnapshot): CarVisualState {
   };
 }
 
-const shellParts = ['body', 'glass', 'mirrors', 'lamp-lenses', 'trim-details'];
+/**
+ * X-ray material for fault view: every outer part of the car swaps to this one shared
+ * material, faint face-on and brighter towards silhouettes. One uniform material means no
+ * transparency sorting between overlapping parts, so nothing flickers.
+ */
+export const xrayMaterial = new ShaderMaterial({
+  uniforms: { colour: { value: new Color(tokens.ink2) }, faceOn: { value: 0.05 }, edge: { value: 0.42 } },
+  vertexShader: /* glsl */ `
+    varying vec3 vNormal;
+    varying vec3 vView;
+    void main() {
+      vec4 viewPosition = modelViewMatrix * vec4(position, 1.0);
+      vNormal = normalize(normalMatrix * normal);
+      vView = normalize(-viewPosition.xyz);
+      gl_Position = projectionMatrix * viewPosition;
+    }`,
+  fragmentShader: /* glsl */ `
+    uniform vec3 colour;
+    uniform float faceOn;
+    uniform float edge;
+    varying vec3 vNormal;
+    varying vec3 vView;
+    void main() {
+      float rim = pow(1.0 - abs(dot(normalize(vNormal), normalize(vView))), 2.5);
+      gl_FragColor = vec4(colour, mix(faceOn, edge, rim));
+    }`,
+  transparent: true,
+  depthWrite: false,
+});
 
-/** Apply ghost mode, the fault highlight and the charge-port state to the car model. */
-export function applyCarVisualState(car: Object3D, visual: CarVisualState): void {
-  // Ghost mode: the whole outer shell turns see-through so the faulty module shows inside.
-  for (const name of shellParts) {
-    const mesh = car.getObjectByName(name);
-    if (!(mesh instanceof Mesh)) continue;
-    for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-      if (!(material instanceof MeshStandardMaterial)) continue;
-      material.transparent = visual.faultHighlight !== null;
-      material.opacity = visual.faultHighlight ? 0.16 : 1;
-      material.depthWrite = visual.faultHighlight === null;
+/** The part's own material, even while the x-ray material is swapped in. */
+export function solidMaterial(mesh: Mesh): Material | Material[] {
+  return (mesh.userData.solidMaterial as Material | Material[] | undefined) ?? mesh.material;
+}
+
+function insideInternals(node: Object3D): boolean {
+  for (let p: Object3D | null = node; p; p = p.parent) if (p.name === 'internals') return true;
+  return false;
+}
+
+/** Swap every outer mesh to the x-ray material, or back to its own. */
+function setXray(car: Object3D, on: boolean): void {
+  car.traverse((node) => {
+    if (!(node instanceof Mesh) || insideInternals(node)) return;
+    if (on && node.userData.solidMaterial === undefined) {
+      node.userData.solidMaterial = node.material;
+      node.material = xrayMaterial;
+    } else if (!on && node.userData.solidMaterial !== undefined) {
+      node.material = node.userData.solidMaterial as Material | Material[];
+      delete node.userData.solidMaterial;
     }
-  }
+  });
+}
+
+/** Apply fault x-ray view, the faulted part's glow and the charge-port state to the car model. */
+export function applyCarVisualState(car: Object3D, visual: CarVisualState): void {
+  setXray(car, visual.faultHighlight !== null);
+  // The wheel-well liners span the car's width; in x-ray view they would read as tubes through it.
+  const wells = car.getObjectByName('wheel-wells');
+  if (wells) wells.visible = visual.faultHighlight === null;
   const internals = car.getObjectByName('internals');
   if (internals) {
     internals.visible = visual.faultHighlight !== null;
     for (const part of internals.children) {
       part.visible = part.name === visual.faultHighlight?.part;
       if (part instanceof Mesh && part.material instanceof MeshStandardMaterial) {
-        part.material.color.set(part.visible ? visual.faultHighlight?.severity === 'red' ? tokens.fault : tokens.warn : '#86aeb8');
+        // The faulted module glows steadily in its severity colour (no idle motion, DESIGN-RULES §6).
+        const colour = visual.faultHighlight?.severity === 'red' ? tokens.fault : tokens.warn;
+        part.material.color.set(part.visible ? colour : '#86aeb8');
+        part.material.emissive.set(part.visible ? colour : '#000000');
+        part.material.emissiveIntensity = part.visible ? 0.85 : 0;
       }
     }
   }

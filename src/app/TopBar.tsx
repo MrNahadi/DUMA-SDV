@@ -1,5 +1,6 @@
 import { Power } from 'lucide-react';
 import styles from './TopBar.module.css';
+import { BrandMark } from './BrandMark';
 import { useSimStore } from './simStore';
 
 export function TopBar() {
@@ -7,7 +8,7 @@ export function TopBar() {
   return (
     <header className={styles.bar}>
       <div className={styles.brand}>
-        <span className={styles.mark} aria-hidden="true" />
+        <BrandMark />
         <span className={styles.name}>Duma SDV</span>
       </div>
       <div className={styles.state} role="status" aria-label="Power state">

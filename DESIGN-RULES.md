@@ -121,6 +121,7 @@ The car is "the car" in UI text, never "the vehicle", "the EV" or "the model".
 ## 11. Icons
 
 - **Lucide only** (`lucide-react`), with 1.5 px stroke. No emojis anywhere: UI, captions, commit messages or the paper.
+- The brand mark (`src/app/BrandMark.tsx`, `public/favicon.svg`) is Lucide's `car-front` in white on a 20 px `--ink` tile.
 
 ## Checklist: a view passes when every box is true
 

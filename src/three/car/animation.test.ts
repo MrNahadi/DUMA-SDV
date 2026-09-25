@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Mesh, MeshStandardMaterial } from 'three';
 import { createSim } from '../../sim';
-import { visualStateFromSnapshot } from './animation';
+import { visualStateFromSnapshot, xrayMaterial } from './animation';
 import { buildCar, applyCarVisualState } from './index';
 
 describe('car visual state', () => {
@@ -22,12 +22,22 @@ describe('car visual state', () => {
     applyCarVisualState(car, visual);
     expect(car.getObjectByName('internals')?.visible).toBe(true);
     expect(car.getObjectByName(part)?.visible).toBe(true);
-    expect(((car.getObjectByName('body') as Mesh).material as MeshStandardMaterial[])[0]!.opacity).toBeLessThan(1);
+    // X-ray view: every outer part shares the one x-ray material; the faulted part glows.
+    for (const name of ['body', 'glass', 'trim-details', 'headlights']) {
+      expect((car.getObjectByName(name) as Mesh).material, name).toBe(xrayMaterial);
+    }
+    expect(car.getObjectByName('wheel-wells')!.visible).toBe(false);
+    const tyre = car.getObjectByName('wheel-front-left')!.children[0] as Mesh;
+    expect(tyre.material).toBe(xrayMaterial);
+    const glowing = (car.getObjectByName(part) as Mesh).material as MeshStandardMaterial;
+    expect(glowing.emissiveIntensity).toBeGreaterThan(0);
     sim.setInputs({ faultCommand: { key, action: 'restore' } });
     sim.step(20);
     applyCarVisualState(car, visualStateFromSnapshot(sim.snapshot()));
     expect(car.getObjectByName('internals')?.visible).toBe(false);
-    expect(((car.getObjectByName('body') as Mesh).material as MeshStandardMaterial[])[0]!.opacity).toBe(1);
+    const body = car.getObjectByName('body') as Mesh;
+    expect(Array.isArray(body.material)).toBe(true);
+    expect((body.material as MeshStandardMaterial[])[0]!.opacity).toBe(1);
   });
   it('shows a closed flap, inserted plug, and charging marker from public snapshots', () => {
     const sim = createSim();
