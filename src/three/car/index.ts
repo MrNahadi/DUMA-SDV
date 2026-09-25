@@ -1,9 +1,12 @@
 import {
   BoxGeometry,
+  BufferGeometry,
   CylinderGeometry,
   ExtrudeGeometry,
   Group,
+  Float32BufferAttribute,
   Mesh,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
   Shape,
 } from 'three';
@@ -34,7 +37,13 @@ export type CarPart = (typeof carParts)[number];
 export function buildCar(params: Readonly<VehicleParams>): Group {
   const car = new Group();
   car.name = 'car';
-  const paint = new MeshStandardMaterial({ color: '#273841', metalness: 0.35, roughness: 0.52 });
+  const paint = new MeshPhysicalMaterial({
+    color: '#273841',
+    metalness: 0.45,
+    roughness: 0.38,
+    clearcoat: 0.8,
+    clearcoatRoughness: 0.12,
+  });
   const glass = new MeshStandardMaterial({ color: '#15252e', metalness: 0.14, roughness: 0.34 });
   const rubber = new MeshStandardMaterial({ color: '#13191c', roughness: 0.94 });
   const metal = new MeshStandardMaterial({ color: '#8b9698', metalness: 0.7, roughness: 0.42 });
@@ -53,23 +62,7 @@ export function buildCar(params: Readonly<VehicleParams>): Group {
   const radius = params.wheelRadiusM;
   const shoulder = Math.min(params.heightM * 0.53, radius * 2.5);
 
-  const profile = new Shape();
-  profile.moveTo(-halfLength, radius * 0.65);
-  profile.lineTo(-halfLength, shoulder * 0.82);
-  profile.quadraticCurveTo(-halfLength * 0.92, shoulder, -halfLength * 0.75, shoulder);
-  profile.lineTo(halfLength * 0.82, shoulder);
-  profile.quadraticCurveTo(halfLength, shoulder, halfLength, shoulder * 0.79);
-  profile.lineTo(halfLength, radius * 0.65);
-  profile.lineTo(-halfLength, radius * 0.65);
-  const shell = new Mesh(
-    new ExtrudeGeometry(profile, {
-      depth: params.widthM * 0.87,
-      bevelEnabled: false,
-      curveSegments: 8,
-    }),
-    paint.clone(),
-  );
-  shell.position.z = (-params.widthM * 0.87) / 2;
+  const shell = new Mesh(buildHull(params, shoulder), paint.clone());
   shell.name = 'body';
   car.add(shell);
 
@@ -162,4 +155,85 @@ export function buildCar(params: Readonly<VehicleParams>): Group {
   port.add(marker);
   car.add(port);
   return car;
+}
+
+const HULL_STATIONS = 49;
+const HULL_RING = 40;
+
+/** Piecewise smoothstep through [t, value] keys sorted by t. */
+function smoothKeys(keys: ReadonlyArray<readonly [number, number]>, t: number): number {
+  for (let i = 1; i < keys.length; i++) {
+    const [t1, v1] = keys[i]!;
+    const [t0, v0] = keys[i - 1]!;
+    if (t <= t1) {
+      const u = Math.min(Math.max((t - t0) / (t1 - t0), 0), 1);
+      return v0 + (v1 - v0) * u * u * (3 - 2 * u);
+    }
+  }
+  return keys[keys.length - 1]![1];
+}
+
+/**
+ * Lofted superellipse hull. Stations run nose (+X) to tail (-X); each ring
+ * narrows above the beltline (tumblehome) and its bottom rises over each axle
+ * to form the wheel arches.
+ */
+function buildHull(params: Readonly<VehicleParams>, shoulder: number): BufferGeometry {
+  const halfLength = params.lengthM / 2;
+  const halfWidth = params.widthM / 2;
+  const radius = params.wheelRadiusM;
+  const height = params.heightM;
+  const sill = radius * 0.55;
+  const roofKeys = [
+    [-1, shoulder * 0.88],
+    [-0.75, shoulder * 1.08],
+    [-0.35, height * 0.93],
+    [-0.1, height],
+    [0.2, height * 0.97],
+    [0.45, shoulder * 1.02],
+    [0.8, shoulder * 0.9],
+    [1, shoulder * 0.74],
+  ] as const;
+  const archHalf = radius * 1.2;
+  const positions: number[] = [];
+  for (let s = 0; s < HULL_STATIONS; s++) {
+    const t = 1 - (2 * s) / (HULL_STATIONS - 1);
+    const x = t * halfLength;
+    const end = Math.pow(1 - Math.pow(Math.abs(t), 6), 1 / 3);
+    let bottom = sill;
+    for (const axle of [params.wheelbaseM / 2, -params.wheelbaseM / 2]) {
+      const d = (x - axle) / archHalf;
+      if (Math.abs(d) < 1) bottom = Math.max(bottom, sill + radius * 0.75 * Math.sqrt(1 - d * d));
+    }
+    const top = smoothKeys(roofKeys, t);
+    const centre = (top + bottom) / 2;
+    const halfHeight = ((top - bottom) / 2) * Math.max(end, 0.02);
+    const width = halfWidth * Math.max(end, 0.02);
+    for (let r = 0; r < HULL_RING; r++) {
+      const angle = (2 * Math.PI * r) / HULL_RING;
+      const c = Math.cos(angle);
+      const sn = Math.sin(angle);
+      const tumble = 1 - 0.2 * Math.max(sn, 0) ** 2;
+      positions.push(
+        x,
+        centre + halfHeight * Math.sign(sn) * Math.abs(sn) ** 0.5,
+        width * tumble * Math.sign(c) * Math.abs(c) ** 0.4,
+      );
+    }
+  }
+  const index: number[] = [];
+  for (let s = 0; s < HULL_STATIONS - 1; s++) {
+    for (let r = 0; r < HULL_RING; r++) {
+      const a = s * HULL_RING + r;
+      const b = s * HULL_RING + ((r + 1) % HULL_RING);
+      const c = a + HULL_RING;
+      const d = b + HULL_RING;
+      index.push(a, b, c, b, d, c);
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new Float32BufferAttribute(positions, 3));
+  geometry.setIndex(index);
+  geometry.computeVertexNormals();
+  return geometry;
 }

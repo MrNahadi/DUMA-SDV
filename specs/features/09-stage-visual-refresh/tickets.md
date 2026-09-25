@@ -25,7 +25,7 @@ Notes: Adjust the surface grey if the contrast fails; don't lower the threshold.
 
 ## T-003: Lofted smooth body hull
 
-Status: open
+Status: in-progress
 Blocked by:
 Slice: Replace the extruded body with one lofted superellipse hull sized from `vehicleParams`. It needs a rounded nose, a sloping bonnet, a fastback roof, tumblehome, and arches from a raised section bottom over each axle. Paint becomes a `MeshPhysicalMaterial` with clearcoat.
 Test seam: `buildCar(params)` in `src/three/car/`
@@ -35,6 +35,7 @@ Acceptance:
 - [ ] The paint is a `MeshPhysicalMaterial` with clearcoat above 0 and transmission at 0
 - [ ] All `carParts` names are still present once, and the budget test (under 30k triangles, 20 draw calls or fewer) passes
 Notes: ADR 0014. Don't change `carParts` or the internals.
+Checkpoint: hull, clearcoat paint and tests are implemented; car tests, typecheck, lint, build and e2e (16/16) pass. `npm test` fails only on timeouts in the sim reference tests (dc-reference 30 s, energy 60 s) under full-suite load. These also time out on the clean tree (git stash), and both pass when run alone. Needs a human decision (raise timeouts or cut parallelism) before this can be marked done.
 
 ## T-004: One-piece tinted glasshouse
 

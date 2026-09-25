@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Box3, Mesh, Vector3 } from 'three';
+import { Box3, Mesh, MeshPhysicalMaterial, Vector3 } from 'three';
 import { vehicleParams } from '../../sim/vehicle/params';
 import { buildCar, carParts } from './index';
 
@@ -58,5 +58,44 @@ describe('procedural car', () => {
     });
     expect(triangles).toBeLessThan(30_000);
     expect(drawCalls).toBeLessThan(20);
+  });
+
+  it('lofts one smooth clearcoated body hull with raised arches', () => {
+    const car = buildCar(vehicleParams);
+    const bodies: Mesh[] = [];
+    car.traverse((node) => {
+      if (node.name === 'body') bodies.push(node as Mesh);
+    });
+    expect(bodies).toHaveLength(1);
+    const body = bodies[0]!;
+    expect(body).toBeInstanceOf(Mesh);
+    expect(body.geometry.index).not.toBeNull();
+    expect(body.geometry.attributes.normal).toBeDefined();
+    body.geometry.computeBoundingBox();
+    const size = body.geometry.boundingBox!.getSize(new Vector3());
+    expect(Math.abs(size.x / vehicleParams.lengthM - 1)).toBeLessThan(0.02);
+    expect(Math.abs(size.z / vehicleParams.widthM - 1)).toBeLessThan(0.02);
+    expect(Math.abs(body.geometry.boundingBox!.max.y / vehicleParams.heightM - 1)).toBeLessThan(
+      0.02,
+    );
+
+    const position = body.geometry.getAttribute('position');
+    const lowest = (from: number, to: number) => {
+      let min = Infinity;
+      for (let i = 0; i < position.count; i++) {
+        const x = position.getX(i) + body.position.x;
+        if (x >= from && x <= to) min = Math.min(min, position.getY(i) + body.position.y);
+      }
+      return min;
+    };
+    const half = vehicleParams.wheelbaseM / 2;
+    const between = lowest(-0.3, 0.3);
+    expect(lowest(half - 0.1, half + 0.1)).toBeGreaterThan(between);
+    expect(lowest(-half - 0.1, -half + 0.1)).toBeGreaterThan(between);
+
+    const paint = body.material as MeshPhysicalMaterial;
+    expect(paint).toBeInstanceOf(MeshPhysicalMaterial);
+    expect(paint.clearcoat).toBeGreaterThan(0);
+    expect(paint.transmission).toBe(0);
   });
 });
