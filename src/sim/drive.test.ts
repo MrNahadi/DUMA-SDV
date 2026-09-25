@@ -317,6 +317,34 @@ describe('torque and motion (T-004, R2, R4)', () => {
     expect(sim.snapshot().odometerM - startOdometerM).toBeCloseTo(distance, 6);
   });
 
+  it('reports a signed travel position wrapped into [0, 90) m', () => {
+    const wrap = (m: number) => ((m % 90) + 90) % 90;
+    for (const gear of ['D', 'R'] as const) {
+      const sim = readyIn(gear);
+      sim.setInputs({ brake: 0, accelerator: 1 });
+      let expected = sim.snapshot().render.travelM;
+      let before = sim.snapshot();
+      for (let i = 0; i < 3000; i++) {
+        sim.step(1);
+        const s = sim.snapshot();
+        expected = wrap(expected + ((before.speedMs + s.speedMs) / 2) * TICK_S);
+        const got = s.render.travelM;
+        expect(got).toBeGreaterThanOrEqual(0);
+        expect(got).toBeLessThan(90);
+        expect(Math.min(Math.abs(got - expected), 90 - Math.abs(got - expected))).toBeLessThan(1e-6);
+        before = s;
+      }
+      expect(sim.snapshot().odometerM).toBeGreaterThan(90);
+      if (gear === 'R') expect(sim.snapshot().speedMs).toBeLessThan(0);
+      sim.setInputs({ accelerator: 0, brake: 1 });
+      run(sim, 20);
+      const stopped = sim.snapshot().render.travelM;
+      run(sim, 2);
+      expect(sim.snapshot().speedMs).toBe(0);
+      expect(sim.snapshot().render.travelM).toBe(stopped);
+    }
+  });
+
   it('reports render data: brake lights follow the pedal, headlights on at READY', () => {
     const sim = createSim();
     expect(sim.snapshot().render.headlights).toBe(false);

@@ -2,14 +2,14 @@
 
 ## T-001: Signed travel position in snapshot render data
 
-Status: open
+Status: done
 Blocked by:
 Slice: Add a signed travel position (metres, wrapped into [0, 90)) to the snapshot's `render` data. It follows vehicle speed with sign, so it goes down in reverse.
 Test seam: `createSim()` public API
 Acceptance:
-- [ ] Moving forward increases the position and reverse decreases it, both by the distance travelled (modulo 90 m)
-- [ ] The position stays constant while stationary and is always within [0, 90)
-- [ ] All other snapshot fields match the previous values, and the reference tests pass with unchanged tolerances
+- [x] Moving forward increases the position and reverse decreases it, both by the distance travelled (modulo 90 m)
+- [x] The position stays constant while stationary and is always within [0, 90)
+- [x] All other snapshot fields match the previous values, and the reference tests pass with unchanged tolerances
 Notes: ADR 0014. `odometerM` only counts up, so don't reuse it.
 
 ## T-002: Road colour tokens

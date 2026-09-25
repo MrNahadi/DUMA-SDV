@@ -13,6 +13,8 @@ import { capTractionForceN } from './traction';
 export const BRAKE_MAX_DECEL_G = 1.0;
 
 const TWO_PI = 2 * Math.PI;
+/** Wrap length of the render travel position, m (ADR 0014). */
+export const TRAVEL_WRAP_M = 90;
 
 export interface LongitudinalDynamics {
   /** Vehicle speed, m/s, forward positive. */
@@ -21,6 +23,8 @@ export interface LongitudinalDynamics {
   readonly accelMs2: number;
   /** Distance travelled in either direction, m. */
   readonly odometerM: number;
+  /** Signed travel position for the road visual, m, wrapped to [0, TRAVEL_WRAP_M). */
+  readonly travelM: number;
   /** Road-wheel rotation angle, rad, wrapped to [0, 2π). */
   readonly wheelAngleRad: number;
   /** Motor shaft speed, rad/s (wheel speed × reduction ratio). */
@@ -38,6 +42,7 @@ export function createLongitudinalDynamics(p: Readonly<VehicleParams>, tickS: nu
     speedMs: 0,
     accelMs2: 0,
     odometerM: 0,
+    travelM: 0,
     wheelAngleRad: 0,
     motorSpeedRadS: 0,
     step(motorTorqueNm: number, brakePedal: number) {
@@ -66,6 +71,7 @@ export function createLongitudinalDynamics(p: Readonly<VehicleParams>, tickS: nu
       dyn.accelMs2 = (next - v) / tickS;
       dyn.speedMs = next;
       dyn.odometerM += Math.abs(meanV) * tickS;
+      dyn.travelM = (((dyn.travelM + meanV * tickS) % TRAVEL_WRAP_M) + TRAVEL_WRAP_M) % TRAVEL_WRAP_M;
       dyn.wheelAngleRad = (((dyn.wheelAngleRad + (meanV * tickS) / p.wheelRadiusM) % TWO_PI) + TWO_PI) % TWO_PI;
       dyn.motorSpeedRadS = (next / p.wheelRadiusM) * p.reductionRatio;
     },

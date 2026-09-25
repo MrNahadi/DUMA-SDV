@@ -202,6 +202,8 @@ export interface SimSnapshot {
   render: {
     /** Road-wheel rotation angle, rad, in [0, 2π). */
     wheelAngleRad: number;
+    /** Signed travel position, m, in [0, 90): rises going forward, falls in reverse. */
+    travelM: number;
     /** Brake-light intensity, 0..1 (follows the brake pedal). */
     brakeLights: number;
     headlights: boolean;
@@ -550,6 +552,7 @@ export function createSim(options: SimOptions = {}): Sim {
         lvVoltageV: p.lvBatteryNominalV,
         render: {
           wheelAngleRad: dynamics.wheelAngleRad,
+          travelM: dynamics.travelM,
           brakeLights: driver.brake,
           headlights: vcu.powerState === 'READY',
         },
