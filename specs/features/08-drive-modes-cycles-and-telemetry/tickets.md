@@ -197,14 +197,14 @@ Checkpoint 2: added a speed lookahead (`CAP_LOOKAHEAD_TICKS`, extrapolates the f
 
 ## T-017: Free-drive telemetry and export from the Drive view
 
-Status: open
+Status: done
 Blocked by: T-015
 Slice: The app keeps a recorder for free driving that samples every 0.1 s of sim time while no cycle is running, with target speed empty. The Drive view gets **Export CSV** for that log. Export file names use the run's length (last sample time minus first), not the absolute sim time. The free-run label is `drive`. (Review findings #5 and #7.)
 Test seam: simStore state; ExportCsvButton and DrivePanel component tests with a stubbed download function
 Acceptance:
-- [ ] After 60 s of free driving, the Drive view export passes CSV text with about 600 rows and a `drive-<mode>-60s.csv` file name
-- [ ] A cycle export after earlier free driving is named with the cycle's length, not the absolute sim time
-- [ ] An empty free-drive log shows a message and saves nothing
+- [x] After 60 s of free driving, the Drive view export passes CSV text with about 600 rows and a `drive-<mode>-60s.csv` file name
+- [x] A cycle export after earlier free driving is named with the cycle's length, not the absolute sim time
+- [x] An empty free-drive log shows a message and saves nothing
 - [ ] Reset clears the free-drive log
 Notes: R12, R13, R17 and the T-010 slice. Keep the one-hour cap.
 

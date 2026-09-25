@@ -18,26 +18,29 @@ export const downloadText: DownloadFn = (text, filename) => {
 /** File name from run label, mode and sim duration (R17); no wall clock. */
 export function csvFilename(label: string, samples: readonly TelemetrySample[]): string {
   const mode = samples[0]?.driveMode ?? 'normal';
-  const durationS = Math.round(samples[samples.length - 1]?.timeS ?? 0);
+  // Run length, not absolute sim time: the sim may have run before the log started.
+  const durationS = Math.round((samples[samples.length - 1]?.timeS ?? 0) - (samples[0]?.timeS ?? 0));
   return `${label}-${mode}-${durationS}s.csv`;
 }
 
 interface Props {
   label: string;
-  samples: readonly TelemetrySample[];
+  /** The log, or a getter read at click time so large logs are not copied every frame. */
+  samples: readonly TelemetrySample[] | (() => readonly TelemetrySample[]);
   download?: DownloadFn;
 }
 
 export function ExportCsvButton({ label, samples, download = downloadText }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const onClick = () => {
-    const result = toCsv(samples);
+    const log = typeof samples === 'function' ? samples() : samples;
+    const result = toCsv(log);
     if (!result.ok) {
       setMessage(result.reason);
       return;
     }
     setMessage(null);
-    download(result.csv, csvFilename(label, samples));
+    download(result.csv, csvFilename(label, log));
   };
   return (
     <>

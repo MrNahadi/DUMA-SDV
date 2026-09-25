@@ -67,3 +67,41 @@ it('locks the mode during a cycle run from the store and the Drive view', async 
   expect(setInputs).not.toHaveBeenCalledWith({ driveMode: 'sport' });
   expect(sport.getAttribute('aria-pressed')).toBe('false');
 });
+
+function driveFor(seconds: number) {
+  act(() => useSimStore.getState().advance(Math.round(seconds / 0.01)));
+}
+
+it('exports about 600 rows after 60 s of free driving, named with the run length', async () => {
+  const download = vi.fn();
+  act(() => useSimStore.getState().powerOn());
+  driveFor(5);
+  act(() => useSimStore.getState().clearDriveLog());
+  driveFor(60);
+  render(<DrivePanel download={download} />);
+  await userEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+  const [text, filename] = download.mock.calls[0] as [string, string];
+  const rows = text.trim().split('\n').length - 1;
+  expect(rows).toBeGreaterThanOrEqual(595);
+  expect(rows).toBeLessThanOrEqual(605);
+  expect(filename).toMatch(/^drive-\w+-60s\.csv$/);
+  expect(useSimStore.getState().driveLog().every((s) => s.targetSpeedMs === null)).toBe(true);
+});
+
+it('refuses an empty free-drive export and saves nothing', async () => {
+  const download = vi.fn();
+  act(() => useSimStore.getState().powerOn());
+  driveFor(5);
+  act(() => useSimStore.getState().clearDriveLog());
+  render(<DrivePanel download={download} />);
+  await userEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+  expect(screen.getByRole('alert').textContent).toContain('No telemetry');
+  expect(download).not.toHaveBeenCalled();
+});
+
+it('clears the free-drive log on reset', () => {
+  driveFor(2);
+  expect(useSimStore.getState().driveLog().length).toBeGreaterThan(0);
+  act(() => useSimStore.getState().reset());
+  expect(useSimStore.getState().driveLog()).toHaveLength(0);
+});

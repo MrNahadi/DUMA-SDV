@@ -8,6 +8,7 @@ import { Toast } from '../ui/Toast';
 import type { Gear, GearRefusal, SimSnapshot, StartupFailReason, StartupStepStatus } from '../sim';
 import { useSimStore } from './simStore';
 import { ModeControl } from './ModeControl';
+import { ExportCsvButton, type DownloadFn } from './ExportCsvButton';
 import { setPedalHeld } from './useDriveInput';
 import styles from './DrivePanel.module.css';
 
@@ -69,7 +70,8 @@ function StepIcon({ status }: { status: StartupStepStatus }) {
 const stepsKey = (s: SimSnapshot) =>
   s.startup.steps.map((step) => `${step.status}:${step.startedS}:${step.doneS}`).join('|');
 
-export function DrivePanel() {
+export function DrivePanel({ download }: { download?: DownloadFn } = {}) {
+  const driveLog = useSimStore((s) => s.driveLog);
   const { powerState, gear, gearRefusal, failReason, recoveredEnergyJ, recoveredDistanceM } = useSimStore(
     useShallow((s) => ({
       powerState: s.snapshot.powerState,
@@ -207,6 +209,10 @@ export function DrivePanel() {
                 <small>{(recoveredDistanceM / 1000).toFixed(1)} km added</small>
               </div>
             )}
+          </section>
+          <section aria-label="Telemetry" className={styles.section}>
+            <h2>Telemetry</h2>
+            <ExportCsvButton label="drive" samples={driveLog} download={download} />
           </section>
           <Button variant="secondary" onClick={requestPowerOff}>
             Power off

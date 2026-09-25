@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { createSim, TICK_S, type DriveMode, type FaultCommand, type Gear, type Sim, type SimSnapshot } from '../sim';
 import { createCycleRunner, type CycleId, type CycleRunner, type CycleRunStatus } from '../sim/scenarios';
 import type { CycleResult } from '../sim/scenarios/cycle-runner';
+import { createRecorder, type TelemetrySample } from '../sim/telemetry';
 
 export interface CycleRun {
   runner: CycleRunner;
@@ -28,15 +29,21 @@ interface SimState {
   runCycle: (cycleId: CycleId) => void;
   stopCycle: () => void;
   advance: (ticks: number) => void;
+  /** Free-drive telemetry (R12): sampled every 0.1 s while no cycle runs. */
+  driveLog: () => TelemetrySample[];
+  clearDriveLog: () => void;
 }
 
 const initialSim = createSim();
+const driveRecorder = createRecorder();
 
 export const useSimStore = create<SimState>((set, get) => ({
   sim: initialSim,
   snapshot: initialSim.snapshot(),
   cycleRun: null,
   chosenDriveMode: null,
+  driveLog: () => driveRecorder.samples(),
+  clearDriveLog: () => driveRecorder.clear(),
   powerOn: () => {
     const { sim, snapshot } = get();
     if (snapshot.powerState === 'OFF') sim.setInputs({ powerButton: true });
@@ -66,6 +73,7 @@ export const useSimStore = create<SimState>((set, get) => ({
   },
   reset: () => {
     const sim = createSim();
+    driveRecorder.clear();
     set({ sim, snapshot: sim.snapshot(), cycleRun: null, chosenDriveMode: null });
   },
   runCycle: (cycleId) => {
@@ -90,7 +98,11 @@ export const useSimStore = create<SimState>((set, get) => ({
       set({ snapshot: sim.snapshot(), cycleRun: { runner, status: runner.status(), result: runner.result() } });
       return;
     }
-    sim.step(ticks);
+    // Step tick by tick so the recorder sees every 0.1 s of sim time at any time scale.
+    for (let i = 0; i < ticks; i++) {
+      sim.step(1);
+      driveRecorder.record(sim.snapshot());
+    }
     const next = sim.snapshot();
     if (next.timeS !== snapshot.timeS) set({ snapshot: next });
   },

@@ -26,3 +26,10 @@ it('refuses an empty log with a message and saves nothing', () => {
   expect(download).not.toHaveBeenCalled();
   expect(screen.getByRole('alert').textContent).toMatch(/No telemetry recorded yet/);
 });
+
+it('names the file with the run length, not the absolute sim time', () => {
+  const download = vi.fn();
+  render(<ExportCsvButton label="urban" samples={[sample(300), sample(419.6)]} download={download} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Export CSV' }));
+  expect(download.mock.calls[0]?.[1]).toBe('urban-eco-120s.csv');
+});
