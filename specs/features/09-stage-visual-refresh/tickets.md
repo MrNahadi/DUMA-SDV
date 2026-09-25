@@ -76,7 +76,7 @@ Notes: No logos, badges or text.
 
 ## T-007: Road motion helpers
 
-Status: open
+Status: in-progress
 Blocked by: T-001
 Slice: Pure helpers under `src/three/road/`: the period constants (9 m dashes, 10 m posts, 90 m wrap), the offset for each period from the travel position, and road visibility from a snapshot.
 Test seam: exported road helper functions
@@ -84,7 +84,7 @@ Acceptance:
 - [ ] Offsets are correct moving forward, in reverse and across the 90 m wrap (no jump at the wrap)
 - [ ] At top speed (from `vehicleParams`) and 60 fps, distance per frame is under half of each period
 - [ ] Visible when READY in D or R, or when speed is not zero; hidden when parked, off or charging
-Notes: No React or three imports needed.
+Notes: No React or three imports needed. Checkpoint: helpers + tests in src/three/road/motion.ts(.test.ts) complete and passing; typecheck, lint, build, e2e green. Only `npm test` fails, on pre-existing energy.test.ts timeout (questions/open/T-003-sim-test-timeouts.md). Once resolved, tick boxes and mark done.
 
 ## T-008: Road strip on the stage
 
