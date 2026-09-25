@@ -93,17 +93,17 @@ Done: helpers and tests were in place; the sim-test timeouts were resolved by ca
 
 ## T-008: Road strip on the stage
 
-Status: in-progress
+Status: done
 Blocked by: T-002, T-007
 Slice: Replace the rolling stripes with a 7 m road reaching ±40 m: a dashed centre line, edge lines, posts on both sides and faint grain, fading into fog. Its offset comes from the snapshot and it fades in and out in 150 ms or less.
 Test seam: the road group builder (draw call count), `e2e/car.spec.ts`
 Acceptance:
 - [x] The road group has 6 draw calls or fewer
-- [ ] e2e: the road is hidden when parked and shown in D, and the parked stage screenshot stays unchanged over time (the parked-still check passes; the road show/hide check is not written yet)
+- [x] e2e: the road is hidden when parked and shown in D, and the parked stage screenshot stays unchanged over time (the parked-still check is automated; road show/hide was checked by hand by the human on 2026-09-25, with no automated spec)
 - [x] Colours come only from the road tokens
 - [x] Under reduced motion, the road shows without a fade
 Notes: Remove the old stripe code. Adjust the fog far distance if needed, but keep the car clear.
-Built by hand: `src/three/road/Road.tsx`, including reduced motion. Remaining: the e2e road show/hide check.
+Built by hand: `src/three/road/Road.tsx`, including reduced motion. Closed by the human on 2026-09-25.
 
 ## T-009: Procedural studio reflections
 
@@ -131,7 +131,7 @@ Done by hand: typecheck, lint, 321 unit tests, build and 16 e2e specs pass.
 
 ## T-011: Stage screenshots for human review
 
-Status: open
+Status: done
 Blocked by: T-010
 Slice: A Playwright spec that powers on and drives through the real UI, then saves PNG screenshots of the stage to `test-results/`: parked three-quarter front, parked side, parked rear, driving at about 100 km/h, and fault ghost mode.
 Test seam: `e2e/stage-screenshots.spec.ts`
@@ -139,3 +139,4 @@ Acceptance:
 - [ ] Running the spec writes the five named PNG files to `test-results/`
 - [ ] The driving shot is taken with a displayed speed between 95 and 105 km/h
 Notes: This checks only that the files exist. A person judges the look (validation.md).
+Closed by the human on 2026-09-25: the stage look was reviewed by hand in the running app. The screenshot spec was not written, so the boxes above stay unticked.

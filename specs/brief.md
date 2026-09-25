@@ -2,8 +2,8 @@
 
 | Field | Value |
 |---|---|
-| Version | 1.1 |
-| Date | 2026-09-23 |
+| Version | 1.2 |
+| Date | 2026-09-25 |
 | Owner | FNM (muigufarid@gmail.com) |
 | Project type | greenfield |
 
@@ -59,7 +59,7 @@ The challenge asks teams to prove they can design the software ecosystem of a mo
 
 ### Flow: first visit (judge, self-serve)
 
-1. Judge opens the link. A dark 3D car appears quickly and the dashboard is visible in its "off" state.
+1. Judge opens the link. A white 3D car (a smooth, stylised fastback crossover with a dark glasshouse, ADR 0014) appears quickly and the dashboard is visible in its "off" state.
 2. One obvious "Power on" action is highlighted ("Start here").
 3. Pressing it runs the startup sequence: 12 V wake-up, self-checks, pre-charge, contactors closing, READY. The 3D car and bus trace show each step.
 4. The next suggested action appears: "Take a drive", then charging, faults, OTA. The guided demo covers them all.
@@ -172,7 +172,7 @@ The roadmap starts from this.
 ## 15. Open questions
 
 - Which reference car (a specific BYD or Tesla trim) sets the physics targets? Sent to the answerer in Phase 1; see `docs/adr/`.
-- Where does the 3D car come from: a free-licence GLB, or a stylised model built in code? Sent to the answerer in Phase 1; see `docs/adr/`.
+- ~~Where does the 3D car come from: a free-licence GLB, or a stylised model built in code?~~ Answered: built in code (ADR 0002). Restyled 2026-09-25 from a fastback SUV-coupe blueprint, at the reference car's size and with no branding (ADR 0014).
 - ~~Product name and author line?~~ Answered 2026-09-23: the product is **Duma SDV** (reuses the Duma family name for a new, different vehicle). The author line in the app and paper is **FNM**.
 - ~~Timeline?~~ None: passion project.
 
