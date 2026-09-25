@@ -38,7 +38,7 @@ Most entries to an SDV design challenge are architecture diagrams and a basic GU
 - Every required scenario (startup, driving, regenerative braking, charging, fault notification) and an over-the-air update run live, and **Start demo** plays them all with captions.
 - Each ECU is its own module, and they talk **only** through a simulated CAN bus with a message catalogue. The trace view shows every frame.
 - The physics is calibrated to a published reference car. Automated tests hold the key figures to ±10 %.
-- It runs fully offline from a laptop, with no network needed once dependencies are installed.
+- It runs fully offline from a laptop: the production build is a PWA whose service worker caches the whole app.
 
 ## What you can do
 
@@ -76,6 +76,22 @@ Production build, which also works offline at a venue with no network:
 npm run build
 npm run preview      # http://localhost:4173
 ```
+
+### Offline at the venue
+
+The production build is a PWA. A service worker precaches the whole app (the 3D stage, fonts and icons), so after one online load it runs with no network at all. Nothing is fetched from another site at runtime.
+
+Offline check, on the laptop you will present from:
+
+1. From a clean checkout, with network: `npm ci`, then `npm run build`.
+2. Start the local server: `npm run preview`, and open http://localhost:4173 in Chrome or Edge. Wait for the car to appear.
+3. Turn Wi-Fi off (or unplug the network).
+4. Reload the page. The car and the dashboard appear as before.
+5. Press **Power on** and check the top bar reaches READY, then press **Start demo** and let the guided demo play through.
+
+`npm run preview` itself needs no network once `npm ci` has run, so steps 2 to 5 also work if the laptop never goes online again. Chrome and Edge also offer **Install app** in the address bar; the installed app opens offline in its own window. `e2e/offline.spec.ts` automates steps 2 to 5.
+
+The build output in `dist/` uses relative paths, so the same folder can be served from any static host later. Public hosting is not set up yet.
 
 | Script | What it does |
 |---|---|
@@ -233,7 +249,7 @@ CONTEXT.md        Glossary
 |---|---|---|
 | Simulation | Vitest (Node) | Bus timing, startup, interlocks, pedal maps, regen, AC/DC charging, faults and DTCs, thermal, drive cycles, telemetry, and the reference-figure tests |
 | UI and 3D | Vitest + Testing Library (jsdom) | Every panel, the car model's parts and budgets, X-ray fault view, road motion helpers |
-| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update, and each scenario played from the guided demo |
+| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update, each scenario played from the guided demo, and an offline reload |
 
 The simulation runs in fixed 10 ms ticks with no wall clock or randomness, so every test is deterministic. Vitest runs with at most four workers because the long reference runs are CPU-bound.
 
@@ -277,8 +293,8 @@ The UI follows [`DESIGN-RULES.md`](DESIGN-RULES.md): a light, restrained interfa
 | 09 | Stage visual refresh | Done |
 | 10 | Over-the-air software update | Done |
 | 11 | Guided demo mode | Done |
-| 12 | Offline (PWA) and public deployment | Next |
-| 13 | LaTeX paper | Planned |
+| 12 | Offline (PWA); public hosting deferred | Done |
+| 13 | LaTeX paper | Next |
 | 14 | Stretch: open-world drive | Optional |
 
 The full plan is in [`specs/roadmap.md`](specs/roadmap.md).
