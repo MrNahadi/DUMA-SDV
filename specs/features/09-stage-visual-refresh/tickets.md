@@ -25,7 +25,7 @@ Notes: Adjust the surface grey if the contrast fails; don't lower the threshold.
 
 ## T-003: Lofted smooth body hull
 
-Status: in-progress
+Status: blocked-question
 Blocked by:
 Slice: Replace the extruded body with one lofted superellipse hull sized from `vehicleParams`. It needs a rounded nose, a sloping bonnet, a fastback roof, tumblehome, and arches from a raised section bottom over each axle. Paint becomes a `MeshPhysicalMaterial` with clearcoat.
 Test seam: `buildCar(params)` in `src/three/car/`
