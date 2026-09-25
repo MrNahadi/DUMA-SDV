@@ -193,6 +193,7 @@ Acceptance:
 - [ ] Normal and Sport snapshots are unchanged, and the 0–100, range and regen reference tests pass with unchanged tolerances
 Notes: R4, ADR 0013. Do not change official parameters.
 Checkpoint (in-progress, committed by hand after the iteration hit the usage limit): `MODE_MAPS` has `batteryCapW`; the VCU clamps torque with `batteryCappedTorqueNm` (solves shaft power + motor loss + aux load = cap). The new test in `drive-mode-maps.test.ts` FAILS: Eco peaks at 156.5 kW against the 155 kW cap (+1 %). Check whether inverter loss or pack internal loss is missing from the formula, or whether the one-tick-old speed causes the overshoot (as noted for the shaft power in T-002). Feedback commands not yet run.
+Checkpoint 2: added a speed lookahead (`CAP_LOOKAHEAD_TICKS`, extrapolates the frame-old MCU speed). TICK_S is 0.01 and MCU_Status is 10 ms. At 1.5 ticks the peak drops to 155.6 kW (low speed, ~6 m/s, copper loss dominant). At 3–4 ticks the low-speed peak is gone, but a ~40–90 W overshoot stays at ~39 m/s and does not respond to the lookahead, so speed staleness is not the cause there. Torque quantization (0.1 N·m, about 18 W) is too small to explain it. Next: log the VCU's torque command against `mcu.torqueNm` and look for an MCU ramp or blend. packW equals inverterDcW + auxLoadW exactly.
 
 ## T-017: Free-drive telemetry and export from the Drive view
 

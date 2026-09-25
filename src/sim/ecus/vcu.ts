@@ -116,6 +116,8 @@ export const MODE_MAPS: Readonly<Record<DriveMode, ModeMap>> = {
   sport: { pedalExponent: 0.8, powerCapW: Infinity, liftOffG: REGEN_DECEL_G, batteryCapW: Infinity }, // estimate
 };
 /** ADR 0013: a mode change blends the old map into the new one over this time. */
+/** Speed extrapolation for the Eco battery cap: one frame of staleness plus half a tick. */
+const CAP_LOOKAHEAD_TICKS = 1.5;
 export const MODE_RAMP_S = 0.5; // estimate
 
 export interface Vcu {
@@ -468,7 +470,11 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
     const w = Math.abs(motorRadS);
     let availableNm = motorMaxTorqueNm(p, motorRadS);
     if (w > 0) availableNm = Math.min(availableNm, Math.min(maxDischargeKw as number * 1000, decision.powerCapKw * 1000, map.powerCapW) / w);
-    if (Number.isFinite(map.batteryCapW)) availableNm = Math.min(availableNm, batteryCappedTorqueNm(map.batteryCapW, w));
+    // The reported speed is a frame old and the plant loads the pack at the tick's mean
+    // speed, so the cap is solved at the speed expected over the coming tick.
+    const wAhead = w + CAP_LOOKAHEAD_TICKS * Math.max(0, w - lastCapW);
+    lastCapW = w;
+    if (Number.isFinite(map.batteryCapW)) availableNm = Math.min(availableNm, batteryCappedTorqueNm(map.batteryCapW, wAhead));
 
     const direction = vcu.gear === 'D' ? 1 : -1;
     const limitKmh = vcu.gear === 'D' ? decision.speedCapKmh : Math.min(REVERSE_SPEED_LIMIT_KMH, decision.speedCapKmh);
@@ -483,6 +489,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
    * ADR 0013: largest torque whose shaft power plus motor/inverter loss and aux load
    * keeps battery discharge within the cap, solving c·T² + ω·T + rest = cap for T.
    */
+  let lastCapW = 0;
   function batteryCappedTorqueNm(capW: number, w: number): number {
     const c = p.motorLossCopperWPerNm2;
     const rest = motorLossW(p, 0, w) + p.auxLoadW - capW;
