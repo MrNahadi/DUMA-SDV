@@ -12,5 +12,5 @@
 ## Manual checks requiring a human
 
 1. In a desktop browser, verify the warning wording is immediately understandable without knowing DTCs, the affected module is locatable on the x-ray car, and amber/red highlights remain clear on a venue projector and in reduced-motion mode.
-2. Review Diagnostics against every `DESIGN-RULES.md` checklist item, including focus ring, WCAG AA contrast, one primary action, empty/loading/error states and modal completion feedback in Chrome, Edge and Firefox.
+2. Review Diagnostics against every `docs/design-rules.md` checklist item, including focus ring, WCAG AA contrast, one primary action, empty/loading/error states and modal completion feedback in Chrome, Edge and Firefox.
 3. On a mid-range integrated-graphics laptop, inspect 3D smoothness near 60 fps and initial render under 2 s offline. Record device and measured result; do not mark the performance requirement verified from headless tests alone.

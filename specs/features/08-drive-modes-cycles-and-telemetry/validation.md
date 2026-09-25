@@ -18,4 +18,4 @@
 2. Open an exported CSV in a spreadsheet. Columns, units and values should read correctly.
 3. Drive freely in each mode. Eco should feel softer and Sport sharper, with no jerk on a mode change.
 4. An engineer reviews the ADR 0013 estimates and the cycle data source.
-5. Check against DESIGN-RULES: tokens, fonts, tabular numbers, focus rings and chart colour contrast.
+5. Check against docs/design-rules.md: tokens, fonts, tabular numbers, focus rings and chart colour contrast.

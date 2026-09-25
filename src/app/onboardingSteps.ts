@@ -1,5 +1,5 @@
 /**
- * Start here onboarding (DESIGN-RULES §10): five suggested steps, each latched
+ * Start here onboarding (docs/design-rules.md §10): five suggested steps, each latched
  * once the judge has done it.
  */
 

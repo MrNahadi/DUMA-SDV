@@ -17,7 +17,7 @@
 ## UI: Software view
 
 - **R12.** The Software view answers "What version is running, and what is new?". Its subject is the update card: package version, what's new, the steps Download → Verify → Install → Reboot with status and progress, and one primary action.
-- **R13.** Actions use DESIGN-RULES §8 verbs: **Check for updates** and **Install update**. Install asks for confirmation in a modal that states the consequence, and completion shows a tick and a toast.
+- **R13.** Actions use docs/design-rules.md §8 verbs: **Check for updates** and **Install update**. Install asks for confirmation in a modal that states the consequence, and completion shows a tick and a toast.
 - **R14.** The view lists every ECU with its running version in Geist Mono, and marks the updated ECU in words.
 - **R15.** Empty, loading and error states: car off ("Power on to check for updates."), checking, up to date, refused install (the reason in plain words) and a failed update.
 - **R16.** On the Drive view, a locked Sport button stays disabled and a one-line hint says a software update unlocks it. After the update Sport can be selected.

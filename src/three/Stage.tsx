@@ -61,7 +61,7 @@ export const StageScene = memo(function StageScene() {
 
 /**
  * The 3D stage: the car on a quiet studio floor that becomes a road while driving.
- * 1 unit = 1 m. No idle motion (DESIGN-RULES.md §6).
+ * 1 unit = 1 m. No idle motion (docs/design-rules.md §6).
  */
 export default function Stage() {
   // Primitive selectors: the stage re-renders only when the fault label changes, not every tick.

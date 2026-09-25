@@ -27,5 +27,5 @@
 - **R14** The Energy nav item opens a panel whose subject is the live power-flow diagram. It has nodes for Charger, Pack, Inverter, Motor, DC-DC and 12 V battery, and each active edge is labelled with its power in kW, converted at the UI boundary.
 - **R15** An edge's flow direction follows the sign of its power, and dash speed scales with its magnitude. An edge below a small threshold is idle. Under `prefers-reduced-motion`, values show without animation.
 - **R16** The panel shows pack, motor and inverter temperatures in °C with tabular numbers, and each coolant loop's state. Meaning never depends on colour alone.
-- **R17** Colours come only from DESIGN-RULES tokens (`--ok` for regen and charging flow, `--accent` for discharge). Labels use the DESIGN-RULES verbs.
+- **R17** Colours come only from docs/design-rules.md tokens (`--ok` for regen and charging flow, `--accent` for discharge). Labels use the docs/design-rules.md verbs.
 - **R18** Existing views, scenarios and e2e suites keep working, and the Energy view fits at 1366×768.

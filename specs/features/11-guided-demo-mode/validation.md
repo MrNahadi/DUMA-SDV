@@ -12,4 +12,4 @@
 
 1. Play the whole demo on a projector-sized screen. Are the captions readable and in step with what the car does?
 2. Walk a first-time user through the Start here card without the demo.
-3. Check the demo bar and card against the DESIGN-RULES checklist.
+3. Check the demo bar and card against the docs/design-rules.md checklist.

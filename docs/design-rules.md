@@ -1,6 +1,6 @@
 # Design rules: Duma SDV
 
-The rules for every screen, derived from `SAAS-Design.md`. If a change breaks a rule, the change is wrong. The checklist at the bottom is how a view passes.
+The rules for every screen, adapted from a third-party SaaS UI design checklist (not kept in the repo). If a change breaks a rule, the change is wrong. The checklist at the bottom is how a view passes.
 
 ## 1. Principles
 

@@ -16,7 +16,7 @@ test('the app loads with a 3D stage and no errors', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Charge');
   await expect(page).toHaveURL(/#\/charge$/);
 
-  // DESIGN-RULES.md §5: no horizontal scroll at 1366x768.
+  // docs/design-rules.md §5: no horizontal scroll at 1366x768.
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );

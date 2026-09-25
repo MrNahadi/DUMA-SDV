@@ -80,7 +80,7 @@ Test seam: EnergyPanel component
 Acceptance:
 - [x] Dash direction reverses when power changes sign (drive → regen)
 - [x] With reduced motion on, the edges do not animate
-Notes: Use tokens only (DESIGN-RULES colours and motion).
+Notes: Use tokens only (docs/design-rules.md colours and motion).
 
 ## T-008: Temperature readout
 

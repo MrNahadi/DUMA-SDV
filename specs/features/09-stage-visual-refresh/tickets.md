@@ -16,7 +16,7 @@ Notes: ADR 0014. `odometerM` only counts up, so don't reuse it.
 
 Status: done
 Blocked by:
-Slice: Add road surface (starting point `#cfcec8`), marking (`#ffffff`) and post tokens to DESIGN-RULES §3, `tokens.css` and `tokens.ts`. Add a line to DESIGN-RULES §6 allowing road motion that tracks distance travelled.
+Slice: Add road surface (starting point `#cfcec8`), marking (`#ffffff`) and post tokens to docs/design-rules.md §3, `tokens.css` and `tokens.ts`. Add a line to docs/design-rules.md §6 allowing road motion that tracks distance travelled.
 Test seam: exported tokens from `src/ui/tokens.ts`
 Acceptance:
 - [x] The three tokens exist in both the CSS and TS files with equal values
@@ -88,8 +88,8 @@ Acceptance:
 - [x] Offsets are correct moving forward, in reverse and across the 90 m wrap (no jump at the wrap)
 - [x] At top speed (from `vehicleParams`) and 60 fps, distance per frame is under half of each period
 - [x] Visible when READY in D or R, or when speed is not zero; hidden when parked, off or charging
-Notes: No React or three imports needed. Checkpoint: helpers + tests in src/three/road/motion.ts(.test.ts) complete and passing; typecheck, lint, build, e2e green. Only `npm test` fails, on pre-existing energy.test.ts timeout (questions/open/T-003-sim-test-timeouts.md). Once resolved, tick boxes and mark done.
-Done: helpers and tests were in place; the sim-test timeouts were resolved by capping Vitest workers (questions/answered/T-003-sim-test-timeouts.md).
+Notes: No React or three imports needed. Checkpoint: helpers + tests in src/three/road/motion.ts(.test.ts) complete and passing; typecheck, lint, build, e2e green. Only `npm test` fails, on pre-existing energy.test.ts timeout. Once resolved, tick boxes and mark done.
+Done: helpers and tests were in place; the sim-test timeouts were resolved by capping Vitest workers (`test.maxWorkers: 4` in `vite.config.ts`).
 
 ## T-008: Road strip on the stage
 

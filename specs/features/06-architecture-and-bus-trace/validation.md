@@ -19,4 +19,4 @@
 1. At 1366×768 in Chrome, watch the diagram during power-on and driving. Activity should be readable and match the trace, with no stutter.
 2. A judge can follow the startup and fault signal flow in the diagram, and it matches the architecture described in the brief.
 3. Using only the keyboard, go through the filters, Pause/Resume/Clear trace and frame selection. Check that focus is visible and no state depends on colour alone.
-4. Check the view against DESIGN-RULES: fonts, spacing and tabular numbers.
+4. Check the view against docs/design-rules.md: fonts, spacing and tabular numbers.

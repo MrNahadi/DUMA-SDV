@@ -108,7 +108,7 @@ Acceptance:
 - [x] Only design-rule data colours and locally bundled assets are used; reduced motion adds no decoration
 Notes: Install the already approved exact package version in feature setup before the unattended loop, as required by the stack.
 Checkpoint: ChargeChart and sampling test added. Focused test was failing because the stale-frame sample arrived before the 1 s sample interval; increased test step to 120 ticks but have not rerun. Full Feedback initial run: typecheck/build passed, lint flagged synchronous effect state update (changed to animation frame); npm test had the focused failure plus a reference-test timeout under parallel load; e2e found a heading name collision (renamed heading). Rerun all Feedback commands, preferably sequentially.
-Checkpoint: Focused test and all five Feedback commands pass. Review found that chart series still use UI colours `--accent` and `--ok`, while DESIGN-RULES.md requires the unavailable dataviz skill palette. See `questions/open/T-009-chart-palette.md`.
+Checkpoint: Focused test and all five Feedback commands pass. Review found that chart series still use UI colours `--accent` and `--ok`, while docs/design-rules.md requires the unavailable dataviz skill palette.
 Resolution: Answered palette question approved dedicated AC/DC data tokens. Chart and design rules use them; all five Feedback commands pass.
 
 ## T-010: Show charge port state on the car

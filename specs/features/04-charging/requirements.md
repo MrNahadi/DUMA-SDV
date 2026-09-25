@@ -1,6 +1,6 @@
 # 04 · Charging: requirements
 
-These are planned requirements, not verified results. Terms follow `CONTEXT.md`; architecture and physics follow `specs/tech-stack.md` and accepted ADRs.
+These are planned requirements, not verified results. Terms follow `docs/glossary.md`; architecture and physics follow `specs/tech-stack.md` and accepted ADRs.
 
 ## R1. Charging decision and reference
 

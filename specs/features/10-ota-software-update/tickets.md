@@ -60,7 +60,7 @@ Acceptance:
 - [x] Off, checking, downloading, ready, installing, installed, up to date, refused and failed states each render their text
 - [x] Install update confirms first, and completion shows a toast
 - [x] Versions are listed per ECU and the updated one is marked in words
-- [x] Labels match DESIGN-RULES §8
+- [x] Labels match docs/design-rules.md §8
 
 ## T-006: Locked Sport hint on the Drive view
 
