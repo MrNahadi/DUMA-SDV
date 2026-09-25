@@ -117,7 +117,9 @@ export const MODE_MAPS: Readonly<Record<DriveMode, ModeMap>> = {
 };
 /** ADR 0013: a mode change blends the old map into the new one over this time. */
 /** Speed extrapolation for the Eco battery cap: one frame of staleness plus half a tick. */
-const CAP_LOOKAHEAD_TICKS = 1.5;
+const CAP_LOOKAHEAD_TICKS = 4;
+/** VCU_Command torqueRequest resolution; the capped torque is floored to it so encoding cannot round it up. */
+const TORQUE_REQUEST_STEP_NM = 0.1;
 export const MODE_RAMP_S = 0.5; // estimate
 
 export interface Vcu {
@@ -474,7 +476,7 @@ export function createVcu(bus: Bus, p: Readonly<VehicleParams>, tickS: number, f
     // speed, so the cap is solved at the speed expected over the coming tick.
     const wAhead = w + CAP_LOOKAHEAD_TICKS * Math.max(0, w - lastCapW);
     lastCapW = w;
-    if (Number.isFinite(map.batteryCapW)) availableNm = Math.min(availableNm, batteryCappedTorqueNm(map.batteryCapW, wAhead));
+    if (Number.isFinite(map.batteryCapW)) availableNm = Math.min(availableNm, Math.floor(batteryCappedTorqueNm(map.batteryCapW, wAhead) / TORQUE_REQUEST_STEP_NM) * TORQUE_REQUEST_STEP_NM);
 
     const direction = vcu.gear === 'D' ? 1 : -1;
     const limitKmh = vcu.gear === 'D' ? decision.speedCapKmh : Math.min(REVERSE_SPEED_LIMIT_KMH, decision.speedCapKmh);
