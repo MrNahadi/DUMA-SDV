@@ -1,9 +1,30 @@
+# Dependencies and build output
 node_modules/
 dist/
-.ralph/logs/
-.ralph/done
-.claude/settings.local.json
-*.log
+coverage/
+
+# Test output
 playwright-report/
 test-results/
-coverage/
+
+# Logs and local environment
+*.log
+.env
+.env.*
+*.local
+
+# Editor and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Build tooling that is not part of the project: the Claude Code agent setup,
+# the Ralph build loop and its question queue
+.claude/
+.ralph/
+questions/
+
+# Third-party reference documents kept locally only
+SAAS-Design.md
+challenge.md
