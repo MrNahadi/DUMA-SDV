@@ -205,7 +205,7 @@ Acceptance:
 - [x] After 60 s of free driving, the Drive view export passes CSV text with about 600 rows and a `drive-<mode>-60s.csv` file name
 - [x] A cycle export after earlier free driving is named with the cycle's length, not the absolute sim time
 - [x] An empty free-drive log shows a message and saves nothing
-- [ ] Reset clears the free-drive log
+- [x] Reset clears the free-drive log
 Notes: R12, R13, R17 and the T-010 slice. Keep the one-hour cap.
 
 ## T-018: Cycle chart: SOC axis, reset and redraw cost
