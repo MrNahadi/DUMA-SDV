@@ -101,6 +101,8 @@ The build output in `dist/` uses relative paths, so the same folder can be serve
 | `npm test` | Vitest unit and component tests |
 | `npm run build` | Production build to `dist/` |
 | `npm run e2e` | Playwright end-to-end specs (first time: `npx playwright install chromium`) |
+| `npm run paper` | Regenerate the paper's data from the simulator and build `paper/main.pdf` (needs TeX Live) |
+| `npm run paper:figures` | Recapture the paper's car renders and screenshots from the production build |
 
 ## Controls
 
@@ -239,6 +241,7 @@ e2e/              Playwright specs, one per user flow
 specs/            Brief, mission, tech stack, roadmap, per-feature specs and tickets
 docs/adr/         Architecture decision records
 docs/images/      README screenshots
+paper/            LaTeX paper: main.tex, generated data/ and captured figures/
 DESIGN-RULES.md   The UI contract every view follows
 CONTEXT.md        Glossary
 ```
@@ -275,6 +278,7 @@ Every non-obvious choice is written down in `docs/adr/`:
 | [0014](docs/adr/0014-smooth-stylised-car-and-road-stage.md) | Smooth stylised car and road stage |
 | [0015](docs/adr/0015-ota-software-update.md) | Over-the-air software update |
 | [0016](docs/adr/0016-guided-demo-scripts.md) | Guided demo scripts |
+| [0017](docs/adr/0017-bms-discharge-limit-at-the-battery.md) | The BMS discharge limit applies at the battery |
 
 The UI follows [`DESIGN-RULES.md`](DESIGN-RULES.md): a light, restrained interface where each view answers one question, colour is used only for data and status, and every control is keyboard reachable.
 
@@ -294,7 +298,7 @@ The UI follows [`DESIGN-RULES.md`](DESIGN-RULES.md): a light, restrained interfa
 | 10 | Over-the-air software update | Done |
 | 11 | Guided demo mode | Done |
 | 12 | Offline (PWA); public hosting deferred | Done |
-| 13 | LaTeX paper | Next |
+| 13 | LaTeX paper | Done |
 | 14 | Stretch: open-world drive | Optional |
 
 The full plan is in [`specs/roadmap.md`](specs/roadmap.md).

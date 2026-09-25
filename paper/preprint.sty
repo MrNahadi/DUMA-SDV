@@ -1,0 +1,76 @@
+% preprint.sty -- single-column preprint layout modelled on the NeurIPS style:
+% 5.5 x 9 in text block, title between heavy rules, block paragraphs,
+% bold run-in paragraph headings, small captions with bold lead sentences.
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{preprint}[2026/09/23 NeurIPS-like preprint layout]
+
+\RequirePackage[letterpaper,textwidth=5.5in,textheight=9in,top=1in,
+  headheight=12pt,headsep=25pt,footskip=30pt]{geometry}
+\RequirePackage[T1]{fontenc}
+\RequirePackage{newtxtext,newtxmath}
+\RequirePackage[protrusion=true,expansion=true]{microtype}
+\RequirePackage{xcolor}
+\RequirePackage[explicit]{titlesec}
+\RequirePackage{caption}
+\RequirePackage{enumitem}
+
+% Block paragraphs
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5.5pt}
+
+% Section headings
+\titleformat{\section}{\large\bfseries\raggedright}{\thesection}{1em}{#1}
+\titlespacing*{\section}{0pt}{12pt plus 4pt minus 2pt}{6pt plus 2pt}
+\titleformat{\subsection}{\normalsize\bfseries\raggedright}{\thesubsection}{1em}{#1}
+\titlespacing*{\subsection}{0pt}{9pt plus 3pt minus 2pt}{3pt plus 1pt}
+\titleformat{\paragraph}[runin]{\normalsize\bfseries}{}{0pt}{#1}
+\titlespacing*{\paragraph}{0pt}{5.5pt plus 2pt}{1em}
+
+% Captions: "Figure 1:" label, small type, full width
+\captionsetup{font=small,labelsep=colon,skip=6pt,justification=justified,singlelinecheck=true}
+\captionsetup[table]{position=top,skip=4pt}
+
+% Lists: tight, like the NeurIPS template
+\setlist{itemsep=1pt,topsep=2pt,parsep=0pt,leftmargin=1.5em}
+\setlist[itemize]{label=\textbullet}
+
+% Title block
+\newcommand{\@affil}{}
+\newcommand{\affiliation}[1]{\renewcommand{\@affil}{#1}}
+\renewcommand{\maketitle}{%
+  \thispagestyle{plain}%
+  \begingroup
+  \vbox{%
+    \hsize\textwidth
+    \hrule height 4pt
+    \vskip .25in
+    \centering
+    {\LARGE\bfseries \@title\par}%
+    \vskip .29in
+    \hrule height 1pt
+    \vskip .3in
+    {\bfseries \@author\par}%
+    \vskip .08in
+    {\@affil\par}%
+  }%
+  \endgroup
+  \vskip .3in
+}
+
+% Abstract
+\renewenvironment{abstract}{%
+  \vskip .075in
+  \centerline{\large\bfseries Abstract}%
+  \vspace{0.5ex}%
+  \begin{list}{}{\leftmargin=0.5in\rightmargin=0.5in\listparindent=0pt\parsep=5.5pt}\item\relax
+}{%
+  \end{list}\vskip .15in
+}
+
+% Appendix section numbering "A", "A.1"
+\g@addto@macro\appendix{%
+  \setcounter{section}{0}\renewcommand{\thesection}{\Alph{section}}%
+}
+
+\pagestyle{plain}
+\endinput

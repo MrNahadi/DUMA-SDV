@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
-  { ignores: ['dist', 'node_modules', 'playwright-report', 'test-results', 'paper', '.claude', '.ralph'] },
+  { ignores: ['dist', 'node_modules', 'playwright-report', 'test-results', 'paper/data/.build', '.claude', '.ralph'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
@@ -40,7 +40,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['vite.config.ts', 'playwright.config.ts', 'e2e/**/*.ts', 'eslint.config.js'],
+    files: ['vite.config.ts', 'playwright.config.ts', 'e2e/**/*.ts', 'eslint.config.js', 'paper/data/**/*.ts', 'paper/figures/**/*.ts'],
     languageOptions: { globals: { ...globals.node } },
   },
 );

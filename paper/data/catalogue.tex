@@ -1,0 +1,23 @@
+\texttt{0x0F1} & \texttt{VCU\_Boot} & event & 2 & TCU \\
+\texttt{0x0F2} & \texttt{BMS\_Boot} & event & 2 & VCU \\
+\texttt{0x0F3} & \texttt{MCU\_Boot} & event & 2 & VCU \\
+\texttt{0x0F4} & \texttt{IC\_Boot} & event & 2 & VCU \\
+\texttt{0x0F5} & \texttt{TCU\_Boot} & event & 2 & -- \\
+\texttt{0x100} & \texttt{VCU\_Command} & 10 & 3 & BMS, MCU \\
+\texttt{0x101} & \texttt{VCU\_Status} & 100 & 5 & IC, TCU \\
+\texttt{0x102} & \texttt{VCU\_Range} & 1000 & 3 & IC \\
+\texttt{0x103} & \texttt{VCU\_Recovery} & 100 & 1 & IC \\
+\texttt{0x104} & \texttt{VCU\_Charge} & 10 & 7 & BMS, IC, OBC, TCU \\
+\texttt{0x105} & \texttt{VCU\_DTC} & 100 & 2 & IC \\
+\texttt{0x106} & \texttt{VCU\_DriveDecision} & 100 & 3 & IC \\
+\texttt{0x107} & \texttt{VCU\_Mode} & 100 & 1 & MCU \\
+\texttt{0x200} & \texttt{BMS\_Status} & 100 & 5 & IC, MCU, TCU, VCU \\
+\texttt{0x201} & \texttt{BMS\_Limits} & 100 & 2 & IC, VCU \\
+\texttt{0x202} & \texttt{BMS\_Charge} & 10 & 3 & IC, OBC, VCU \\
+\texttt{0x203} & \texttt{BMS\_DTC} & 100 & 2 & IC, VCU \\
+\texttt{0x204} & \texttt{BMS\_Thermal} & 100 & 1 & IC \\
+\texttt{0x300} & \texttt{MCU\_Status} & 10 & 4 & BMS, VCU \\
+\texttt{0x301} & \texttt{MCU\_Vehicle} & 20 & 1 & IC, TCU, VCU \\
+\texttt{0x302} & \texttt{MCU\_DTC} & 100 & 2 & IC, VCU \\
+\texttt{0x303} & \texttt{MCU\_Thermal} & 100 & 2 & IC \\
+\texttt{0x400} & \texttt{TCU\_Ota} & 100 & 4 & VCU \\

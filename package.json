@@ -13,7 +13,10 @@
     "test": "vitest run",
     "build": "vite build",
     "e2e": "playwright test",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "paper:figures": "playwright test --config paper/figures/playwright.config.ts",
+    "paper:data": "vite build --config paper/data/vite.config.ts && node paper/data/.build/export.mjs",
+    "paper": "npm run paper:data && cd paper && latexmk -pdf -interaction=nonstopmode -halt-on-error main.tex"
   },
   "dependencies": {
     "@fontsource-variable/geist": "5.3.0",
