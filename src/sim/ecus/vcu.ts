@@ -524,12 +524,15 @@ export function createVcu(
     const motorRadS = rpmToRads(inbox.read('MCU_Status', 'motorSpeedRpm') as number);
     const w = Math.abs(motorRadS);
     let availableNm = motorMaxTorqueNm(p, motorRadS);
-    if (w > 0) availableNm = Math.min(availableNm, Math.min(maxDischargeKw as number * 1000, decision.powerCapKw * 1000, map.powerCapW) / w);
-    // The reported speed is a frame old and the plant loads the pack at the tick's mean
-    // speed, so the cap is solved at the speed expected over the coming tick.
+    // Shaft power caps: the VCU's fault derate and the mode map.
+    if (w > 0) availableNm = Math.min(availableNm, Math.min(decision.powerCapKw * 1000, map.powerCapW) / w);
+    // The BMS discharge limit is battery power (ADR 0017): shaft power plus motor and inverter
+    // loss plus the auxiliary load. The reported speed is a frame old and the plant loads the pack
+    // at the tick's mean speed, so the cap is solved at the speed expected over the coming tick.
     const wAhead = w + CAP_LOOKAHEAD_TICKS * Math.max(0, w - lastCapW);
     lastCapW = w;
-    if (Number.isFinite(map.batteryCapW)) availableNm = Math.min(availableNm, Math.floor(batteryCappedTorqueNm(map.batteryCapW, wAhead) / TORQUE_REQUEST_STEP_NM) * TORQUE_REQUEST_STEP_NM);
+    const batteryCapW = Math.min(maxDischargeKw as number * 1000, map.batteryCapW);
+    availableNm = Math.min(availableNm, Math.floor(batteryCappedTorqueNm(batteryCapW, wAhead) / TORQUE_REQUEST_STEP_NM) * TORQUE_REQUEST_STEP_NM);
 
     const direction = vcu.gear === 'D' ? 1 : -1;
     const limitKmh = vcu.gear === 'D' ? decision.speedCapKmh : Math.min(REVERSE_SPEED_LIMIT_KMH, decision.speedCapKmh);

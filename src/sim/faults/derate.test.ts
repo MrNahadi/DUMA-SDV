@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createSim } from '../index';
+import { TICK_S, createSim } from '../index';
 import { powerOnToReady, shiftWithBrake } from '../scenarios';
 
 function driving() {
@@ -35,5 +35,24 @@ describe('cell over-temperature drive derate', () => {
     faulted.step(30);
     expect(lastLimit(faulted)?.maxDischargeKw).toBe(healthyLimit.maxDischargeKw);
     expect(faulted.snapshot().diagnostics.records[0]?.status).toBe('stored');
+  });
+
+  it('keeps pack discharge power within the BMS limit it received (ADR 0017)', () => {
+    for (const fault of [false, true]) {
+      const sim = createSim();
+      expect(powerOnToReady(sim)).toBe(true);
+      expect(shiftWithBrake(sim, 'D')).toBe(true);
+      if (fault) sim.setInputs({ faultCommand: { key: 'cellOverTemperature', action: 'inject' } });
+      sim.setInputs({ brake: 0, accelerator: 1 });
+      sim.step(50);
+      let worst = -Infinity;
+      for (let i = 0; i < 12 / TICK_S; i++) {
+        sim.step(1);
+        const limitKw = sim.snapshot().dashboard.maxDischargeKw;
+        if (limitKw !== null) worst = Math.max(worst, sim.snapshot().power.packW - limitKw * 1000);
+      }
+      // One torque-request step (0.1 N·m) of headroom at most.
+      expect(worst, fault ? 'faulted' : 'healthy').toBeLessThanOrEqual(200);
+    }
   });
 });
