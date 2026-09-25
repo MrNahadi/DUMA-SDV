@@ -223,12 +223,12 @@ Notes: R16 and R18.
 
 ## T-019: Review follow-up regression sweep
 
-Status: open
+Status: done
 Blocked by: T-013, T-014, T-015, T-016, T-017, T-018
 Slice: Run every Feedback command and every reference and e2e test. Extend `e2e/cycles.spec.ts` to check that the exported file name ends with the cycle's length in seconds (±1 s). Fix any breakage without widening tolerances.
 Test seam: `npm test` and `npm run e2e`
 Acceptance:
-- [ ] typecheck, lint, test, build and e2e all pass
-- [ ] The cycles e2e test checks the file name duration
-- [ ] Reference test tolerances are unchanged
+- [x] typecheck, lint, test, build and e2e all pass
+- [x] The cycles e2e test checks the file name duration
+- [x] Reference test tolerances are unchanged
 Notes:

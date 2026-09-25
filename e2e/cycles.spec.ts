@@ -23,7 +23,12 @@ test('Eco Urban cycle runs to a Wh/km result and exports a CSV', async ({ page }
     page.waitForEvent('download'),
     page.getByRole('button', { name: 'Export CSV' }).click(),
   ]);
-  expect(download.suggestedFilename()).toMatch(/^urban-eco-\d+s\.csv$/);
+  const name = download.suggestedFilename();
+  expect(name).toMatch(/^urban-eco-\d+s\.csv$/);
+  const source = await readFile('src/sim/scenarios/cycles/wltc-class3-low.csv', 'utf8');
+  const times = source.trim().split(/\r?\n/).slice(1).map((row) => Number(row.split(',')[0]));
+  const cycleLengthS = times.at(-1)! - times[0]!;
+  expect(Math.abs(Number(/(\d+)s\.csv$/.exec(name)![1]) - cycleLengthS)).toBeLessThanOrEqual(1);
   const csv = await readFile((await download.path())!, 'utf8');
   const rows = csv.trimEnd().split(/\r?\n/);
   expect(rows[0]).toBe(HEADER);
