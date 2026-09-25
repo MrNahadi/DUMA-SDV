@@ -15,5 +15,5 @@ Each phase gets `specs/features/NN-slug/` and a `feature/NN-slug` branch.
 - [x] **10 · OTA software update** [6]. Software view with ECU versions; download → verify → install → reboot flow with confirmation; the update visibly changes behaviour (e.g. unlocks a mode or raises regen strength).
 - [x] **11 · Guided demo mode** [5]. One button plays each scenario with captions. "Start here" onboarding for first-time judges. Includes one e2e test per scenario, which closes the DoD scenario check.
 - [x] **12 · Offline and deployment** [11]. PWA / service worker, documented offline check. Public static hosting is deferred (owner decision, 2026-09-25): the brief's "public URL" DoD item stays open until a later phase publishes `dist/`.
-- [ ] **13 · Paper** [10]. LaTeX paper in the Duma preprint style: architecture, software design, scenario results, with figures made from exported telemetry.
+- [x] **13 · Paper** [10]. LaTeX paper in the Duma preprint style: architecture, software design, scenario results, with figures made from exported telemetry.
 - [ ] **14 · Stretch: open-world drive.** A simple road loop the car can drive around, building on the phase 09 road. Optional; skip if costly.
