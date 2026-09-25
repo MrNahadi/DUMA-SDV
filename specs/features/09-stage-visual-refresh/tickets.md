@@ -14,13 +14,13 @@ Notes: ADR 0014. `odometerM` only counts up, so don't reuse it.
 
 ## T-002: Road colour tokens
 
-Status: open
+Status: done
 Blocked by:
 Slice: Add road surface (starting point `#cfcec8`), marking (`#ffffff`) and post tokens to DESIGN-RULES §3, `tokens.css` and `tokens.ts`. Add a line to DESIGN-RULES §6 allowing road motion that tracks distance travelled.
 Test seam: exported tokens from `src/ui/tokens.ts`
 Acceptance:
-- [ ] The three tokens exist in both the CSS and TS files with equal values
-- [ ] A test shows marking vs road surface luminance contrast is at least 1.5:1
+- [x] The three tokens exist in both the CSS and TS files with equal values
+- [x] A test shows marking vs road surface luminance contrast is at least 1.5:1
 Notes: Adjust the surface grey if the contrast fails; don't lower the threshold.
 
 ## T-003: Lofted smooth body hull

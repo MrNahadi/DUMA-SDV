@@ -34,6 +34,9 @@ Tokens are defined once on `:root` in `src/ui/tokens.css`. Hex values are never 
 | `--ok` | `#2E7D4F` | Regen, charging, READY, healthy |
 | `--warn` | `#B7791F` | Derate, warnings, stored DTCs |
 | `--fault` | `#B3261E` | Active faults, limp mode, confirmation of destructive actions |
+| `--road-surface` | `#CFCEC8` | Stage road surface |
+| `--road-marking` | `#FFFFFF` | Stage road lane markings (at least 1.5:1 against the surface) |
+| `--road-post` | `#8E9199` | Stage roadside posts |
 | `--*-soft` | same hue at ~10% on white | Status backgrounds (badges, highlighted rows) |
 
 - Status is **never shown by colour alone**. It always comes with an icon or a word.
@@ -66,6 +69,7 @@ No other sizes. Text is sentence case everywhere except `label`.
 ## 6. Motion
 
 Allowed, because each one tells the user something:
+- Road markings and posts moving past the car, tracking the distance travelled (never frame time).
 - Wheels spinning with speed. Energy-flow dashes moving in the direction and at the rate of the power flow. Gauge needles and bars tracking values.
 - The startup sequence stepping through its states.
 - Skeleton placeholders while the 3D stage loads.

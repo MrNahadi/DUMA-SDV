@@ -14,6 +14,9 @@ export const tokens = {
   ok: '#2e7d4f',
   warn: '#b7791f',
   fault: '#b3261e',
+  roadSurface: '#cfcec8',
+  roadMarking: '#ffffff',
+  roadPost: '#8e9199',
 } as const;
 
 export type TokenName = keyof typeof tokens;
