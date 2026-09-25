@@ -218,7 +218,7 @@ Acceptance:
 - [x] The SOC scale has a labelled axis with a fixed 0–100 % range
 - [x] With no samples, the chart shows no series data
 - [x] Series data isn't rebuilt when the sample count hasn't changed
-- [ ] `snapshot.driveModes` is the same array between snapshots while availability is unchanged
+- [x] `snapshot.driveModes` is the same array between snapshots while availability is unchanged
 Notes: R16 and R18.
 
 ## T-019: Review follow-up regression sweep
