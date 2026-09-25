@@ -99,7 +99,7 @@ export function applyCarVisualState(car: Object3D, visual: CarVisualState): void
     for (const part of internals.children) {
       part.visible = part.name === visual.faultHighlight?.part;
       if (part instanceof Mesh && part.material instanceof MeshStandardMaterial) {
-        // The faulted module glows steadily in its severity colour (no idle motion, DESIGN-RULES §6).
+        // The faulted module glows steadily in its severity colour (no idle motion, docs/design-rules.md §6).
         const colour = visual.faultHighlight?.severity === 'red' ? tokens.fault : tokens.warn;
         part.material.color.set(part.visible ? colour : '#86aeb8');
         part.material.emissive.set(part.visible ? colour : '#000000');

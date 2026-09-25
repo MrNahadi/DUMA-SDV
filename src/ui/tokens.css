@@ -1,4 +1,4 @@
-/* Design tokens: the only place UI colours, type and spacing are defined (DESIGN-RULES.md). */
+/* Design tokens: the only place UI colours, type and spacing are defined (docs/design-rules.md). */
 :root {
   /* Surfaces and lines */
   --bg: #fafaf9;
@@ -21,12 +21,12 @@
   --warn-soft: #f8f1e8;
   --fault-soft: #f7e9e8;
 
-  /* Stage road: surface, lane markings, edge posts (DESIGN-RULES.md). */
+  /* Stage road: surface, lane markings, edge posts (docs/design-rules.md). */
   --road-surface: #cfcec8;
   --road-marking: #ffffff;
   --road-post: #8e9199;
 
-  /* Chart data: distinct from UI accent and status colours (DESIGN-RULES.md). */
+  /* Chart data: distinct from UI accent and status colours (docs/design-rules.md). */
   --data-ac: #0072b2;
   --data-dc: #c65300;
   --data-speed: #0072b2;

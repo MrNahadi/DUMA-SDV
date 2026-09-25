@@ -1,6 +1,6 @@
 /**
  * The guided demo's scripts (ADR 0016), one per scenario in brief §5. Captions use
- * the words of CONTEXT.md and DESIGN-RULES §8. Each scenario starts from a fresh sim
+ * the words of docs/glossary.md and docs/design-rules.md §8. Each scenario starts from a fresh sim
  * prepared headlessly, so it plays the same on its own or after the others.
  */
 

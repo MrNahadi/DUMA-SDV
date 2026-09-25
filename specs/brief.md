@@ -30,7 +30,7 @@ The challenge asks teams to prove they can design the software ecosystem of a mo
 | Every scenario can be demoed | A judge with no help can run Startup, Charging, Driving, Fault and Regen from the UI, each in under 60 s from first click. |
 | Believable physics | Simulated 0–100 km/h, range, and charge times are within ±10% of the reference car's published figures. |
 | The architecture is visible | The app shows live messages between ECUs (BMS, MCU, VCU, OBC, …) on a simulated CAN bus. The signal flow of every scenario can be traced in the UI and matches the paper's architecture diagram. |
-| Looks like a real product | Every screen passes the written design-rules checklist (derived from SAAS-Design.md). 3D runs at 60 fps on a mid-range laptop. First render in under 2 s offline. |
+| Looks like a real product | Every screen passes the written design-rules checklist (`docs/design-rules.md`). 3D runs at 60 fps on a mid-range laptop. First render in under 2 s offline. |
 
 ## 5. Scope (REQUIRED)
 
@@ -101,7 +101,7 @@ The challenge asks teams to prove they can design the software ecosystem of a mo
 - The written deliverables (system architecture and software design documentation) are submitted as a separate LaTeX paper in the style of `../DUMA-EV Design/paper/main.tex` (preprint.sty layout).
 - The vehicle is a new, fictional EV. It may take its specs loosely from a real BYD or Tesla model, but it never uses their names, logos or branding in the app or the paper.
 - The 3D view uses three.js.
-- The UI follows the SAAS-Design.md principles: muted chrome with one accent, colour only for data and status, a real icon set with no emojis, and motion only when it tells the user something.
+- The UI follows SaaS UI design principles (distilled in `docs/design-rules.md`): muted chrome with one accent, colour only for data and status, a real icon set with no emojis, and motion only when it tells the user something.
 
 ## 9. Tech preferences
 
@@ -132,7 +132,7 @@ The challenge asks teams to prove they can design the software ecosystem of a mo
 - Tests: unit tests for every simulation module. Physics reference tests for the ±10% goal. One automated end-to-end test per scenario.
 - Performance: 60 fps 3D on a mid-range laptop with integrated graphics. First render under 2 s offline. (from goals)
 - Accessibility: fully keyboard-operable driving and controls. WCAG AA contrast. Status is never shown by colour alone.
-- Docs: README with run/offline instructions, DESIGN-RULES.md, and the LaTeX paper.
+- Docs: README with run/offline instructions, docs/design-rules.md, and the LaTeX paper.
 - Supported environments: latest desktop Chrome, Edge and Firefox, 1366×768 and up. Phone layout not required.
 
 ## 12. Definition of done for the first release (REQUIRED)
@@ -142,7 +142,7 @@ The challenge asks teams to prove they can design the software ecosystem of a mo
 - [ ] The app runs locally from a clean checkout with Wi-Fi off, verified by a documented offline check.
 - [ ] A public URL loads the app. (Can come after local; still part of done.)
 - [ ] The LaTeX paper (architecture and software design) compiles to PDF, with figures and data produced by the simulator.
-- [ ] Every view passes the DESIGN-RULES.md checklist.
+- [ ] Every view passes the docs/design-rules.md checklist.
 
 ## 13. Known phases
 
@@ -178,8 +178,8 @@ The roadmap starts from this.
 
 ## 16. References
 
-- `challenge.md` / `specs/brief.original.md`: the competition brief (deliverables and required scenarios).
-- `SAAS-Design.md`: UI principles to borrow. Source for DESIGN-RULES.md.
+- `specs/brief.original.md`: the competition brief (deliverables and required scenarios).
+- A third-party SaaS UI design checklist (not kept in the repo): UI principles to borrow. Source for docs/design-rules.md.
 - `../DUMA-EV Design/paper/main.tex` + `preprint.sty`: style reference for the LaTeX paper.
 - `../DUMA-EV Design/`: the team's earlier EV design project, for context and paper conventions only. Its vehicle is **not** the one simulated here.
 - Original request (verbatim): "I want to build something along these lines @challenge.md, Ideally using some three.js 3D, as you do that kindly read through @SAAS-Design.md and see if we can borrow some things from it, I want a clean looking output for the UI, feel free to use the frontend-design skill keeping this in mind".

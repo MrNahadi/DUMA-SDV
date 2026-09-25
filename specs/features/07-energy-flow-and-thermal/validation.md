@@ -15,5 +15,5 @@
 
 1. In Chrome at 1366×768, drive, lift off, brake and charge. Flow direction and speed should look right, with no stutter.
 2. An engineer reviews the ADR 0012 thermal estimates and judges whether temperature rise and settling look plausible. This needs human sign-off; none of this phase is validated against reference data.
-3. Check the view against DESIGN-RULES: tokens, fonts, tabular numbers and visible keyboard focus.
+3. Check the view against docs/design-rules.md: tokens, fonts, tabular numbers and visible keyboard focus.
 4. With the OS reduced-motion setting on, the view shows static values.

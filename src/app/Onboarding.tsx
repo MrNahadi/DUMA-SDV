@@ -6,7 +6,7 @@ import { useAppStore } from './store';
 import { VIEWS } from './views';
 import styles from './ViewPanel.module.css';
 
-/** The Start here card (DESIGN-RULES §10): the one highlighted element, walking through five steps. */
+/** The Start here card (docs/design-rules.md §10): the one highlighted element, walking through five steps. */
 export function Onboarding() {
   const progress = useSimStore((s) => s.onboarding);
   const demoOn = useSimStore((s) => s.demo !== null);

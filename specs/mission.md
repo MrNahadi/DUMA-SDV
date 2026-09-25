@@ -19,7 +19,7 @@ Duma SDV is a browser-based digital twin of a fictional electric sedan. It is bu
 | Every scenario can be demoed | A judge with no help runs Startup, Charging, Driving, Fault and Regen, each in under 60 s from first click. |
 | Believable physics | 0–100 km/h, range at 100 km/h, and 10–80% DC charge time are within ±10% of the reference car's published figures (automated tests). |
 | The architecture is visible | Live ECU-to-ECU messages on a simulated CAN bus. Every scenario's signal flow can be traced in the UI and matches the paper's architecture diagram. |
-| Looks like a real product | Every view passes `DESIGN-RULES.md`. 60 fps on a mid-range laptop. First render under 2 s offline. |
+| Looks like a real product | Every view passes `docs/design-rules.md`. 60 fps on a mid-range laptop. First render under 2 s offline. |
 
 ## In scope
 

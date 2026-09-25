@@ -1,6 +1,6 @@
 import styles from './StageSkeleton.module.css';
 
-/** Shown while three.js loads, so the stage is never blank (DESIGN-RULES.md §6, §9). */
+/** Shown while three.js loads, so the stage is never blank (docs/design-rules.md §6, §9). */
 export function StageSkeleton() {
   return (
     <div className={styles.skeleton} role="status" aria-label="Loading 3D view">

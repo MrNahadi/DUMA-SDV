@@ -77,7 +77,7 @@ docs/adr/         Decisions
 
 ### UI
 
-- **`DESIGN-RULES.md` is binding.** Every view must pass its checklist. Use tokens and primitives from `src/ui/`. No inline hex colours and no ad-hoc font sizes.
+- **`docs/design-rules.md` is binding.** Every view must pass its checklist. Use tokens and primitives from `src/ui/`. No inline hex colours and no ad-hoc font sizes.
 - No UI kit and no CSS framework. Use plain CSS modules (`*.module.css`) with the tokens.
 - No router library. The current view is store state, mirrored to `location.hash` so a view can be linked.
 - Components are function components. Data-heavy panels subscribe to narrow store selectors so the 3D stage doesn't re-render at 100 Hz.
@@ -94,7 +94,7 @@ docs/adr/         Decisions
 
 - TypeScript `strict`, `noUncheckedIndexedAccess`. No `any` without a comment explaining why.
 - Tests sit next to code as `*.test.ts(x)`. Test through public interfaces (`src/sim/index.ts`, component props, e2e user actions).
-- Names follow `CONTEXT.md`. Say "MCU" for the motor controller, never "microcontroller".
+- Names follow `docs/glossary.md`. Say "MCU" for the motor controller, never "microcontroller".
 - Commits follow Conventional Commits: `feat(T-NNN): …`, `fix:`, `docs:`, `chore:`.
 - No emojis in code, UI, commits or docs.
 

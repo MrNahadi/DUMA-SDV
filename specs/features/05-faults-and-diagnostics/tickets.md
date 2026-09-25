@@ -94,7 +94,7 @@ Acceptance:
 - [x] Cancel leaves every record unchanged; confirm clears eligible stored records only
 - [x] Active conditions and their records remain active after confirmation
 - [x] The modal states the consequence and confirmation shows a tick/toast
-Notes: The action wording must match `DESIGN-RULES.md` exactly.
+Notes: The action wording must match `docs/design-rules.md` exactly.
 
 ## T-009: Highlight the faulty module on the car
 

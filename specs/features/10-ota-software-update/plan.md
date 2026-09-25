@@ -15,7 +15,7 @@ Decisions and estimates go in ADR 0015.
 - `src/sim/index.ts`: `otaCommand` input, `ota` and `software` snapshot fields, `vcuSwVersion` option, `driveModes` from firmware.
 - `src/app/SoftwarePanel.tsx` (+ CSS, test), `simStore.ts`, `ViewPanel.tsx`, `ModeControl.tsx`, `DrivePanel.tsx` (refusal text).
 - Tests that enumerate boot frames or ECUs (bus catalogue test, startup test) gain the TCU.
-- `CONTEXT.md` gains TCU and firmware bank.
+- `docs/glossary.md` gains TCU and firmware bank.
 - `e2e/ota.spec.ts`.
 
 ## Order of work

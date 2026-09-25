@@ -88,7 +88,7 @@ Acceptance:
 - [x] Choosing D without the brake shows "Press the brake to shift out of P". With the brake held it shifts
 - [x] Holding `W` ramps the accelerator to 1 over about 0.4 s, and releasing ramps it to 0 over about 0.25 s (fake timers)
 - [x] Power off above 5 km/h opens the modal. Cancel keeps the car READY, and confirming powers off and shows the toast "Car powered off"
-- [x] Button and label text match DESIGN-RULES §8 exactly
+- [x] Button and label text match docs/design-rules.md §8 exactly
 Notes:
 
 ## T-008: Dashboard strip under the stage

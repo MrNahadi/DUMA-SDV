@@ -16,5 +16,5 @@ Basis:
 - "N is always allowed" is kept for every state in which an ECU can process a request. An asleep VCU cannot accept one.
 Consequences:
 - The T-004 tests cover: P refused at >= 1 km/h; every request refused in OFF; N accepted in ACCESSORY and STARTING while P, R and D are refused; Power off at standstill gives P; Power off at speed gives N, and that gear persists to the next Power on.
-- T-007 needs a hint for each code, worded to DESIGN-RULES §8. `brakeRequired` is "Press the brake to shift out of P" (R8).
+- T-007 needs a hint for each code, worded to docs/design-rules.md §8. `brakeRequired` is "Press the brake to shift out of P" (R8).
 - Scenarios and the guided demo must not assume the car is in P after every Power off.

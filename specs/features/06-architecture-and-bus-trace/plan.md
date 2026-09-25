@@ -2,11 +2,11 @@
 
 ## Approach
 
-Build the Architecture view (DESIGN-RULES.md §7: `network` icon, "How do the modules talk?") on top of the existing public sim contract. The sim already records every frame in a bounded ring buffer (`createSim().trace()`, `Frame { t, id, name, sender, signals }`, capacity 5000). The bus catalogue already declares each message's sender, period and signals, including units and value tables. Most of this phase is UI work plus pure, testable view-model helpers. The sim changes only to add a read-only topology accessor.
+Build the Architecture view (docs/design-rules.md §7: `network` icon, "How do the modules talk?") on top of the existing public sim contract. The sim already records every frame in a bounded ring buffer (`createSim().trace()`, `Frame { t, id, name, sender, signals }`, capacity 5000). The bus catalogue already declares each message's sender, period and signals, including units and value tables. Most of this phase is UI work plus pure, testable view-model helpers. The sim changes only to add a read-only topology accessor.
 
 1. **Topology data.** Build the ECU nodes and message edges from the bus catalogue (senders) and the ECU subscriptions (receivers). Never hand-draw them. That way the diagram always matches the code, and ECUs added in later phases (OBC, TMS, gateway) show up automatically.
 2. **Pure trace model.** These functions work on `Frame[]`. They cover newest-first ordering with a row limit, filters by ECU and message, pausing (freezing a snapshot while the sim keeps running), clearing (hiding frames at or before a sim-time mark without touching the sim), recent activity per ECU and signal formatting.
-3. **UI.** The panel has an SVG ECU diagram (no new package) whose nodes show activity, and a CAN trace table in Geist Mono with tabular numbers. It has ECU and message filters and the **Pause**, **Resume** and **Clear trace** buttons named in DESIGN-RULES.md §8. A signal detail panel shows the selected frame's signals.
+3. **UI.** The panel has an SVG ECU diagram (no new package) whose nodes show activity, and a CAN trace table in Geist Mono with tabular numbers. It has ECU and message filters and the **Pause**, **Resume** and **Clear trace** buttons named in docs/design-rules.md §8. A signal detail panel shows the selected frame's signals.
 4. **Linking.** Clicking an ECU node filters the trace to that ECU. Selecting a frame highlights its sender and receivers.
 5. **End-to-end scenario.** One test covers the startup frames, filtering, pausing, signal detail and a fault DTC frame.
 

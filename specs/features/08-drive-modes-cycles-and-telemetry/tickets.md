@@ -36,7 +36,7 @@ Test seam: Cycle catalogue public functions (list cycles, target speed at time)
 Acceptance:
 - [x] Each cycle's duration and distance match the published phase totals
 - [x] Target speed interpolates linearly between points and is 0 after the end
-Notes: Data only, no dependence on the sim. Data is already in `src/sim/scenarios/cycles/` (see questions/answered/T-003-wltc-data-source.md); load it, do not retype it.
+Notes: Data only, no dependence on the sim. Data is already in `src/sim/scenarios/cycles/` (source cited in ADR 0013); load it, do not retype it.
 
 ## T-004: Headless cycle runner with a driver model
 
@@ -63,7 +63,7 @@ Acceptance:
 - [x] A stopped run has no result
 Notes: No absolute Wh/km target is asserted.
 Checkpoint (in-progress): `runner.result()` implemented (odometer/tripEnergyJ deltas from run start; null unless completed); distance, determinism and stopped-run tests pass. Eco vs Normal on Urban FAILS: Eco 146.4 Wh/km vs Normal 144.75. Tried: (1) nothing mode-aware → Eco worse; (2) driver now inverts the mode's pedal exponent, uses the mode power cap and mode lift-off g (MODE_MAPS exported from vcu.ts) → still ~1 % worse. Likely cause: Eco's stronger lift-off (0.2 g vs 0.15 g) regenerates energy that road load would otherwise absorb while coasting, and the round-trip loss costs more than it saves; the pedal/power-cap differences barely act on Urban. Next: consider driver coast band that approximates lift-off with a light accelerator, or escalate whether Eco's map (ADR 0013 estimates) should change.
-Answered: questions/answered/T-005-eco-vs-normal-urban.md. R10 is now "report, don't rank". Replace the failing Eco ≤ Normal test with the ±3 % check. Keep the Eco map values as they are, and don't make the driver behave differently by mode to save energy. Add a paragraph to ADR 0013 explaining that on a fixed trace the modes change drivability, not the energy needed, and that Eco's stronger lift-off regen adds round-trip loss. Record the measured Urban Wh/km for each mode in the ADR.
+Answered (human decision, recorded in ADR 0013). R10 is now "report, don't rank". Replace the failing Eco ≤ Normal test with the ±3 % check. Keep the Eco map values as they are, and don't make the driver behave differently by mode to save energy. Add a paragraph to ADR 0013 explaining that on a fixed trace the modes change drivability, not the energy needed, and that Eco's stronger lift-off regen adds round-trip loss. Record the measured Urban Wh/km for each mode in the ADR.
 
 ## T-006: Telemetry recorder and CSV
 
@@ -99,17 +99,17 @@ Acceptance:
 - [x] Run cycle starts a run, the button becomes Stop cycle, and progress advances
 - [x] Completion shows Wh/km, distance and energy, and stopping shows no result
 - [x] The mode and cycle cannot change while a run is in progress
-Notes: Use DESIGN-RULES §8 words.
+Notes: Use docs/design-rules.md §8 words.
 
 ## T-009: Cycle chart
 
 Status: done
 Blocked by: T-006, T-008
-Slice: A uPlot chart in the Cycles view plots speed and target speed, battery power and SOC against sim time, from the recorder. New data colours are added to DESIGN-RULES §2 first.
+Slice: A uPlot chart in the Cycles view plots speed and target speed, battery power and SOC against sim time, from the recorder. New data colours are added to docs/design-rules.md §2 first.
 Test seam: CycleChart component test and its pure series-building function
 Acceptance:
 - [x] Series are built from recorder samples with UI units (km/h, kW, %)
-- [x] Each series has a text label, and the colours come from new DESIGN-RULES tokens
+- [x] Each series has a text label, and the colours come from new docs/design-rules.md tokens
 Notes: Follow the ChargeChart pattern.
 
 ## T-010: Export CSV button

@@ -18,7 +18,7 @@
 ## Manual (human)
 
 1. First impression at 1366×768: is the car clean, believable and unbranded, and does the stage feel calm?
-2. Run the DESIGN-RULES checklist on the Drive view and the dashboard strip.
+2. Run the docs/design-rules.md checklist on the Drive view and the dashboard strip.
 3. Keyboard driving feels controllable: the ramps aren't twitchy, and braking to a stop is easy.
 4. Startup sequence: are the steps understandable to a judge who has never seen the app?
 5. Performance: 60 fps while driving on a mid-range laptop (Chrome DevTools FPS meter), and the shell paints before the car appears.

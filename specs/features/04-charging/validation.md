@@ -12,7 +12,7 @@
 
 ## Manual (human)
 
-1. At 1366×768, review the Charge view against every applicable `DESIGN-RULES.md` checklist item, including status wording, empty/loading/error states, focus ring and reduced motion. SOC must remain the sole hero value.
+1. At 1366×768, review the Charge view against every applicable `docs/design-rules.md` checklist item, including status wording, empty/loading/error states, focus ring and reduced motion. SOC must remain the sole hero value.
 2. Compare AC and DC chart shapes and the estimate wording against the charging ADR; confirm no chart line suggests measured reference data or simulated samples that did not occur.
 3. Orbit the car during each port state and confirm the 3D charge port remains clear without excess draw calls or visual confusion with fault highlights. Check the stage near the 60 fps target on a mid-range laptop during accelerated charging.
 4. Try stopping, unplugging, changing target and attempting to drive during charging; confirm the controls explain the result in plain language and remain responsive at high time scale.

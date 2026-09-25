@@ -16,5 +16,5 @@
 
 1. Run the update in Chrome and watch the bus trace: `TCU_Ota` progress, the power-down, then `VCU_Boot` 1.1.0.
 2. Drive in Sport after the update and compare part-pedal response with Normal.
-3. Check the Software view against the DESIGN-RULES checklist.
+3. Check the Software view against the docs/design-rules.md checklist.
 4. An engineer reviews the ADR 0015 estimates.

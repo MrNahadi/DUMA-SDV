@@ -28,7 +28,7 @@
 - R15. The road shows when the car is READY in D or R, or when its speed is not zero. Otherwise (parked, off or charging) the studio turntable shows. Show and hide transitions are ≤ 150 ms ease-out, and instant under reduced motion.
 - R16. Nothing on the stage moves while the car is stationary.
 - R17. The road, markings and posts add no more than 6 draw calls.
-- R18. Road colours come from new tokens (surface, marking, post) documented in DESIGN-RULES §3 and defined in `tokens.css` and `tokens.ts`. Markings have a luminance contrast of at least 1.5:1 against the road. A faint procedural grain on the road gives a speed cue at low speed.
+- R18. Road colours come from new tokens (surface, marking, post) documented in docs/design-rules.md §3 and defined in `tokens.css` and `tokens.ts`. Markings have a luminance contrast of at least 1.5:1 against the road. A faint procedural grain on the road gives a speed cue at low speed.
 
 ## Preservation
 

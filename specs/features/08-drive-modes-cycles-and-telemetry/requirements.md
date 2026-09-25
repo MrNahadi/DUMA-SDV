@@ -26,7 +26,7 @@
 ## UI
 
 - **R15.** Drive and Cycles views have a mode control labelled Eco / Normal / Sport with the current mode selected and keyboard operable.
-- **R16.** The Cycles view shows a cycle picker, **Run cycle** / **Stop cycle**, progress, a chart of speed (with target), power and SOC against time, and the Wh/km result as the primary number, per DESIGN-RULES §7.
-- **R17.** **Export CSV** saves the telemetry of the current run to a file named with cycle, mode and sim duration (no wall clock needed). Words follow DESIGN-RULES §8.
-- **R18.** New chart series colours are added to DESIGN-RULES §2 before use; series are also named in words.
+- **R16.** The Cycles view shows a cycle picker, **Run cycle** / **Stop cycle**, progress, a chart of speed (with target), power and SOC against time, and the Wh/km result as the primary number, per docs/design-rules.md §7.
+- **R17.** **Export CSV** saves the telemetry of the current run to a file named with cycle, mode and sim duration (no wall clock needed). Words follow docs/design-rules.md §8.
+- **R18.** New chart series colours are added to docs/design-rules.md §2 before use; series are also named in words.
 - **R19.** Earlier views and e2e flows (drive, regen, charge, faults, architecture, energy) keep working.

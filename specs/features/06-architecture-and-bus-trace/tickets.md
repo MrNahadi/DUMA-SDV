@@ -53,7 +53,7 @@ Test seam: Architecture panel component and `createSim().trace()`
 Acceptance:
 - [x] Pause freezes the rows while sim time advances, and Resume shows newer frames
 - [x] Clear trace hides earlier frames and newer frames still appear, while `createSim().trace()` is unchanged
-Notes: Use the labels exactly as DESIGN-RULES.md §8 gives them.
+Notes: Use the labels exactly as docs/design-rules.md §8 gives them.
 
 ## T-006: Frame signal detail
 

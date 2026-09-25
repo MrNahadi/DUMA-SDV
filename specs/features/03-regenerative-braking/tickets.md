@@ -95,7 +95,7 @@ Slice: Add `Energy recovered` kWh and km added to the Drive panel, with zero and
 Test seam: rendered `DrivePanel` via Testing Library
 Acceptance:
 - [x] Zero trip, rising recovery and stale telemetry render from the IC snapshot with correct unit conversions
-- [x] Speed remains the sole display-size Drive value and UI wording follows `CONTEXT.md` and DESIGN-RULES
+- [x] Speed remains the sole display-size Drive value and UI wording follows `docs/glossary.md` and docs/design-rules.md
 - [x] No horizontal scroll at 1366×768
 Notes: DrivePanel reads IC recovery values, converts joules to kWh and metres to km, and shows unavailable when telemetry is stale.
 ## T-009: End-to-end Regen scenario

@@ -1,6 +1,6 @@
 # 03 · Regenerative braking: requirements
 
-Terms and boundaries follow `CONTEXT.md`, `specs/tech-stack.md`, DESIGN-RULES, and accepted ADRs 0004–0008. These requirements are planned, not verified.
+Terms and boundaries follow `docs/glossary.md`, `specs/tech-stack.md`, docs/design-rules.md, and accepted ADRs 0004–0008. These requirements are planned, not verified.
 
 ## R1. Control decision
 

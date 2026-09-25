@@ -9,7 +9,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 
-/** The views of DESIGN-RULES.md §7. Each answers one question. */
+/** The views of docs/design-rules.md §7. Each answers one question. */
 export const VIEW_IDS = [
   'drive',
   'charge',

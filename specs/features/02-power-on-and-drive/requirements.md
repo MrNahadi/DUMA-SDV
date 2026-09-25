@@ -1,6 +1,6 @@
 # 02 · Power on and drive: requirements
 
-Terms follow `CONTEXT.md`. Conventions follow `specs/tech-stack.md`. UI follows `DESIGN-RULES.md`.
+Terms follow `docs/glossary.md`. Conventions follow `specs/tech-stack.md`. UI follows `docs/design-rules.md`.
 
 ## R1. Vehicle parameters
 
@@ -113,12 +113,12 @@ Run headless in Vitest under the ADR 0001 conditions:
 
 ## R8. Drive view (right panel)
 
-- When the car is OFF, a **Start here** card appears at the top with the single primary action **Power on**. It uses the accent border and the one allowed shadow (DESIGN-RULES §10), and has one line of text: "Power on to run the startup sequence."
+- When the car is OFF, a **Start here** card appears at the top with the single primary action **Power on**. It uses the accent border and the one allowed shadow (docs/design-rules.md §10), and has one line of text: "Power on to run the startup sequence."
 - **Startup checklist:** the five steps, each with a status icon and word (pending, active, done, failed) and the sim time it finished. It stays visible after READY, collapsed to one line, "Startup complete in 2.1 s", which expands on click.
 - **Gear selector:** segmented P R N D (32 px). The selected gear uses accent-soft. A refused request shows the reason inline in `small` text, e.g. "Press the brake to shift out of P".
 - **Pedals:** two on-screen hold buttons, Accelerator and Brake, with the keyboard hints shown as `Kbd` chips. They are disabled with a reason when the car isn't READY.
 - **Power off** (secondary). Above 5 km/h it opens a confirmation modal: title "Power off while driving?", one line of consequence, and the buttons **Power off while driving** (primary, fault colour) and Cancel (quiet). On completion, a toast with a tick reads "Car powered off".
-- Labels follow DESIGN-RULES §8 exactly.
+- Labels follow docs/design-rules.md §8 exactly.
 
 ## R9. Dashboard strip (under the stage, Drive view only)
 

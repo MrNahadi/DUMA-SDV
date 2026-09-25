@@ -4,7 +4,7 @@
 
 A pure demo runner (`src/app/demo/runner.ts`) holds the scenario scripts' progress. The sim store drives it from `advance()`: before each tick the runner applies the entering step's inputs, after each tick it checks the step's end condition against the snapshot. When a scenario starts, the store swaps in the fresh prepared sim that the runner returns. View and time-scale changes are data on each step; the store applies them to the app store when a step starts.
 
-Scripts live in `src/app/demo/scenarios.ts`, next to the runner. They reuse the headless helpers in `src/sim/scenarios/` (power on, shift with brake) for preparation. Captions follow CONTEXT.md and DESIGN-RULES §8 words. Decisions are in ADR 0016.
+Scripts live in `src/app/demo/scenarios.ts`, next to the runner. They reuse the headless helpers in `src/sim/scenarios/` (power on, shift with brake) for preparation. Captions follow docs/glossary.md and docs/design-rules.md §8 words. Decisions are in ADR 0016.
 
 ## Affected modules
 

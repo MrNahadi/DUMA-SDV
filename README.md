@@ -241,9 +241,9 @@ e2e/              Playwright specs, one per user flow
 specs/            Brief, mission, tech stack, roadmap, per-feature specs and tickets
 docs/adr/         Architecture decision records
 docs/images/      README screenshots
+docs/design-rules.md  The UI contract every view follows
+docs/glossary.md  Glossary
 paper/            LaTeX paper: main.tex, generated data/ and captured figures/
-DESIGN-RULES.md   The UI contract every view follows
-CONTEXT.md        Glossary
 ```
 
 ## Testing
@@ -280,7 +280,7 @@ Every non-obvious choice is written down in `docs/adr/`:
 | [0016](docs/adr/0016-guided-demo-scripts.md) | Guided demo scripts |
 | [0017](docs/adr/0017-bms-discharge-limit-at-the-battery.md) | The BMS discharge limit applies at the battery |
 
-The UI follows [`DESIGN-RULES.md`](DESIGN-RULES.md): a light, restrained interface where each view answers one question, colour is used only for data and status, and every control is keyboard reachable.
+The UI follows [`docs/design-rules.md`](docs/design-rules.md): a light, restrained interface where each view answers one question, colour is used only for data and status, and every control is keyboard reachable.
 
 ## Roadmap
 

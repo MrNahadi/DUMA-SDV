@@ -25,11 +25,8 @@ Thumbs.db
 .ralph/
 questions/
 
-# Third-party reference documents kept locally only
-SAAS-Design.md
-challenge.md
-
-# Paper build output
+# Paper build output. The built PDF is published as a GitHub release asset.
+paper/main.pdf
 paper/data/.build/
 paper/*.aux
 paper/*.bbl

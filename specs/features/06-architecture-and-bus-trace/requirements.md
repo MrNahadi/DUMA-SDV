@@ -1,6 +1,6 @@
 # 06 · Architecture and bus trace: requirements
 
-Sources: brief use case 4, the success criterion "The architecture is visible", roadmap phase 06 and DESIGN-RULES.md §7–8.
+Sources: brief use case 4, the success criterion "The architecture is visible", roadmap phase 06 and docs/design-rules.md §7–8.
 
 1. The nav rail's Architecture view (`network` icon) opens a panel with an ECU diagram and a CAN trace.
 2. The diagram's nodes are exactly the ECUs that send or subscribe to catalogue messages in the running sim. Edges connect each message's sender to its subscribers. No ECU that is absent from the code is drawn.

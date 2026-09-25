@@ -1,4 +1,4 @@
-# CONTEXT: shared glossary
+# Glossary
 
 Words used in specs, code, UI and paper. Use them exactly. If code names differ from these, the code is wrong.
 
@@ -48,6 +48,6 @@ Words used in specs, code, UI and paper. Use them exactly. If code names differ 
 | Scenario | A required behaviour: Startup, Driving, Charging, Regen, Fault, plus OTA. |
 | Guided demo | Scripted playback of scenarios with short captions. |
 | Stage | The 3D scene: the car on a turntable / rolling road, with an x-ray option to show internals. |
-| View | One page of the app. Each view answers one question (see `DESIGN-RULES.md`). |
+| View | One page of the app. Each view answers one question (see `docs/design-rules.md`). |
 | Telemetry | The recorded time series of signals from a run. It can be exported as CSV. |
-| Design rules | `DESIGN-RULES.md`: the one-page UI contract every view must pass. |
+| Design rules | `docs/design-rules.md`: the one-page UI contract every view must pass. |

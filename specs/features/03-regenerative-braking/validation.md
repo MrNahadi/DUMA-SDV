@@ -12,6 +12,6 @@
 ## Manual (human)
 
 1. Drive with keyboard and on-screen pedals: lift-off and blended braking feel continuous, with no abrupt handoff near stop.
-2. At 1366×768, review the Drive view against the DESIGN-RULES checklist: speed remains primary; recovery text is readable; `--ok` is accompanied by words or icon; reduced-motion mode remains clear.
+2. At 1366×768, review the Drive view against the docs/design-rules.md checklist: speed remains primary; recovery text is readable; `--ok` is accompanied by words or icon; reduced-motion mode remains clear.
 3. Review the new ADR's estimates and compare the observed deceleration and recovered energy with a plausible EV drive; do not treat the simulator's chosen values as published reference-car data.
 4. On a mid-range laptop, confirm the stage still runs near 60 fps while driving and braking.
