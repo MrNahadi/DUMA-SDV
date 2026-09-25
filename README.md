@@ -107,7 +107,7 @@ flowchart LR
     UI["React views<br/>Drive · Charge · Energy · Diagnostics<br/>Architecture · Cycles"]
     Stage["3D stage<br/>react-three-fiber"]
     Store["Zustand stores<br/>sim + app state"]
-    Loop["Frame loop<br/>fixed 10 ms ticks × time scale"]
+    FrameLoop["Frame loop<br/>fixed 10 ms ticks × time scale"]
   end
   subgraph Core["Simulation core (src/sim, pure TS)"]
     direction TB
@@ -118,7 +118,7 @@ flowchart LR
   end
   UI -- "inputs (pedals, gear, faults, charge)" --> Store
   Store -- setInputs --> Core
-  Loop -- "advance(ticks)" --> Core
+  FrameLoop -- "advance(ticks)" --> Core
   Core -- "snapshot()" --> Store
   Store -- "narrow selectors" --> UI
   Store -. "read each frame (useFrame)" .-> Stage
@@ -171,13 +171,13 @@ Each step has a timeout, and a failed step powers the car back down with a reaso
 ```mermaid
 sequenceDiagram
   participant RAF as requestAnimationFrame
-  participant Loop as useSimLoop
+  participant SimLoop as useSimLoop
   participant Sim as Sim core
   participant Store as simStore
   participant UI as Views and dashboard
   participant Stage as 3D stage
-  RAF->>Loop: frame (wall time Δt)
-  Loop->>Sim: advance(n) with n = Δt × time scale / 10 ms
+  RAF->>SimLoop: frame (wall time Δt)
+  SimLoop->>Sim: advance(n) with n = Δt × time scale / 10 ms
   Sim->>Sim: ECUs exchange frames, plant integrates
   Sim-->>Store: snapshot
   Store-->>UI: re-render only what a selector reads
