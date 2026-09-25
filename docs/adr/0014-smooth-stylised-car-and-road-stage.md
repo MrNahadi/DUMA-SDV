@@ -1,42 +1,39 @@
 # 0014 · Smooth stylised car and road stage
 
-Status: accepted
-Decided-by: human (2026-09-25), details inferred by the builder where marked
+Status: accepted (built interactively, 2026-09-25)
+Decided-by: human, except where marked "builder"
 Supersedes: the "stylised, low-poly" styling in ADR 0002. ADR 0002's procedural build, part names, internals, ghost mode and budgets still apply.
 
 ## Context
 
-The procedural car from ADR 0002 is a single flat extruded side profile, with a flat-sided glass block, box lights and plain cylinder wheels. It reads as blocky, and the human wants something cleaner that looks better and is "not so low poly", in the style of the car in slowroads.io. The rolling-road lines are also hard to see while driving. There are five faint (34 % opacity) crosswise stripes 0.9 m apart, inside the turntable only. At 100 km/h the car moves about 0.46 m per 60 fps frame, half the stripe spacing. At that rate the eye can't tell which way the stripes moved, so they flicker or seem to stand still.
+The ADR 0002 car was a single flat extruded side profile, with a flat-sided glass block, box lights and plain cylinder wheels. It read as blocky. The human asked for something cleaner, in the spirit of the white car in slowroads.io, and then supplied a dimensioned side, top, front and rear blueprint of a fastback SUV-coupe to design from. The rolling-road stripes were also hard to see while driving: five faint crosswise stripes 0.9 m apart. At 100 km/h they moved half their spacing per 60 fps frame, so their direction was ambiguous and they seemed to flicker or stand still.
 
 ## Decision: the car
 
-Target look (slowroads.io style, fictional, no brand): a clean, smooth-shaded stylised car with a continuous rounded body, a clear silhouette and soft studio lighting. No textures. It isn't a faceted low-poly model and it isn't photoreal.
+- **Shape from the blueprint, size from the reference car.** The side silhouette (hood, beltline, roof, rear deck and tail), the underside, the plan half-width and the glasshouse proportions were traced from the blueprint's pixels. The pixel keys are kept in `src/three/car/shape.ts`. They are fitted to the reference car (ADR 0001): 4.8 × 1.875 × 1.46 m, 2.92 m wheelbase and 0.335 m tyre radius. The overhangs keep the blueprint's front-to-rear ratio (0.897 : 1.088). The human chose this over the blueprint's own 1.73 m × 2.0 m size so the 3D car matches the physics.
+- **No branding.** The blueprint shows a real car. As the brief requires a fictional EV, no logo, badge or grille pattern is copied. The front is a clean EV nose with slim wedge headlamps and a dark horizontal intake.
+- **Construction.** The body is one smooth loft of analytic cross-sections, with a shoulder, a side feature crease, tumblehome to about 91 % width at the beltline, and wheel arches that ease into the sills. It has two material groups: white paint, and dark cladding on the sills, the lower rear and the wheel-well roofs. The glasshouse is one dark loft, open underneath. Lamps and the intake are thin strips laid along the body's outline at set heights (builder). The tail-lamp bar runs across the tail and wraps onto the rear quarters. Mirrors are black. The wheels have a lathed tyre with rounded shoulders and a ten-slot turbine rim, and dark liners fill the wheel wells.
+- **Colour.** White paint (`#f3f3f0`) with a dark glasshouse and trim, as the human asked. This replaces the brief's "dark 3D car" line for the look. The brief itself still needs the human to update it.
+- **Budgets hold:** under 30k triangles and under 20 draw calls, counting material groups (tested).
 
-- **Body** is one smooth hull built by lofting cross-sections along the car's length (X). Each section is a rounded rectangle or superellipse whose width, height, bottom height and shoulder roundness vary along X. That gives a rounded nose, a sloping bonnet, a fastback roofline and a short, slightly raised tail. The sides tuck in above the shoulder (tumblehome). Wheel arches come from raising the section bottom edge around each axle, so they read as arches from outside. Normals are smooth.
-- **Glasshouse** is one smooth, dark tinted piece on the hull. The pillars are implied by the glass tone, not modelled.
-- **Wheels:** the tyre is a lathe with rounded sidewalls. The rim is a single merged five-spoke disc in dark metallic grey, with a brake disc behind it. The existing `wheel-*` groups and spin behaviour stay.
-- **Lights:** full-width light strips front and rear that follow the body curve. `headlights` and `brake-lights` behave as they do now.
-- **Detail kept minimal:** matte dark lower cladding and a rear diffuser line, small side mirrors, the charge port flap on the rear quarter as it is now. No logos, badges or text.
-- **Paint:** a dark, muted colour as now (brief: "a dark 3D car"), in a physically based material with a light clearcoat (`MeshPhysicalMaterial`). No transmission or refraction materials (ADR 0002).
-- **Unchanged from ADR 0002:** built in code in `src/three/car/`, sized from `vehicleParams`, the `CarPart` names and internals, ghost mode for faults, and the budget of 30k triangles and 20 draw calls or fewer for the car.
+## Decision: lighting and materials (builder, for performance)
 
-## Decision: stage lighting
+Standard materials under plain studio lights: a hemisphere light plus key, fill and rim directional lights. There is no environment map and no clearcoat. A procedural `<Environment>` with clearcoat paint looked glossier, but in headless Chromium's software renderer it measured 4 fps against 10–15 fps without it. It also made the e2e flows time out. The brief's 60 fps on integrated graphics takes priority over polish (ranked trade-offs). The flat, soft look is also closer to slowroads.
 
-Soft studio light with reflections on the paint. Use drei `<Environment>` with procedural `<Lightformer>` panels only (no HDRI file and no CDN, tech-stack §3D), plus the existing key light and contact shadows. Inferred by the builder.
+Two stage performance rules follow from the same investigation:
+
+- The scene is memoised and reads the sim only in `useFrame`. `Stage` subscribes only to the fault label's text. Re-rendering the scene on every sim tick had been rebuilding the lighting, and it saturated the main thread.
+- The contact shadow is rendered once, because the car never moves on the stage. The pixel ratio is capped at 1.5.
 
 ## Decision: the road
 
-A road strip replaces the stripes while driving. It is closest to the slowroads look and makes speed easy to read.
-
-- **Layout:** a two-lane road (7 m wide) along X under the car, reaching at least ±40 m and fading into the stage fog. It has a dashed centre line, solid edge lines, and small roadside posts on both sides.
-- **Readable motion:** centre dashes are 3 m long with 6 m gaps (9 m period). Posts are every 10 m. The distance moved per frame must stay under half of each repeat period at top speed and 60 fps, so the motion never flickers or looks reversed. A faint procedural grain on the road surface gives a speed cue at low speed too.
-- **Position from distance, not frame time:** the road's offset comes from the signed distance travelled in the sim snapshot, taken modulo each period. It then follows the time scale exactly and moves the correct way in reverse. Rendering never changes sim state. `odometerM` only counts up, and `render.wheelAngleRad` wraps every wheel turn, so add a signed travel position to the snapshot's `render` data. Wrap it modulo 90 m (a common multiple of the 9 m and 10 m periods) to keep float precision.
-- **When shown:** the road fades in when the car is READY in D or R, or moving. It fades out to the current studio turntable when parked, off or charging. Nothing moves while the car is stationary (DESIGN-RULES §6, no idle motion).
-- **Colours:** add road tokens to DESIGN-RULES §3 and `tokens.css` / `tokens.ts` before use: a road surface mid-grey (starting point `#cfcec8`), a marking colour (`#ffffff`) and a post colour. Markings need a luminance contrast of at least 1.5:1 against the road. Inferred by the builder.
-- **Budget:** the road, markings and posts add no more than 6 draw calls (use instancing or a single texture or shader for repeats). The whole stage still runs at 60 fps on a mid-range laptop with integrated graphics (brief §4).
+- **Layout:** two 3.5 m lanes, with the car in the near lane and the dashed centre line on its right. The road is 110 m long, fading into the stage fog, with solid edge lines and 0.7 m roadside posts on both verges (builder).
+- **Readable motion:** centre dashes are 3 m long with 6 m gaps (9 m period). Posts are every 10 m, staggered between sides. A seeded fine grain texture scrolls with the road so low speeds read too. At top speed and 60 fps each repeat moves less than half its period per frame (tested).
+- **Position from the sim:** offsets come from the snapshot's signed `render.travelM` (wrapped at 90 m, a multiple of both periods). The road follows the time scale and reverse, and never changes sim state. The wheels spin from the sim's own `render.wheelAngleRad`, since the drawn tyre is the simulated one.
+- **When shown:** the road cross-fades in over 0.45 s when READY in D or R, or moving, and the studio turntable returns when parked, off or charging. Nothing moves while the car is stationary.
 
 ## Consequences
 
-- Visual quality can only be judged by a person. The phase must save stage screenshots from Playwright (parked three-quarter front, side, rear, driving at about 100 km/h, and fault ghost mode) to `test-results/` for the human to compare against the slowroads look. Only mechanics and budgets are automated: part names, triangle and draw-call counts, marking periods, offset from distance, and visibility rules.
-- Existing behaviour and e2e flows (wheel spin, lights, charge port, fault highlight, energy views) keep working.
-- A future GLB body can still replace the hull under the same part names (ADR 0002).
+- The ADR 0002 part names, internals and ghost mode are unchanged. Ghost mode now fades the whole shell (body, glass, mirrors, lenses, intake).
+- The keyboard pedal ramp in `useDriveInput` now uses elapsed time, not timer ticks. Slow frames had made releasing a pedal take seconds, which felt laggy and failed the regen e2e.
+- Visual quality is judged by a person. The unit tests cover mechanics and budgets only.

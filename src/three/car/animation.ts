@@ -33,13 +33,20 @@ export function visualStateFromSnapshot(snapshot: SimSnapshot): CarVisualState {
   };
 }
 
-/** Apply the three static port silhouettes to the named public car part. */
+const shellParts = ['body', 'glass', 'mirrors', 'lamp-lenses', 'trim-details'];
+
+/** Apply ghost mode, the fault highlight and the charge-port state to the car model. */
 export function applyCarVisualState(car: Object3D, visual: CarVisualState): void {
-  const body = car.getObjectByName('body');
-  if (body instanceof Mesh && body.material instanceof MeshStandardMaterial) {
-    body.material.transparent = visual.faultHighlight !== null;
-    body.material.opacity = visual.faultHighlight ? 0.16 : 1;
-    body.material.depthWrite = visual.faultHighlight === null;
+  // Ghost mode: the whole outer shell turns see-through so the faulty module shows inside.
+  for (const name of shellParts) {
+    const mesh = car.getObjectByName(name);
+    if (!(mesh instanceof Mesh)) continue;
+    for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+      if (!(material instanceof MeshStandardMaterial)) continue;
+      material.transparent = visual.faultHighlight !== null;
+      material.opacity = visual.faultHighlight ? 0.16 : 1;
+      material.depthWrite = visual.faultHighlight === null;
+    }
   }
   const internals = car.getObjectByName('internals');
   if (internals) {

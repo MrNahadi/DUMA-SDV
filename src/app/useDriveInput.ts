@@ -36,12 +36,18 @@ export function useDriveInput(): void {
     window.addEventListener('keydown', onKeyDown);
     window.addEventListener('keyup', onKeyUp);
     window.addEventListener('blur', release);
+    // Ramp by elapsed wall time, not by timer ticks: browsers delay timers when frames are slow,
+    // which made the pedals feel sticky (a 1→0 release is 250 ms at any frame rate).
+    let last = performance.now();
     const timer = window.setInterval(() => {
+      const now = performance.now();
+      const steps = Math.min(now - last, 250) / 10;
+      last = now;
       const nextAccelerator =
         held.has('pointer:accelerator') || [...acceleratorKeys].some((key) => held.has(key));
       const nextBrake = held.has('pointer:brake') || [...brakeKeys].some((key) => held.has(key));
-      accelerator = Math.max(0, Math.min(1, accelerator + (nextAccelerator ? 0.025 : -0.04)));
-      brake = Math.max(0, Math.min(1, brake + (nextBrake ? 0.025 : -0.04)));
+      accelerator = Math.max(0, Math.min(1, accelerator + (nextAccelerator ? 0.025 : -0.04) * steps));
+      brake = Math.max(0, Math.min(1, brake + (nextBrake ? 0.025 : -0.04) * steps));
       useSimStore.getState().setPedal('accelerator', accelerator);
       useSimStore.getState().setPedal('brake', brake);
     }, 10);

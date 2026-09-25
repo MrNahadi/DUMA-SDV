@@ -10,6 +10,8 @@ export default defineConfig({
   // three.js + drei live in the lazily loaded Stage chunk (~0.9 MB raw); the shell stays small.
   build: { chunkSizeWarningLimit: 1200 },
   test: {
+    // The long sim reference runs are CPU-bound; more workers than this starve them into timeouts.
+    maxWorkers: 4,
     projects: [
       {
         extends: true,
