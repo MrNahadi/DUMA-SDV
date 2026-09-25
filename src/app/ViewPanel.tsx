@@ -10,8 +10,9 @@ import { CyclesPanel } from './CyclesPanel';
 import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { ArchitecturePanel } from './ArchitecturePanel';
 import { EnergyPanel } from './EnergyPanel';
+import { SoftwarePanel } from './SoftwarePanel';
 
-const PANELS = new Set(['drive', 'charge', 'energy', 'diagnostics', 'architecture', 'cycles']);
+const PANELS = new Set(['drive', 'charge', 'energy', 'diagnostics', 'architecture', 'cycles', 'software']);
 
 export function ViewPanel() {
   const view = useAppStore((s) => s.view);
@@ -42,6 +43,7 @@ export function ViewPanel() {
       {view === 'diagnostics' && <DiagnosticsPanel />}
       {view === 'energy' && <EnergyPanel />}
       {view === 'architecture' && <ArchitecturePanel />}
+      {view === 'software' && <SoftwarePanel />}
       {!PANELS.has(view) && (
         <div className={styles.empty}>
           <span className={styles.emptyIcon} aria-hidden="true">

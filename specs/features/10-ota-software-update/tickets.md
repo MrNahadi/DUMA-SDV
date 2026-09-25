@@ -52,32 +52,32 @@ Acceptance:
 
 ## T-005: Software view
 
-Status: open
+Status: done
 Blocked by: T-004
 Slice: Replace the Software placeholder with the update card (steps, progress, what's new, one primary action), the confirmation modal, the completion toast and the ECU versions list. Store actions send the OTA commands.
 Test seam: `SoftwarePanel` component with the store
 Acceptance:
-- [ ] Off, checking, downloading, ready, installing, installed, up to date, refused and failed states each render their text
-- [ ] Install update confirms first, and completion shows a toast
-- [ ] Versions are listed per ECU and the updated one is marked in words
-- [ ] Labels match DESIGN-RULES §8
+- [x] Off, checking, downloading, ready, installing, installed, up to date, refused and failed states each render their text
+- [x] Install update confirms first, and completion shows a toast
+- [x] Versions are listed per ECU and the updated one is marked in words
+- [x] Labels match DESIGN-RULES §8
 
 ## T-006: Locked Sport hint on the Drive view
 
-Status: open
+Status: done
 Blocked by: T-002
 Slice: When Sport is unavailable the mode control shows a one-line hint that a software update unlocks it. The gear refusal `updating` has plain text.
 Test seam: `DrivePanel` component
 Acceptance:
-- [ ] The hint shows only while Sport is locked
-- [ ] The `updating` refusal shows its text
+- [x] The hint shows only while Sport is locked
+- [x] The `updating` refusal shows its text
 
 ## T-007: OTA end-to-end scenario
 
-Status: open
+Status: done
 Blocked by: T-005, T-006
 Slice: Playwright spec: power on, see Sport locked, check for updates, install with confirmation, see VCU 1.1.0 and select Sport. Run the full regression.
 Test seam: Playwright at 1366×768
 Acceptance:
-- [ ] The scenario passes in under 60 s with no console errors
-- [ ] Every Feedback command passes
+- [x] The scenario passes in under 60 s with no console errors
+- [x] Every Feedback command passes

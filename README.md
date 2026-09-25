@@ -35,7 +35,7 @@ Built for the *Software-Defined Electric Vehicle Design Challenge* (Tech Week 20
 
 Most entries to an SDV design challenge are architecture diagrams and a basic GUI. Judges then have to trust that the pieces would work together. Duma SDV makes the design something you can **run and check**:
 
-- Every required scenario (startup, driving, regenerative braking, charging, fault notification) runs live.
+- Every required scenario (startup, driving, regenerative braking, charging, fault notification) and an over-the-air update run live.
 - Each ECU is its own module, and they talk **only** through a simulated CAN bus with a message catalogue. The trace view shows every frame.
 - The physics is calibrated to a published reference car. Automated tests hold the key figures to ±10 %.
 - It runs fully offline from a laptop, with no network needed once dependencies are installed.
@@ -44,12 +44,13 @@ Most entries to an SDV design challenge are architecture diagrams and a basic GU
 
 | View | The question it answers | Highlights |
 |---|---|---|
-| **Drive** | What is the car doing right now? | Power-on sequence, gears, Eco / Normal / Sport, keyboard or on-screen pedals, speed / power / SOC / range dashboard, trip energy recovered, CSV export |
+| **Drive** | What is the car doing right now? | Power-on sequence, gears, Eco / Normal / Sport (Sport after the OTA update), keyboard or on-screen pedals, speed / power / SOC / range dashboard, trip energy recovered, CSV export |
 | **Charge** | How is charging going? | AC (on-board charger) or DC fast charge, target SOC, live charge curve, time to target, charge-port state on the car |
 | **Energy** | Where is the energy going? | Live power flow pack ↔ inverter ↔ motor, charger → pack, DC-DC → 12 V; pack, motor and inverter temperatures with coolant loops |
 | **Diagnostics** | Is anything wrong, and where? | Inject faults, DTCs (active and stored), derate and limp modes, plain-language warnings, X-ray view of the car with the faulted module glowing |
 | **Architecture** | How do the modules talk? | ECU diagram with live activity, a CAN trace you can filter and pause, signal-level detail for each frame |
 | **Cycles** | How efficient is it? | WLTC Urban and Highway drive cycles with a speed-tracking driver, speed / power / SOC chart and a Wh/km result |
+| **Software** | What version is running, and what is new? | Over-the-air update: check, download, verify, install into the VCU's inactive firmware bank and restart; ECU versions; the update unlocks Sport |
 
 | Fault view (X-ray) | Architecture and CAN trace |
 |---|---|
@@ -104,14 +105,14 @@ The simulation core is plain TypeScript with no React, DOM, three.js, wall clock
 flowchart LR
   subgraph Browser
     direction LR
-    UI["React views<br/>Drive · Charge · Energy · Diagnostics<br/>Architecture · Cycles"]
+    UI["React views<br/>Drive · Charge · Energy · Diagnostics<br/>Architecture · Cycles · Software"]
     Stage["3D stage<br/>react-three-fiber"]
     Store["Zustand stores<br/>sim + app state"]
     FrameLoop["Frame loop<br/>fixed 10 ms ticks × time scale"]
   end
   subgraph Core["Simulation core (src/sim, pure TS)"]
     direction TB
-    ECUs["ECUs<br/>VCU · BMS · MCU · OBC · IC"]
+    ECUs["ECUs<br/>VCU · BMS · MCU · OBC · IC · TCU"]
     Bus[("Simulated CAN bus<br/>message catalogue")]
     Plant["Plant models<br/>vehicle dynamics · battery · thermal · charger"]
     Faults["Fault injection<br/>DTC records"]
@@ -138,6 +139,7 @@ flowchart TB
   MCU["MCU<br/>motor control"]
   OBC["OBC<br/>on-board charger"]
   IC["IC<br/>instrument cluster"]
+  TCU["TCU<br/>telematics, OTA client"]
 
   VCU -- "VCU_Command · VCU_Charge" --> BMS
   VCU -- "VCU_Command · VCU_Mode" --> MCU
@@ -148,9 +150,11 @@ flowchart TB
   MCU -- "MCU_Status · MCU_Vehicle · MCU_DTC" --> VCU
   MCU -- "MCU_Status" --> BMS
   VCU & BMS & MCU -- "status, range, DTC, thermal" --> IC
+  VCU & BMS & MCU -- "boot versions, gear, speed, SOC" --> TCU
+  TCU -- "TCU_Ota" --> VCU
 ```
 
-The catalogue has 17 periodic messages (10 ms to 1 s) from the VCU (`0x1xx`), BMS (`0x2xx`) and MCU (`0x3xx`), plus event-driven boot frames that carry each ECU's self-check result and software version.
+The catalogue has 18 periodic messages (10 ms to 1 s) from the VCU (`0x1xx`), BMS (`0x2xx`), MCU (`0x3xx`) and TCU (`0x4xx`), plus event-driven boot frames that carry each ECU's self-check result and software version.
 
 ### Power-on sequence
 
@@ -164,7 +168,7 @@ flowchart LR
   wake & check & pre & cont -. "step fails or times out" .-> OFF
 ```
 
-Each step has a timeout, and a failed step powers the car back down with a reason code (ADR 0005). An authorised charge session moves the car to `CHARGING`. Gear changes are interlocked with the brake and road speed (ADR 0006).
+Each step has a timeout, and a failed step powers the car back down with a reason code (ADR 0005). An OTA update restarts the car through this same sequence, and the new VCU version shows up in its boot frame (ADR 0015). An authorised charge session moves the car to `CHARGING`. Gear changes are interlocked with the brake and road speed (ADR 0006).
 
 ### One frame
 
@@ -203,7 +207,8 @@ Estimates that aren't published (drive-mode maps, thermal masses and similar) ar
 src/
   sim/            Simulation core: pure TypeScript, deterministic, lint-enforced purity
     bus/          CAN bus and message catalogue
-    ecus/         VCU, BMS, MCU, OBC, IC
+    ecus/         VCU, BMS, MCU, OBC, IC, TCU
+    ota/          Update server package and OTA timings
     vehicle/      Parameters, road load, motor, traction, dynamics
     battery/      Pack and HV circuit
     thermal/      Lumped thermal masses and coolant loops
@@ -227,7 +232,7 @@ CONTEXT.md        Glossary
 |---|---|---|
 | Simulation | Vitest (Node) | Bus timing, startup, interlocks, pedal maps, regen, AC/DC charging, faults and DTCs, thermal, drive cycles, telemetry, and the reference-figure tests |
 | UI and 3D | Vitest + Testing Library (jsdom) | Every panel, the car model's parts and budgets, X-ray fault view, road motion helpers |
-| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export |
+| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update |
 
 The simulation runs in fixed 10 ms ticks with no wall clock or randomness, so every test is deterministic. Vitest runs with at most four workers because the long reference runs are CPU-bound.
 
@@ -251,6 +256,7 @@ Every non-obvious choice is written down in `docs/adr/`:
 | [0012](docs/adr/0012-lumped-thermal-model.md) | Lumped thermal model |
 | [0013](docs/adr/0013-drive-modes-and-drive-cycles.md) | Drive modes and drive cycles |
 | [0014](docs/adr/0014-smooth-stylised-car-and-road-stage.md) | Smooth stylised car and road stage |
+| [0015](docs/adr/0015-ota-software-update.md) | Over-the-air software update |
 
 The UI follows [`DESIGN-RULES.md`](DESIGN-RULES.md): a light, restrained interface where each view answers one question, colour is used only for data and status, and every control is keyboard reachable.
 
@@ -267,8 +273,8 @@ The UI follows [`DESIGN-RULES.md`](DESIGN-RULES.md): a light, restrained interfa
 | 07 | Energy flow and thermal | Done |
 | 08 | Drive modes, drive cycles, telemetry export | Done |
 | 09 | Stage visual refresh | Done |
-| 10 | Over-the-air software update | Next |
-| 11 | Guided demo mode | Planned |
+| 10 | Over-the-air software update | Done |
+| 11 | Guided demo mode | Next |
 | 12 | Offline (PWA) and public deployment | Planned |
 | 13 | LaTeX paper | Planned |
 | 14 | Stretch: open-world drive | Optional |

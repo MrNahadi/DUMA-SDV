@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createSim, TICK_S, type DriveMode, type FaultCommand, type Gear, type Sim, type SimSnapshot } from '../sim';
+import { createSim, TICK_S, type DriveMode, type FaultCommand, type Gear, type OtaCommand, type Sim, type SimSnapshot } from '../sim';
 import { createCycleRunner, type CycleId, type CycleRunner, type CycleRunStatus } from '../sim/scenarios';
 import type { CycleResult } from '../sim/scenarios/cycle-runner';
 import { createRecorder, type TelemetrySample } from '../sim/telemetry';
@@ -24,6 +24,8 @@ interface SimState {
   commandCharge: (command: 'plugIn' | 'unplug' | 'start' | 'stop') => void;
   setPedal: (pedal: 'accelerator' | 'brake', value: number) => void;
   commandFault: (command: FaultCommand) => void;
+  /** Send an OTA command to the TCU (ADR 0015). */
+  commandOta: (command: OtaCommand) => void;
   reset: () => void;
   cycleRun: CycleRun | null;
   runCycle: (cycleId: CycleId) => void;
@@ -68,6 +70,12 @@ export const useSimStore = create<SimState>((set, get) => ({
   commandFault: (command) => {
     const { sim } = get();
     sim.setInputs({ faultCommand: command });
+    sim.step(1);
+    set({ snapshot: sim.snapshot() });
+  },
+  commandOta: (command) => {
+    const { sim } = get();
+    sim.setInputs({ otaCommand: command });
     sim.step(1);
     set({ snapshot: sim.snapshot() });
   },

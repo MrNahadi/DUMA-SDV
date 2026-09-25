@@ -10,19 +10,24 @@ export function ModeControl() {
   const locked = useSimStore((s) => s.cycleRun?.status.state === 'running');
   const driveModes = useSimStore((s) => s.snapshot.driveModes);
   const setDriveMode = useSimStore((s) => s.setDriveMode);
+  // ADR 0015: VCU 1.0.0 does not offer Sport; the OTA update unlocks it.
+  const sportLocked = driveModes.some((m) => m.id === 'sport' && !m.available);
   return (
-    <div role="group" aria-label="Drive mode" className={styles.modes}>
-      {driveModes.map(({ id, available }) => (
-        <button
-          key={id}
-          type="button"
-          aria-pressed={driveMode === id}
-          disabled={locked || !available}
-          onClick={() => setDriveMode(id)}
-        >
-          {modeNames[id]}
-        </button>
-      ))}
-    </div>
+    <>
+      <div role="group" aria-label="Drive mode" className={styles.modes}>
+        {driveModes.map(({ id, available }) => (
+          <button
+            key={id}
+            type="button"
+            aria-pressed={driveMode === id}
+            disabled={locked || !available}
+            onClick={() => setDriveMode(id)}
+          >
+            {modeNames[id]}
+          </button>
+        ))}
+      </div>
+      {sportLocked && <small className={styles.modeHint}>Sport arrives with a software update. Check for updates in Software.</small>}
+    </>
   );
 }

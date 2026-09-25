@@ -152,3 +152,11 @@
 .modes {
   grid-template-columns: repeat(3, 1fr);
 }
+.modeHint {
+  font: var(--text-small);
+  color: var(--ink-2);
+}
+.modes button:disabled {
+  color: var(--ink-3);
+  cursor: not-allowed;
+}
