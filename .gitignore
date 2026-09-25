@@ -26,7 +26,6 @@ Thumbs.db
 questions/
 
 # Paper build output. The built PDF is published as a GitHub release asset.
-paper/main.pdf
 paper/data/.build/
 paper/*.aux
 paper/*.bbl
