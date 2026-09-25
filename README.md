@@ -35,7 +35,7 @@ Built for the *Software-Defined Electric Vehicle Design Challenge* (Tech Week 20
 
 Most entries to an SDV design challenge are architecture diagrams and a basic GUI. Judges then have to trust that the pieces would work together. Duma SDV makes the design something you can **run and check**:
 
-- Every required scenario (startup, driving, regenerative braking, charging, fault notification) and an over-the-air update run live.
+- Every required scenario (startup, driving, regenerative braking, charging, fault notification) and an over-the-air update run live, and **Start demo** plays them all with captions.
 - Each ECU is its own module, and they talk **only** through a simulated CAN bus with a message catalogue. The trace view shows every frame.
 - The physics is calibrated to a published reference car. Automated tests hold the key figures to ±10 %.
 - It runs fully offline from a laptop, with no network needed once dependencies are installed.
@@ -50,6 +50,7 @@ Most entries to an SDV design challenge are architecture diagrams and a basic GU
 | **Diagnostics** | Is anything wrong, and where? | Inject faults, DTCs (active and stored), derate and limp modes, plain-language warnings, X-ray view of the car with the faulted module glowing |
 | **Architecture** | How do the modules talk? | ECU diagram with live activity, a CAN trace you can filter and pause, signal-level detail for each frame |
 | **Cycles** | How efficient is it? | WLTC Urban and Highway drive cycles with a speed-tracking driver, speed / power / SOC chart and a Wh/km result |
+| **Guided demo** | (top bar) | **Start demo** plays Startup, Driving, Regen, AC and DC charging, Fault and OTA with captions; pick any scenario or skip ahead. A Start here card walks first-time users through five steps |
 | **Software** | What version is running, and what is new? | Over-the-air update: check, download, verify, install into the VCU's inactive firmware bank and restart; ECU versions; the update unlocks Sport |
 
 | Fault view (X-ray) | Architecture and CAN trace |
@@ -232,7 +233,7 @@ CONTEXT.md        Glossary
 |---|---|---|
 | Simulation | Vitest (Node) | Bus timing, startup, interlocks, pedal maps, regen, AC/DC charging, faults and DTCs, thermal, drive cycles, telemetry, and the reference-figure tests |
 | UI and 3D | Vitest + Testing Library (jsdom) | Every panel, the car model's parts and budgets, X-ray fault view, road motion helpers |
-| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update |
+| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update, and each scenario played from the guided demo |
 
 The simulation runs in fixed 10 ms ticks with no wall clock or randomness, so every test is deterministic. Vitest runs with at most four workers because the long reference runs are CPU-bound.
 
@@ -257,6 +258,7 @@ Every non-obvious choice is written down in `docs/adr/`:
 | [0013](docs/adr/0013-drive-modes-and-drive-cycles.md) | Drive modes and drive cycles |
 | [0014](docs/adr/0014-smooth-stylised-car-and-road-stage.md) | Smooth stylised car and road stage |
 | [0015](docs/adr/0015-ota-software-update.md) | Over-the-air software update |
+| [0016](docs/adr/0016-guided-demo-scripts.md) | Guided demo scripts |
 
 The UI follows [`DESIGN-RULES.md`](DESIGN-RULES.md): a light, restrained interface where each view answers one question, colour is used only for data and status, and every control is keyboard reachable.
 
@@ -274,8 +276,8 @@ The UI follows [`DESIGN-RULES.md`](DESIGN-RULES.md): a light, restrained interfa
 | 08 | Drive modes, drive cycles, telemetry export | Done |
 | 09 | Stage visual refresh | Done |
 | 10 | Over-the-air software update | Done |
-| 11 | Guided demo mode | Next |
-| 12 | Offline (PWA) and public deployment | Planned |
+| 11 | Guided demo mode | Done |
+| 12 | Offline (PWA) and public deployment | Next |
 | 13 | LaTeX paper | Planned |
 | 14 | Stretch: open-world drive | Optional |
 

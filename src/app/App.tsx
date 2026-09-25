@@ -8,6 +8,7 @@ import { useSimLoop } from './useSimLoop';
 import { useDriveInput } from './useDriveInput';
 import { useAppStore } from './store';
 import { DashboardStrip } from './DashboardStrip';
+import { DemoBar } from './DemoBar';
 
 // The 3D stage is split out so the shell paints before three.js loads.
 const Stage = lazy(() => import('../three/Stage'));
@@ -25,6 +26,7 @@ export function App() {
         <Suspense fallback={<StageSkeleton />}>
           <Stage />
         </Suspense>
+        <DemoBar />
       </main>
       {view === 'drive' && <DashboardStrip />}
       <ViewPanel />

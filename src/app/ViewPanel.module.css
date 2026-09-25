@@ -24,37 +24,9 @@
   color: var(--ink-2);
 }
 
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--s-3);
-  margin: var(--s-7) var(--s-5);
-  text-align: center;
-  font: var(--text-small);
-  color: var(--ink-2);
-}
 
-.empty p {
-  margin: 0;
-  max-width: 240px;
-}
 
-.emptyIcon {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--ink-3);
-}
 
-.emptyIcon svg {
-  width: var(--icon-nav);
-  height: var(--icon-nav);
-  stroke-width: 1.5;
-}
 
 .startCard {
   display: flex;
@@ -79,6 +51,18 @@
 }
 
 .startCard p {
+  font: var(--text-small);
+  color: var(--ink-2);
+}
+
+.startLabel {
+  font: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.startHint {
   font: var(--text-small);
   color: var(--ink-2);
 }

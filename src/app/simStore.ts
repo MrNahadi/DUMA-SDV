@@ -3,6 +3,10 @@ import { createSim, TICK_S, type DriveMode, type FaultCommand, type Gear, type O
 import { createCycleRunner, type CycleId, type CycleRunner, type CycleRunStatus } from '../sim/scenarios';
 import type { CycleResult } from '../sim/scenarios/cycle-runner';
 import { createRecorder, type TelemetrySample } from '../sim/telemetry';
+import { createDemoRunner, type DemoRunner, type DemoStatus } from './demo/runner';
+import { DEMO_SCENARIOS } from './demo/scenarios';
+import { latchOnboarding, NO_ONBOARDING, type OnboardingProgress } from './onboardingSteps';
+import { useAppStore } from './store';
 
 export interface CycleRun {
   runner: CycleRunner;
@@ -34,16 +38,41 @@ interface SimState {
   /** Free-drive telemetry (R12): sampled every 0.1 s while no cycle runs. */
   driveLog: () => TelemetrySample[];
   clearDriveLog: () => void;
+  /** Guided demo (ADR 0016); null when no demo is playing. */
+  demo: DemoRunner | null;
+  demoStatus: DemoStatus | null;
+  /** Play the demo from scenario `index` (default the first). */
+  startDemo: (index?: number) => void;
+  nextDemoScenario: () => void;
+  /** Play the current scenario again, or the whole demo once it has finished. */
+  replayDemo: () => void;
+  exitDemo: () => void;
+  /** The judge's own progress through the Start here steps. */
+  onboarding: OnboardingProgress;
 }
 
 const initialSim = createSim();
 const driveRecorder = createRecorder();
+/** The time scale the user had before the demo took over. */
+let timeScaleBeforeDemo: ReturnType<typeof useAppStore.getState>['timeScale'] = 1;
+
+/** Show a demo step: switch to its view and time scale when the step changes. */
+function showDemoStep(previous: DemoStatus | null, next: DemoStatus) {
+  const app = useAppStore.getState();
+  const changed = previous === null || previous.scenarioIndex !== next.scenarioIndex || previous.stepIndex !== next.stepIndex || previous.state !== next.state;
+  if (!changed) return;
+  if (next.state === 'running' && app.view !== next.view) app.setView(next.view);
+  if (app.timeScale !== next.timeScale) app.setTimeScale(next.timeScale);
+}
 
 export const useSimStore = create<SimState>((set, get) => ({
   sim: initialSim,
   snapshot: initialSim.snapshot(),
   cycleRun: null,
   chosenDriveMode: null,
+  demo: null,
+  demoStatus: null,
+  onboarding: NO_ONBOARDING,
   driveLog: () => driveRecorder.samples(),
   clearDriveLog: () => driveRecorder.clear(),
   powerOn: () => {
@@ -82,7 +111,34 @@ export const useSimStore = create<SimState>((set, get) => ({
   reset: () => {
     const sim = createSim();
     driveRecorder.clear();
-    set({ sim, snapshot: sim.snapshot(), cycleRun: null, chosenDriveMode: null });
+    set({ sim, snapshot: sim.snapshot(), cycleRun: null, chosenDriveMode: null, demo: null, demoStatus: null, onboarding: NO_ONBOARDING });
+  },
+  startDemo: (index = 0) => {
+    const { demo: existing, demoStatus } = get();
+    if (existing === null) timeScaleBeforeDemo = useAppStore.getState().timeScale;
+    const demo = existing ?? createDemoRunner(DEMO_SCENARIOS);
+    const sim = demo.start(index);
+    driveRecorder.clear();
+    const status = demo.status();
+    showDemoStep(demoStatus === null ? null : { ...demoStatus, stepIndex: -1 }, status);
+    set({ sim, snapshot: sim.snapshot(), cycleRun: null, chosenDriveMode: null, demo, demoStatus: status });
+  },
+  nextDemoScenario: () => {
+    const { demoStatus, startDemo } = get();
+    if (demoStatus === null) return;
+    startDemo((demoStatus.scenarioIndex + 1) % demoStatus.scenarioCount);
+  },
+  replayDemo: () => {
+    const { demoStatus, startDemo } = get();
+    if (demoStatus === null) return;
+    startDemo(demoStatus.state === 'finished' ? 0 : demoStatus.scenarioIndex);
+  },
+  exitDemo: () => {
+    const { sim, demo } = get();
+    if (demo === null) return;
+    sim.setInputs({ accelerator: 0, brake: 0 });
+    useAppStore.getState().setTimeScale(timeScaleBeforeDemo);
+    set({ demo: null, demoStatus: null });
   },
   runCycle: (cycleId) => {
     const { sim, cycleRun } = get();
@@ -106,12 +162,31 @@ export const useSimStore = create<SimState>((set, get) => ({
       set({ snapshot: sim.snapshot(), cycleRun: { runner, status: runner.status(), result: runner.result() } });
       return;
     }
+    const { demo, demoStatus } = get();
+    if (demo !== null) {
+      // The demo drives the sim tick by tick; a new scenario brings its own sim.
+      let current = sim;
+      for (let i = 0; i < ticks; i++) {
+        const next = demo.tick(current);
+        if (next !== null) {
+          current = next;
+          driveRecorder.clear();
+          break;
+        }
+        driveRecorder.record(demo.lastSnapshot() ?? current.snapshot());
+      }
+      const status = demo.status();
+      showDemoStep(demoStatus, status);
+      set({ sim: current, snapshot: current.snapshot(), demoStatus: status, ...(current === sim ? {} : { chosenDriveMode: null }) });
+      return;
+    }
     // Step tick by tick so the recorder sees every 0.1 s of sim time at any time scale.
     for (let i = 0; i < ticks; i++) {
       sim.step(1);
       driveRecorder.record(sim.snapshot());
     }
     const next = sim.snapshot();
-    if (next.timeS !== snapshot.timeS) set({ snapshot: next });
+    const onboarding = latchOnboarding(get().onboarding, next);
+    if (next.timeS !== snapshot.timeS) set(onboarding === get().onboarding ? { snapshot: next } : { snapshot: next, onboarding });
   },
 }));

@@ -1,0 +1,72 @@
+.bar {
+  position: absolute;
+  top: var(--s-4);
+  left: var(--s-4);
+  right: var(--s-4);
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: var(--s-3) var(--s-4);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.bar[data-state='failed'] {
+  border-color: var(--fault);
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  min-width: 0;
+}
+.label {
+  font: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.title {
+  margin: 0;
+  font: var(--text-h2);
+}
+.caption,
+.failure {
+  display: flex;
+  gap: var(--s-2);
+  margin: 0;
+  font: var(--text-body);
+  color: var(--ink);
+}
+.caption svg,
+.failure svg {
+  flex: none;
+  width: var(--icon);
+  height: var(--icon);
+  margin-top: 2px;
+  stroke-width: 1.5;
+}
+.failure svg {
+  color: var(--fault);
+}
+.done {
+  color: var(--ok);
+}
+.controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--s-2);
+}
+.picker {
+  height: var(--control-h);
+  max-width: 200px;
+  padding: 0 var(--s-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  font: var(--text-small);
+}

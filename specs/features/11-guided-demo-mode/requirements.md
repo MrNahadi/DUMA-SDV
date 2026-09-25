@@ -5,7 +5,7 @@
 - **R1.** A **Start demo** button in the top bar plays every scenario in order: Startup, Driving, Regen, Charging (AC), Charging (DC), Fault, OTA. It never starts on its own (DESIGN-RULES §10).
 - **R2.** Each scenario is a script of steps. A step has a caption, the view to show, a time scale, the inputs it applies when it starts, and the condition that ends it (a snapshot condition, a minimum dwell, or both). Inputs go through the public `setInputs`, as a driver would.
 - **R3.** Each scenario starts from a fresh sim that is brought into its starting state headlessly (for example READY in D at 80 km/h for Regen), so any scenario can be played on its own and the result does not depend on what ran before.
-- **R4.** A demo bar over the stage shows the scenario's position (n of 7), its title, the caption, the step position, a scenario picker, **Next scenario** and **Exit demo**. Escape also exits.
+- **R4.** A demo bar over the stage shows the scenario's position (n of 7), its title, the caption, the step position, a scenario picker and **Next scenario**. While the demo plays, the top bar's button reads **Exit demo**. Escape also exits.
 - **R5.** A step that does not finish within its timeout stops the demo with an error state that names the step and offers **Replay** and **Next scenario**. The demo never hangs.
 - **R6.** Exiting the demo releases the pedals and restores the time scale the user had. The car keeps the state the demo left it in.
 - **R7.** After the last scenario the demo bar says the demo is complete and offers **Replay demo** and **Exit demo**.

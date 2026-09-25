@@ -46,6 +46,8 @@ export function useDriveInput(): void {
       const nextAccelerator =
         held.has('pointer:accelerator') || [...acceleratorKeys].some((key) => held.has(key));
       const nextBrake = held.has('pointer:brake') || [...brakeKeys].some((key) => held.has(key));
+      // The guided demo sets the pedals itself; released keys must not override it.
+      if (useSimStore.getState().demo !== null && !nextAccelerator && !nextBrake && accelerator === 0 && brake === 0) return;
       accelerator = Math.max(0, Math.min(1, accelerator + (nextAccelerator ? 0.025 : -0.04) * steps));
       brake = Math.max(0, Math.min(1, brake + (nextBrake ? 0.025 : -0.04) * steps));
       useSimStore.getState().setPedal('accelerator', accelerator);

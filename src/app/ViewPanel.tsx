@@ -1,9 +1,7 @@
-import { Power } from 'lucide-react';
 import { useAppStore } from './store';
 import { VIEWS } from './views';
 import styles from './ViewPanel.module.css';
-import { Button } from '../ui/Button';
-import { useSimStore } from './simStore';
+import { Onboarding } from './Onboarding';
 import { DrivePanel } from './DrivePanel';
 import { ChargePanel } from './ChargePanel';
 import { CyclesPanel } from './CyclesPanel';
@@ -12,13 +10,9 @@ import { ArchitecturePanel } from './ArchitecturePanel';
 import { EnergyPanel } from './EnergyPanel';
 import { SoftwarePanel } from './SoftwarePanel';
 
-const PANELS = new Set(['drive', 'charge', 'energy', 'diagnostics', 'architecture', 'cycles', 'software']);
-
 export function ViewPanel() {
   const view = useAppStore((s) => s.view);
-  const { label, question, icon: Icon } = VIEWS[view];
-  const powerState = useSimStore((s) => s.snapshot.powerState);
-  const powerOn = useSimStore((s) => s.powerOn);
+  const { label, question } = VIEWS[view];
 
   return (
     <aside className={styles.panel} aria-labelledby="view-title">
@@ -28,15 +22,7 @@ export function ViewPanel() {
         </h1>
         <p className={styles.question}>{question}</p>
       </header>
-      {view === 'drive' && powerState === 'OFF' ? (
-        <section className={styles.startCard} aria-labelledby="start-here-title">
-          <h2 id="start-here-title">Start here</h2>
-          <p>Power on to run the startup sequence.</p>
-          <Button variant="primary" large icon={<Power />} onClick={powerOn}>
-            Power on
-          </Button>
-        </section>
-      ) : null}
+      <Onboarding />
       {view === 'drive' && <DrivePanel />}
       {view === 'charge' && <ChargePanel />}
       {view === 'cycles' && <CyclesPanel />}
@@ -44,14 +30,6 @@ export function ViewPanel() {
       {view === 'energy' && <EnergyPanel />}
       {view === 'architecture' && <ArchitecturePanel />}
       {view === 'software' && <SoftwarePanel />}
-      {!PANELS.has(view) && (
-        <div className={styles.empty}>
-          <span className={styles.emptyIcon} aria-hidden="true">
-            <Icon />
-          </span>
-          <p>Nothing to show yet. This view is part of an upcoming phase.</p>
-        </div>
-      )}
     </aside>
   );
 }
