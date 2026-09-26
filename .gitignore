@@ -20,11 +20,13 @@ test-results/
 .DS_Store
 Thumbs.db
 
-# Build tooling that is not part of the project: the Claude Code agent setup,
-# the Ralph build loop and its question queue
-.claude/
-.ralph/
-questions/
+# Ralph build loop (spec-ralph): the prompt, script, loop settings, answerer
+# agent and question queue are tracked; per-run state and logs are not.
+.claude/*
+!.claude/agents/
+.ralph/logs/
+.ralph/done
+.ralph/progress.md
 
 # Paper build output. The built PDF is published as a GitHub release asset.
 paper/data/.build/
