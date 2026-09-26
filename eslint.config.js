@@ -28,6 +28,7 @@ export default tseslint.config(
             { group: ['three', 'three/*', '@react-three/*'], message: 'src/sim must not import three.' },
             { group: ['zustand', 'zustand/*'], message: 'src/sim must not import UI state.' },
             { group: ['../app/*', '../three/*', '../ui/*', '../views/*', '../../*'], message: 'src/sim must not import app code.' },
+            { group: ['../ai', '../ai/*', '../../ai', '../../ai/*', '@google/genai'], message: 'src/sim must not import the AI layer (tech-stack.md, AI).' },
           ],
         },
       ],
@@ -36,6 +37,23 @@ export default tseslint.config(
         'error',
         { object: 'Math', property: 'random', message: 'Use a seeded RNG passed into the sim.' },
         { object: 'Date', property: 'now', message: 'Sim time comes from ticks, not the wall clock.' },
+      ],
+    },
+  },
+  {
+    // The AI layer is framework-free; the app wires it to React (tech-stack.md, AI).
+    files: ['src/ai/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            { group: ['react', 'react-dom', 'react/*', 'react-dom/*'], message: 'src/ai must not import React.' },
+            { group: ['three', 'three/*', '@react-three/*'], message: 'src/ai must not import three.' },
+            { group: ['zustand', 'zustand/*'], message: 'src/ai must not import UI state.' },
+            { group: ['../app/*', '../three/*', '../ui/*', '../../app/*', '../../three/*', '../../ui/*'], message: 'src/ai must not import app code.' },
+          ],
+        },
       ],
     },
   },

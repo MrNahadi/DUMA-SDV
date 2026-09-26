@@ -23,5 +23,8 @@ export default defineConfig({
     // Own port, never reused: a foreign server on 4173 once served 403s to every spec.
     reuseExistingServer: false,
     timeout: 120_000,
+    // Variables already in the environment beat .env files in Vite, so a developer's
+    // .env.local key never reaches e2e (feature 15 R11).
+    env: { GEMINI_API_KEY: '', GEMINI_MODEL: '', GEMINI_LIVE_MODEL: '' },
   },
 });

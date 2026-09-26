@@ -40,12 +40,12 @@ Notes: AiStatusLine is shared so the Report view (feature 18) can reuse it. aiSt
 
 ## T-004: Keep tests away from real keys and fix module boundaries
 
-Status: open
+Status: done
 Blocked by: T-003
 Slice: Blank `GEMINI_*` in the e2e web server, add lint boundaries for `src/ai`, and document setup in the README.
 Test seam: `playwright.config.ts` web server env; `eslint.config.js`; README
 Acceptance:
-- [ ] The e2e server's env sets every `GEMINI_*` variable to an empty string
-- [ ] Lint fails when `src/sim` imports `src/ai` or when `src/ai` imports React
-- [ ] README explains `.env.local`, the three variables, model switching and the never-deploy-a-key rule
-Notes:
+- [x] The e2e server's env sets every `GEMINI_*` variable to an empty string
+- [x] Lint fails when `src/sim` imports `src/ai` or when `src/ai` imports React
+- [x] README explains `.env.local`, the three variables, model switching and the never-deploy-a-key rule
+Notes: Verified with a fake key in .env.local: e2e still showed No API key and dist had no trace of it.

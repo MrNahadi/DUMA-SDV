@@ -93,6 +93,25 @@ Offline check, on the laptop you will present from:
 
 The build output in `dist/` uses relative paths, so the same folder can be served from any static host later. Public hosting is not set up yet.
 
+### Gemini co-pilot setup
+
+The co-pilot and the vehicle report's AI summary use the Gemini API. Everything else runs without it.
+
+1. Get an API key from Google AI Studio.
+2. Copy `.env.example` to `.env.local` (git-ignored) and set the key:
+
+   ```bash
+   GEMINI_API_KEY=your-key
+   GEMINI_MODEL=            # text model; empty means gemini-3.5-flash-lite
+   GEMINI_LIVE_MODEL=       # voice model; empty means gemini-3.8-live
+   ```
+
+3. Restart `npm run dev`. Vite reads env files only at start-up, so restart after every change. The **Co-pilot** view shows the status and the models in use.
+
+To try another model, change `GEMINI_MODEL` or `GEMINI_LIVE_MODEL` and restart. Check model names in AI Studio: they change often.
+
+The key is bundled into the app you build locally. **Never publish a build made with a key.** Tests never use your key: unit tests ignore `.env.local`, and the e2e server runs with blank `GEMINI_*` variables. Details in [ADR 0018](docs/adr/0018-gemini-integration-and-model-settings.md).
+
 | Script | What it does |
 |---|---|
 | `npm run dev` | Vite dev server with hot reload |
