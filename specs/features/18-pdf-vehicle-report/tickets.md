@@ -2,15 +2,15 @@
 
 ## T-001: Report model and restriction episodes
 
-Status: open
+Status: done
 Blocked by:
 Slice: Build every section's data from a snapshot, the drive log and tracked episodes, with rule-based tips and downsampled chart series.
 Test seam: `buildReportModel()` and `createEpisodeTracker()` in `src/ai/report/model.ts`, tested with real sim runs
 Acceptance:
-- [ ] State, faults, episodes and trip figures match the sim run
-- [ ] Series have at most 600 points and keep the first and last sample
-- [ ] Each rule-based tip appears exactly when its condition holds; "No issues found" otherwise
-Notes:
+- [x] State, faults, episodes and trip figures match the sim run
+- [x] Series have at most 600 points and keep the first and last sample
+- [x] Each rule-based tip appears exactly when its condition holds; "No issues found" otherwise
+Notes: Trip totals come from the car (odometer, tripEnergyJ, VCU_Recovery via the IC); charts and maxima from the drive log.
 
 ## T-002: AI summary and tips
 
