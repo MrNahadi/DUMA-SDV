@@ -89,6 +89,10 @@ Every transition is ≤ 150 ms and ease-out. Honour `prefers-reduced-motion` by 
 | Architecture | `network` | How do the modules talk? | ECU diagram + CAN trace |
 | Cycles | `route` | How efficient is it over a standard trip? | Wh/km result + chart |
 | Software | `cloud-download` | What version is running, and what's new? | Update card |
+| Co-pilot | `audio-lines` | What does the car have to say? | Talk button and the conversation |
+| Report | `file-text` | What would a service engineer need to know? | Report contents and Export PDF |
+
+Proactive suggestions appear as one card on the stage in every view (like the demo bar), not inside a view's panel.
 
 ## 8. Words: use these exact verbs
 
@@ -103,6 +107,9 @@ Every transition is ≤ 150 ms and ease-out. Honour `prefers-reduced-motion` by 
 | Telemetry | **Export CSV** | Download, Save, Save as |
 | Drive cycle | **Run cycle** / **Stop cycle** | Start test, Play |
 | Guided demo | **Start demo** / **Exit demo** | Tour, Walkthrough, Play demo |
+| Co-pilot voice | **Start talking** / **Stop talking** | Listen, Record, Call, Chat |
+| Proactive suggestion | **Accept** / **Dismiss** | OK, Yes, Close, Ignore |
+| Report | **Export PDF** | Download, Save, Print, Generate |
 
 The car is "the car" in UI text, never "the vehicle", "the EV" or "the model".
 
