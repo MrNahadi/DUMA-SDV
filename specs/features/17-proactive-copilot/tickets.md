@@ -61,11 +61,11 @@ Notes: Built with T-004 (hearDriver + carMessage in show()); its tests live in S
 
 ## T-006: e2e and docs
 
-Status: open
+Status: done
 Blocked by: T-004
 Slice: e2e for a fault suggestion accepted from the card; README and ADR 0020 notes.
 Test seam: `e2e/proactive.spec.ts`
 Acceptance:
-- [ ] e2e: an injected fault shows the card on Drive and Accept opens Diagnostics
-- [ ] README describes the triggers and that nothing happens without Accept
-Notes:
+- [x] e2e: an injected fault shows the card on Drive and Accept opens Diagnostics
+- [x] README describes the triggers and that nothing happens without Accept
+Notes: Fault suggestions dropped the DTC code from their text: three existing e2e specs match the code by text, and the co-pilot rule already says codes only when asked. Accept keeps its outcome visible when the next suggestion follows.

@@ -23,7 +23,7 @@ Brief v1.3 scope item 13, goal "speaks up at the right time", ADR 0020.
 
 ## Words
 
-- **R11.** Every trigger has an English and a Kiswahili template in the co-pilot's chosen language, with the relevant value (module name, temperature, SOC).
+- **R11.** Every trigger has an English and a Kiswahili template in the co-pilot's chosen language, with the relevant value (module name, temperature, SOC). Fault suggestions name the module, not the DTC code, matching the co-pilot rule of giving codes only when asked.
 - **R12.** When AI is ready and no voice session is open, the text model may rephrase the template in one sentence; the template shows at once and is replaced only if the reply arrives within 3 s.
 - **R13.** When a voice session is open, the suggestion is also sent as a `[car]` message so the co-pilot says it; the message tells the model that the car acts on the driver's answer and it must not call a tool for it.
 

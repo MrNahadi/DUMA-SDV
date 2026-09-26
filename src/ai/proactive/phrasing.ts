@@ -11,14 +11,14 @@ const restrictionSw = (f: Facts) => (f.restriction === 'limp' ? 'hali ya dharura
 /** Templates: [with action, without action]. */
 const TEMPLATES: Record<CopilotLanguage, Record<Suggestion['trigger'], (f: Facts, hasAction: boolean) => string>> = {
   en: {
-    newFault: (f) => `${f.module} fault (${f.code}). Open Diagnostics to see what it means?`,
+    newFault: (f) => `${f.module} fault. Open Diagnostics to see what it means?`,
     derate: (f, a) => `Power is limited: ${restrictionEn(f)}.${a ? ' Switch to Eco to go easy on the car?' : ' You are already in Eco.'}`,
     packHot: (f, a) => `The battery is at ${f.packC} °C.${a ? ' Switch to Eco to let it cool?' : ' Eco is already helping it cool.'}`,
     lowSoc: (f) => `Battery at ${f.socPercent} percent. Open Charge to plan a stop?`,
     chargeComplete: (f) => `Charging complete at ${f.socPercent} percent. You can unplug.`,
   },
   sw: {
-    newFault: (f) => `Hitilafu kwenye ${f.module} (${f.code}). Nifungue Diagnostics uone maana yake?`,
+    newFault: (f) => `Hitilafu kwenye ${f.module}. Nifungue Diagnostics uone maana yake?`,
     derate: (f, a) => `Nguvu imepunguzwa: ${restrictionSw(f)}.${a ? ' Nibadilishe iwe Eco ili kupunguza mzigo kwa gari?' : ' Tayari uko kwenye Eco.'}`,
     packHot: (f, a) => `Betri iko kwenye nyuzi ${f.packC} °C.${a ? ' Nibadilishe iwe Eco ili ipoe?' : ' Eco tayari inasaidia ipoe.'}`,
     lowSoc: (f) => `Betri imebaki asilimia ${f.socPercent}. Nifungue Charge upange kuchaji?`,

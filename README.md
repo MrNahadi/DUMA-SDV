@@ -121,6 +121,8 @@ To try another model, change `GEMINI_MODEL` or `GEMINI_LIVE_MODEL` and restart. 
 
 Every change goes through the same commands as the touchscreen, so the car can refuse, and the co-pilot tells you why ([ADR 0019](docs/adr/0019-copilot-acts-through-hmi-commands.md)). Try: "Switch to eco mode", "How far can I drive?", "Any faults?", "Set the charge target to 80 percent". In Kiswahili: "Badilisha hali iwe Eco", "Betri imebaki asilimia ngapi?", "Kuna hitilafu yoyote?", "Anza kuchaji".
 
+**Proactive suggestions.** The co-pilot also speaks up on its own, on a card at the top right of the car in every view (and out loud when a voice session is open): a new fault, reduced power or limp mode, a battery at 45 °C or more, charge falling to 20 % and 10 %, and a finished charging session. Each has a cooldown so it does not nag, and it stays quiet during the guided demo. **Nothing happens until you press Accept** or say yes ("ndiyo" in Kiswahili); Accept goes through the same commands as the touchscreen, so the car can still refuse. Without a key the cards still appear, with fixed wording ([ADR 0020](docs/adr/0020-proactive-triggers-and-cooldowns.md)).
+
 The key is bundled into the app you build locally. **Never publish a build made with a key.** Tests never use your key: unit tests ignore `.env.local`, and the e2e server runs with blank `GEMINI_*` variables. Details in [ADR 0018](docs/adr/0018-gemini-integration-and-model-settings.md).
 
 | Script | What it does |
