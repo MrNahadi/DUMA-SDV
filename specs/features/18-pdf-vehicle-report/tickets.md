@@ -14,14 +14,14 @@ Notes: Trip totals come from the car (odometer, tripEnergyJ, VCU_Recovery via th
 
 ## T-002: AI summary and tips
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: Ask the text model for a summary and tips with a JSON schema and a 10 s limit, falling back to an unavailable reason.
 Test seam: `reportAiText(client, model, language)` in `src/ai/report/ai.ts` with `FakeGeminiClient`
 Acceptance:
-- [ ] Sends the schema, the compact model and the language
-- [ ] Returns the parsed summary and at most 5 tips
-- [ ] No client, error, bad JSON or timeout give `unavailable` with a reason
+- [x] Sends the schema, the compact model and the language
+- [x] Returns the parsed summary and at most 5 tips
+- [x] No client, error, bad JSON or timeout give `unavailable` with a reason
 Notes:
 
 ## T-003: PDF renderer
