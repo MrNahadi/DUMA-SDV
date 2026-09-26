@@ -46,6 +46,8 @@ export interface CopilotSessionDeps {
   onChange: (view: CopilotView) => void;
   /** Report a failed call to the app's AI status (null clears it). */
   onAiError?: (reason: string | null) => void;
+  /** First entry id, so ids stay unique when a page keeps several sessions' entries. */
+  firstEntryId?: number;
 }
 
 export interface CopilotSession {
@@ -65,7 +67,7 @@ export function createCopilotSession(deps: CopilotSessionDeps): CopilotSession {
   let state: CopilotState = 'idle';
   let error: string | null = null;
   let entries: ConversationEntry[] = [];
-  let nextId = 1;
+  let nextId = deps.firstEntryId ?? 1;
   let live: LiveSession | null = null;
   /** The role of the entry still receiving transcript fragments, if any. */
   let openRole: 'driver' | 'copilot' | null = null;

@@ -51,16 +51,16 @@ Notes: Worklet is loaded from an inline Blob URL, so no extra file for the PWA p
 
 ## T-005: Talk from the Co-pilot view
 
-Status: open
+Status: done
 Blocked by: T-003, T-004
 Slice: Co-pilot store and HMI adapter over the sim store; language control, Start talking / Stop talking and the conversation list in the view.
 Test seam: `CopilotPanel` with `useCopilotStore` and `useAiStore` set to a `FakeGeminiClient`
 Acceptance:
-- [ ] Start talking is disabled with the AI status text when AI is not ready
-- [ ] With a fake client, Start talking goes live, a scripted `set_drive_mode` changes the car's mode and shows the action line, Stop talking returns to idle
-- [ ] The language choice persists in localStorage and is used at the next start
-- [ ] A connect failure shows the error and sets the app's AI error
-Notes:
+- [x] Start talking is disabled with the AI status text when AI is not ready
+- [x] With a fake client, Start talking goes live, a scripted `set_drive_mode` changes the car's mode and shows the action line, Stop talking returns to idle
+- [x] The language choice persists in localStorage and is used at the next start
+- [x] A connect failure shows the error and sets the app's AI error
+Notes: Conversation is kept across sessions on the page (entry ids offset per session). Start talking stays enabled after an error so the driver can retry.
 
 ## T-006: e2e and docs
 
