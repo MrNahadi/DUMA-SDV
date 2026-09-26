@@ -18,13 +18,13 @@ describe('CopilotPanel', () => {
     expect(initial.client).toBeNull();
   });
 
-  it('shows ready and both models, and never the key', () => {
+  it('shows ready without labelling models, and never the key', () => {
     setAi(KEY);
     const { container } = render(<CopilotPanel />);
     expect(screen.getByRole('status').textContent).toBe('Co-pilot ready');
     expect(screen.getByRole('status').getAttribute('data-status')).toBe('ready');
-    expect(container.textContent).toContain('gemini-text-x');
-    expect(container.textContent).toContain('gemini-live-y');
+    expect(container.textContent).not.toContain('gemini-text-x');
+    expect(container.textContent).not.toContain('gemini-live-y');
     expect(container.innerHTML).not.toContain(KEY);
   });
 

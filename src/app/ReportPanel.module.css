@@ -5,39 +5,6 @@
   padding: var(--s-5);
   min-width: 0;
 }
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-3);
-  padding: var(--s-4);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-}
-.card h2 {
-  margin: 0;
-  font: var(--text-h2);
-}
-.sections {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-2);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font: var(--text-body);
-}
-.sections li {
-  display: flex;
-  flex-direction: column;
-}
-.name {
-  font-weight: 600;
-}
-.figure {
-  font: var(--text-small);
-  font-variant-numeric: tabular-nums;
-  color: var(--ink-2);
-}
 .progress,
 .error {
   display: flex;

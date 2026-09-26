@@ -20,6 +20,8 @@ Question: What goes in the vehicle report and how is the PDF made?
 
 **AI part.** The text model receives the report model as compact JSON and must return JSON matching a schema `{ summary: string, tips: string[] }` (structured output), in the co-pilot's current language. If there is no key, no network, an error or no answer within 10 s, sections 4 and 5 say "AI summary unavailable: <reason>" and still show the rule-based tips.
 
+**Report view.** One primary Export PDF and the AI status line, with no contents list (owner, 2026-09-26): the sections are fixed and listed here.
+
 **File name.** `duma-sdv-report-<sim duration>s.pdf`, from sim time, never the wall clock, like the CSV export.
 
 ## Consequences

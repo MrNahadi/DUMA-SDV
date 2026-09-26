@@ -21,7 +21,7 @@ Brief v1.3 scope item 15, non-negotiables on the key, ADR 0018.
 ## Co-pilot view
 
 - **R8.** A new view "Co-pilot" (`audio-lines`, question "What does the car have to say?") is in the nav rail after Software and linkable by `#/copilot`.
-- **R9.** It shows a status line with an icon and words: "Co-pilot ready", "No API key: add GEMINI_API_KEY to .env.local and restart the dev server", "Offline: the co-pilot needs a network connection", or the error reason. It shows the text model and live model names in Geist Mono.
+- **R9.** It shows a status line with an icon and words: "Co-pilot ready", "No API key: add GEMINI_API_KEY to .env.local and restart the dev server", "Offline: the co-pilot needs a network connection", or the error reason. (Owner, 2026-09-26: the model names are not shown in the UI; they live only in `.env.local`.)
 - **R10.** The view passes `docs/design-rules.md`: tokens only, allowed type and spacing steps, empty state for the conversation area ("Start talking arrives in feature 16" is not user-facing; use "Nothing said yet." plus the next action), keyboard reachable.
 
 ## Isolation

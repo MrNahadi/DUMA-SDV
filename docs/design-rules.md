@@ -89,8 +89,8 @@ Every transition is ≤ 150 ms and ease-out. Honour `prefers-reduced-motion` by 
 | Architecture | `network` | How do the modules talk? | ECU diagram + CAN trace |
 | Cycles | `route` | How efficient is it over a standard trip? | Wh/km result + chart |
 | Software | `cloud-download` | What version is running, and what's new? | Update card |
-| Co-pilot | `audio-lines` | What does the car have to say? | Talk button and the conversation |
-| Report | `file-text` | What would a service engineer need to know? | Report contents and Export PDF |
+| Co-pilot | `audio-lines` | What does the car have to say? | Talk button and the conversation (models are not labelled) |
+| Report | `file-text` | What would a service engineer need to know? | Export PDF (no contents list) |
 
 Proactive suggestions appear as one card on the stage in every view (like the demo bar), not inside a view's panel.
 

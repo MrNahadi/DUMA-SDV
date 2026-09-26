@@ -1,53 +1,23 @@
 import { useEffect } from 'react';
 import { Check, CircleAlert, FileText, LoaderCircle } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
-import { SECTION_TITLES } from '../ai/report/pdf';
 import { Button } from '../ui/Button';
 import { Toast } from '../ui/Toast';
 import { AiStatusLine } from './AiStatusLine';
 import { selectAiStatus, useAiStore } from './aiStore';
 import { useReportStore } from './reportStore';
-import { useSimStore } from './simStore';
 import styles from './ReportPanel.module.css';
-
-/** Light, per-frame figures for the preview; the full model is built only on export. */
-function usePreview() {
-  return useSimStore(useShallow((s) => {
-    const snap = s.snapshot;
-    const records = snap.diagnostics.records;
-    const km = snap.odometerM / 1000;
-    return {
-      // The top bar's words for the power state.
-      power: snap.powerState === 'OFF' ? 'Off' : snap.powerState === 'ACCESSORY' ? 'Starting' : snap.powerState,
-      soc: Math.round((snap.dashboard.soc ?? snap.pack.soc) * 100),
-      faults: records.length,
-      active: records.filter((r) => r.status === 'active').length,
-      km: km.toFixed(2),
-    };
-  }));
-}
 
 export function ReportPanel() {
   const status = useAiStore(useShallow(selectAiStatus));
-  const textModel = useAiStore((s) => s.config.textModel);
   const { step, error, exportPdf, clearDone } = useReportStore(useShallow((s) => ({ step: s.step, error: s.error, exportPdf: s.exportPdf, clearDone: s.clearDone })));
-  const p = usePreview();
   const busy = step === 'ai' || step === 'drawing';
-  const aiReady = status.kind === 'ready';
 
   useEffect(() => {
     if (step !== 'done') return;
     const timer = setTimeout(clearDone, 3000);
     return () => clearTimeout(timer);
   }, [step, clearDone]);
-
-  const figures = [
-    `${p.power}, ${p.soc} % charge`,
-    p.faults === 0 ? 'No faults recorded' : `${p.faults} fault record(s), ${p.active} active`,
-    `${p.km} km driven; consumption and charts in the PDF`,
-    aiReady ? `Written by ${textModel}` : 'Unavailable: the section says why',
-    aiReady ? 'Co-pilot tips plus the car\'s rule-based tips' : 'The car\'s rule-based tips',
-  ];
 
   return (
     <div className={styles.content}>
@@ -72,17 +42,6 @@ export function ReportPanel() {
         </p>
       )}
       <AiStatusLine status={status} />
-      <section className={styles.card} aria-labelledby="report-contents">
-        <h2 id="report-contents">Contents</h2>
-        <ol className={styles.sections}>
-          {SECTION_TITLES.map((title, i) => (
-            <li key={title}>
-              <span className={styles.name}>{title}</span>
-              <span className={styles.figure}>{figures[i]}</span>
-            </li>
-          ))}
-        </ol>
-      </section>
       {step === 'done' && <Toast>Report exported</Toast>}
     </div>
   );

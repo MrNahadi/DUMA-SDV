@@ -108,7 +108,7 @@ The co-pilot and the vehicle report's AI summary use the Gemini API. Everything 
    GEMINI_LIVE_MODEL=       # voice model; empty means gemini-3.8-live
    ```
 
-3. Restart `npm run dev`. Vite reads env files only at start-up, so restart after every change. The **Co-pilot** view shows the status and the models in use.
+3. Restart `npm run dev`. Vite reads env files only at start-up, so restart after every change. The **Co-pilot** view shows whether the co-pilot is ready.
 
 To try another model, change `GEMINI_MODEL` or `GEMINI_LIVE_MODEL` and restart. Check model names in AI Studio: they change often.
 
