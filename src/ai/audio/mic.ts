@@ -56,8 +56,11 @@ export function createMicrophone(deps: MicDeps = browserDeps): AudioInput {
   let stream: MediaStream | null = null;
   let context: AudioContext | null = null;
   let node: AudioWorkletNode | null = null;
+  /** Bumped by every stop, so a start still waiting on a prompt knows it was cancelled. */
+  let generation = 0;
 
   function stop() {
+    generation++;
     node?.port.close();
     node?.disconnect();
     stream?.getTracks().forEach((t) => t.stop());
@@ -70,24 +73,33 @@ export function createMicrophone(deps: MicDeps = browserDeps): AudioInput {
   return {
     async start(onChunk) {
       stop();
+      const mine = generation;
+      let granted: MediaStream;
       try {
-        stream = await deps.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }, video: false });
+        granted = await deps.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }, video: false });
       } catch (e) {
         if (e instanceof Error && (e.name === 'NotAllowedError' || e.name === 'SecurityError')) throw blockedError();
         throw e;
       }
+      if (mine !== generation) {
+        // Stop talking came while the permission prompt was up.
+        granted.getTracks().forEach((t) => t.stop());
+        return;
+      }
+      stream = granted;
       try {
         context = deps.createContext();
         const url = deps.moduleUrl();
         await context.audioWorklet.addModule(url);
         if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+        if (mine !== generation) return;
         const source = context.createMediaStreamSource(stream);
         node = deps.createWorklet(context, 'duma-mic-capture');
         const rate = context.sampleRate;
         node.port.onmessage = (event: MessageEvent<Float32Array>) => onChunk(encodeMicChunk(event.data, rate));
         source.connect(node);
       } catch (e) {
-        stop();
+        if (mine === generation) stop();
         throw e;
       }
     },

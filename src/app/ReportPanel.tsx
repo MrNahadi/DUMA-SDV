@@ -2,7 +2,6 @@ import { useEffect } from 'react';
 import { Check, CircleAlert, FileText, LoaderCircle } from 'lucide-react';
 import { useShallow } from 'zustand/react/shallow';
 import { SECTION_TITLES } from '../ai/report/pdf';
-import { jPerMToWhPerKm } from '../sim/units';
 import { Button } from '../ui/Button';
 import { Toast } from '../ui/Toast';
 import { AiStatusLine } from './AiStatusLine';
@@ -23,7 +22,6 @@ function usePreview() {
       faults: records.length,
       active: records.filter((r) => r.status === 'active').length,
       km: km.toFixed(2),
-      whPerKm: km >= 0.1 ? Math.round(jPerMToWhPerKm(snap.tripEnergyJ / snap.odometerM)) : null,
     };
   }));
 }
@@ -45,7 +43,7 @@ export function ReportPanel() {
   const figures = [
     `${p.power}, ${p.soc} % charge`,
     p.faults === 0 ? 'No faults recorded' : `${p.faults} fault record(s), ${p.active} active`,
-    p.whPerKm === null ? `${p.km} km, not enough distance for consumption` : `${p.km} km at ${p.whPerKm} Wh/km`,
+    `${p.km} km driven; consumption and charts in the PDF`,
     aiReady ? `Written by ${textModel}` : 'Unavailable: the section says why',
     aiReady ? 'Co-pilot tips plus the car\'s rule-based tips' : 'The car\'s rule-based tips',
   ];

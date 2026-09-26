@@ -95,9 +95,9 @@ describe('rule-based tips and empty states', () => {
         thermal: { ...base.thermal, packC: 47.4 },
         dashboard: { ...base.dashboard, soc: 0.15 },
         odometerM: 1000,
-        tripEnergyJ: 250 * 3600,
       }),
-      driveLog: [],
+      // 50 s at 20 m/s and 18 kW: 1 km at 250 Wh/km.
+      driveLog: Array.from({ length: 501 }, (_, i) => ({ timeS: i / 10, speedMs: 20, targetSpeedMs: null, accelerator: 0.3, brake: 0, batteryPowerW: 18000, motorPowerW: 17000, soc: 0.15, packVoltageV: 540, packCurrentA: 33, packTempC: 47.4, motorTempC: 50, inverterTempC: 40, gear: 'D' as const, driveMode: 'normal' as const })),
       episodes: [],
     });
     expect(model.tips).toEqual([
@@ -105,6 +105,23 @@ describe('rule-based tips and empty states', () => {
       'Charge is at 15 %. Plan a charging stop soon.',
       'Consumption was 250 Wh/km. Eco, steadier speed and lifting off early for regen will lower it.',
     ]);
+  });
+});
+
+describe('consumption', () => {
+  it('counts only driving in D or R, so charging never offsets it', () => {
+    const base = createSim().snapshot();
+    const sample = (timeS: number, gear: 'D' | 'P', batteryPowerW: number, speedMs: number) =>
+      ({ timeS, speedMs, targetSpeedMs: null, accelerator: 0, brake: 0, batteryPowerW, motorPowerW: 0, soc: 0.5, packVoltageV: 550, packCurrentA: 0, packTempC: 25, motorTempC: 25, inverterTempC: 25, gear, driveMode: 'normal' as const });
+    // 100 s at 20 m/s and 15 kW (2 km, 750 J/m = 208 Wh/km), then 100 s of 50 kW charging in P.
+    const log = [
+      ...Array.from({ length: 1001 }, (_, i) => sample(i / 10, 'D', 15000, 20)),
+      ...Array.from({ length: 1000 }, (_, i) => sample(100.1 + i / 10, 'P', -50000, 0)),
+    ];
+    const model = buildReportModel({ snapshot: { ...base, odometerM: 2000, tripEnergyJ: 15000 * 100 - 50000 * 100 }, driveLog: log, episodes: [] });
+    expect(value(model.trip, 'Consumption')).toBe('208 Wh/km');
+    expect(model.facts.whPerKm).toBeCloseTo(750 / 3.6, 5);
+    expect(value(model.trip, 'Net energy since start (incl. charging)')).toBe('-0.97 kWh');
   });
 });
 

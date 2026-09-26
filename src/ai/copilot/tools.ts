@@ -108,7 +108,8 @@ function vehicleStatus(s: Readonly<SimSnapshot>): Record<string, unknown> {
     powerState: s.powerState,
     gear: s.gear,
     speedKmh: kmh(s.speedMs),
-    socPercent: Math.round(s.pack.soc * 100),
+    // What the dashboard shows (the BMS estimate over the bus), like every other co-pilot surface.
+    socPercent: Math.round((s.dashboard.soc ?? s.pack.soc) * 100),
     rangeKm: s.dashboard.rangeM === null ? null : Math.round(s.dashboard.rangeM / 1000),
     driveMode: s.driveMode,
     availableDriveModes: s.driveModes.filter((m) => m.available).map((m) => m.id),

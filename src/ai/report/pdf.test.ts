@@ -39,6 +39,8 @@ describe('renderReportPdf', () => {
     expect(has(pdf, 'Book a battery check.')).toBe(true);
     expect(has(pdf, 'P0A7E')).toBe(true);
     expect(has(pdf, 'Speed (km/h)')).toBe(true);
+    // Long values wrap instead of losing their end.
+    expect(pdf).toMatch(/main\+ closed\)/);
     expect(pdf).toMatch(/Service needed: Traction battery fault P0A7E/);
   });
 

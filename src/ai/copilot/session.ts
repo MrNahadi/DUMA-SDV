@@ -127,8 +127,11 @@ export function createCopilotSession(deps: CopilotSessionDeps): CopilotSession {
       error = null;
       stopping = false;
       emit();
+      /** Stop talking, or a close or failure, while connecting ends this start. */
+      const abandoned = () => stopping || state !== 'connecting';
+      let session: LiveSession;
       try {
-        live = await deps.client.connectLive({
+        session = await deps.client.connectLive({
           system: systemPrompt(deps.language),
           tools: COPILOT_TOOLS,
           onAudio: (pcm) => deps.output.play(pcm),
@@ -153,23 +156,34 @@ export function createCopilotSession(deps: CopilotSessionDeps): CopilotSession {
           },
         });
       } catch (e) {
+        if (abandoned()) return;
         const reason = errorReason(e);
         deps.onAiError?.(reason);
         fail(`Could not connect: ${reason}.`);
         return;
       }
+      if (abandoned()) {
+        stopping = true;
+        session.close();
+        return;
+      }
+      live = session;
       deps.onAiError?.(null);
       try {
         await deps.input.start((pcm) => live?.sendAudio(pcm));
       } catch (e) {
+        if (abandoned()) return;
         stopping = true;
-        const session = live;
         const blocked = e instanceof Error && (e.name === 'microphoneBlocked' || e.name === 'NotAllowedError');
         fail(blocked ? MIC_BLOCKED_TEXT : `Microphone unavailable: ${errorReason(e)}.`);
-        session?.close();
+        session.close();
         return;
       }
-      if (live === null) return;
+      if (abandoned()) {
+        // Stopped or closed while the microphone was starting: turn it off again.
+        deps.input.stop();
+        return;
+      }
       state = 'live';
       emit();
     },

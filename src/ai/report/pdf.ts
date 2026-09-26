@@ -110,19 +110,27 @@ export async function renderReportPdf(model: ReportModel, ai: ReportAi, palette:
   const pairs = (rows: { label: string; value: string }[]) => {
     const half = Math.ceil(rows.length / 2);
     const colW = W / 2;
+    const valueW = colW * 0.55 - 2;
     for (let i = 0; i < half; i++) {
-      space(LH + 0.6);
-      for (const [k, item] of [rows[i], rows[i + half]].entries()) {
-        if (!item) continue;
+      const cells = [rows[i], rows[i + half]].map((item) => {
+        if (!item) return null;
+        font(SMALL, 'bold');
+        return { label: item.label, lines: doc.splitTextToSize(item.value, valueW) as string[] };
+      });
+      // Values wrap in full; the row is as tall as its longest value.
+      const h = Math.max(...cells.map((c) => c?.lines.length ?? 1)) * 3.8 + 1.4;
+      space(h);
+      cells.forEach((cell, k) => {
+        if (!cell) return;
         const x = M + k * colW;
         font(SMALL);
         colour(palette.ink2);
-        doc.text(item.label, x, y + 3.2);
+        doc.text(cell.label, x, y + 3.2);
         font(SMALL, 'bold');
         colour(palette.ink);
-        doc.text(doc.splitTextToSize(item.value, colW * 0.55 - 2)[0] as string, x + colW * 0.45, y + 3.2);
-      }
-      y += LH + 0.6;
+        cell.lines.forEach((line, j) => doc.text(line, x + colW * 0.45, y + 3.2 + j * 3.8));
+      });
+      y += h;
     }
   };
   const seriesColour = (s: Series) => ({

@@ -42,6 +42,19 @@ describe('createMicrophone', () => {
     expect(m.node.disconnect).toHaveBeenCalled();
   });
 
+  it('turns the microphone off if stopped while the permission prompt is up', async () => {
+    const m = fakeMic();
+    let grant!: () => void;
+    m.deps.getUserMedia = () => new Promise((resolve) => { grant = () => resolve({ getTracks: () => [m.track] } as unknown as MediaStream); });
+    const mic = createMicrophone(m.deps);
+    const starting = mic.start(() => {});
+    mic.stop();
+    grant();
+    await starting;
+    expect(m.track.stop).toHaveBeenCalled();
+    expect(m.source.connect).not.toHaveBeenCalled();
+  });
+
   it('turns a denied permission into microphoneBlocked', async () => {
     const mic = createMicrophone(fakeMic({ deny: true }).deps);
     await expect(mic.start(() => {})).rejects.toMatchObject({ name: 'microphoneBlocked' });
