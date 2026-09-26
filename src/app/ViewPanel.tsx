@@ -9,6 +9,7 @@ import { DiagnosticsPanel } from './DiagnosticsPanel';
 import { ArchitecturePanel } from './ArchitecturePanel';
 import { EnergyPanel } from './EnergyPanel';
 import { SoftwarePanel } from './SoftwarePanel';
+import { CopilotPanel } from './CopilotPanel';
 
 export function ViewPanel() {
   const view = useAppStore((s) => s.view);
@@ -30,6 +31,7 @@ export function ViewPanel() {
       {view === 'energy' && <EnergyPanel />}
       {view === 'architecture' && <ArchitecturePanel />}
       {view === 'software' && <SoftwarePanel />}
+      {view === 'copilot' && <CopilotPanel />}
     </aside>
   );
 }

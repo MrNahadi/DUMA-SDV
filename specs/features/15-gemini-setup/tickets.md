@@ -27,16 +27,16 @@ Notes: Live connect implemented in full now (audio out, tools, transcripts) so f
 
 ## T-003: Co-pilot view with a status line
 
-Status: open
+Status: done
 Blocked by: T-002
 Slice: Add the Co-pilot view to the nav rail with a status line, model names and an empty conversation area, backed by an app AI store that follows online/offline events.
 Test seam: `CopilotPanel` component with `useAiStore` state; `#/copilot` in e2e
 Acceptance:
-- [ ] Ready, no key, offline and error each show their icon and exact words
-- [ ] Text and live model names are shown; the key never appears in the DOM
-- [ ] `online`/`offline` window events change the status without a reload
-- [ ] e2e: `#/copilot` shows the no-key status
-Notes:
+- [x] Ready, no key, offline and error each show their icon and exact words
+- [x] Text and live model names are shown; the key never appears in the DOM
+- [x] `online`/`offline` window events change the status without a reload
+- [x] e2e: `#/copilot` shows the no-key status
+Notes: AiStatusLine is shared so the Report view (feature 18) can reuse it. aiStore ignores env in MODE=test.
 
 ## T-004: Keep tests away from real keys and fix module boundaries
 

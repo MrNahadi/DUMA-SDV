@@ -1,0 +1,25 @@
+.line {
+  display: flex;
+  gap: var(--s-2);
+  align-items: flex-start;
+  margin: 0;
+  font: var(--text-body);
+  color: var(--ink);
+}
+.line svg {
+  flex: none;
+  width: var(--icon);
+  height: var(--icon);
+  margin-top: 2px;
+  stroke-width: 1.5;
+}
+.line[data-status='ready'] svg {
+  color: var(--ok);
+}
+.line[data-status='noKey'] svg,
+.line[data-status='offline'] svg {
+  color: var(--ink-2);
+}
+.line[data-status='error'] svg {
+  color: var(--fault);
+}
