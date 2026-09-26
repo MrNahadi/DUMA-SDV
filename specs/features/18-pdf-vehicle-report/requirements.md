@@ -4,7 +4,7 @@ Brief v1.3 scope item 14, goal "a report a service engineer could use", ADR 0021
 
 ## Content
 
-- **R1. Vehicle state and operating conditions:** power state, gear, drive mode, SOC, range, pack voltage and current, pack/motor/inverter and ambient temperature, 12 V voltage, contactors, charge session (source, target, power), odometer, and every ECU's firmware version.
+- **R1. Car state and operating conditions:** power state, gear, drive mode, SOC, range, pack voltage and current, pack/motor/inverter and ambient temperature, 12 V voltage, contactors, charge session (source, target, power), odometer, and every ECU's firmware version.
 - **R2. Fault and DTC history:** every fault record (code, module, reporting ECU, severity, active or stored, first seen, last activated, in sim time), the current dashboard warning and drive restriction, and each reduced-power or limp episode with start, end (or "ongoing") and duration. Empty state: "No faults recorded."
 - **R3. Trip telemetry:** distance, run time, driving energy at the pack (D or R only, so charging never offsets it), net energy since start, energy recovered, consumption from the driving energy (Wh/km; "Not enough distance" under 0.1 km), maximum speed, maximum battery power; charts of speed, battery power, SOC and the three temperatures over the drive log. Empty state when the log is empty: "No drive recorded yet."
 - **R4. AI summary:** a short plain-language assessment from the text model, in the co-pilot's language.
@@ -17,7 +17,7 @@ Brief v1.3 scope item 14, goal "a report a service engineer could use", ADR 0021
 
 ## PDF
 
-- **R8.** A4 portrait, the five sections in order with headings, a title "Duma SDV vehicle report", the sim time it covers and the author line FNM. Page breaks never split a table row or a chart.
+- **R8.** A4 portrait, the five sections in order with headings, a title "Duma SDV report", the sim time it covers and the author line FNM. Page breaks never split a table row or a chart.
 - **R9.** Charts are vector lines drawn from at most 600 points per series, with axis labels and a legend in words, using `--data-speed`, `--data-power`, `--data-soc` and a grey/ink set for temperatures.
 - **R10.** File name `duma-sdv-report-<run duration>s.pdf` from sim time.
 - **R11.** jsPDF loads only when Export PDF is first used.

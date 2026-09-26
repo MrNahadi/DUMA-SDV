@@ -33,10 +33,10 @@ afterEach(() => {
 describe('ReportPanel', () => {
   it('lists the five sections with key figures and the AI status', () => {
     render(<ReportPanel />);
-    for (const name of ['Vehicle state and operating conditions', 'Fault and DTC history', 'Trip telemetry', 'AI summary', 'Suggestions and tips']) {
+    for (const name of ['1. Car state and operating conditions', '2. Fault and DTC history', '3. Trip telemetry', '4. AI summary', '5. Suggestions and tips']) {
       expect(screen.getByText(name)).toBeTruthy();
     }
-    expect(screen.getByText('OFF, 80 % charge')).toBeTruthy();
+    expect(screen.getByText('Off, 80 % charge')).toBeTruthy();
     expect(screen.getByText('No faults recorded')).toBeTruthy();
     expect(screen.getByText(/No API key/)).toBeTruthy();
   });

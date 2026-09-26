@@ -10,7 +10,7 @@ Question: What goes in the vehicle report and how is the PDF made?
 
 **Sections, in order.**
 
-1. **Vehicle state and operating conditions:** power state, gear, drive mode, SOC, estimated range, pack voltage and current, pack/motor/inverter temperatures, ambient, 12 V, firmware versions, odometer, charge session.
+1. **Car state and operating conditions:** power state, gear, drive mode, SOC, estimated range, pack voltage and current, pack/motor/inverter temperatures, ambient, 12 V, firmware versions, odometer, charge session.
 2. **Fault and DTC history:** active and stored DTCs with code, module, plain-language text, first and last seen (sim time), and derate or limp episodes.
 3. **Trip telemetry:** distance, duration, energy used, energy recovered, Wh/km, max speed, max power; charts of speed, battery power, SOC and temperatures over the drive log.
 4. **AI summary:** a short plain-language assessment from the text model.

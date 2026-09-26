@@ -20,7 +20,8 @@
   font: var(--text-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
-  color: var(--accent);
+  /* Neutral chrome: the accent is kept for selection, focus and Start here (design rules §3). */
+  color: var(--ink-2);
 }
 .label svg,
 .result svg {

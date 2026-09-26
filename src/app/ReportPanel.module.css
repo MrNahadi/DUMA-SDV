@@ -22,7 +22,8 @@
   flex-direction: column;
   gap: var(--s-2);
   margin: 0;
-  padding-left: var(--s-5);
+  padding: 0;
+  list-style: none;
   font: var(--text-body);
 }
 .sections li {
