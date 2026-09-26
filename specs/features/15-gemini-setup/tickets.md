@@ -14,16 +14,16 @@ Notes: .gitignore now un-ignores .env.example (it matched .env.*). src/vite-env.
 
 ## T-002: Gemini client seam, fake and status
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: Define `GeminiClient`, implement it over `@google/genai` for text, add `FakeGeminiClient` and `aiStatus()`.
 Test seam: `GeminiClient` interface, `FakeGeminiClient`, `aiStatus(config, online)` in `src/ai/`
 Acceptance:
-- [ ] The fake records calls and returns scripted text, JSON or errors
-- [ ] The real client passes the configured text model and parses JSON when a schema is given (tested with the SDK mocked at the module boundary)
-- [ ] `aiStatus` returns noKey, offline or ready with noKey taking priority
-- [ ] SDK errors are reduced to a short reason that never contains the key
-Notes:
+- [x] The fake records calls and returns scripted text, JSON or errors
+- [x] The real client passes the configured text model and parses JSON when a schema is given (tested with the SDK mocked at the module boundary)
+- [x] `aiStatus` returns noKey, offline or ready with noKey taking priority
+- [x] SDK errors are reduced to a short reason that never contains the key
+Notes: Live connect implemented in full now (audio out, tools, transcripts) so feature 16 only adds the controller. SDK errors drop their cause on purpose (key in URL).
 
 ## T-003: Co-pilot view with a status line
 
