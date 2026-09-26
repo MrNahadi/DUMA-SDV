@@ -2,15 +2,15 @@
 
 ## T-001: Read Gemini settings from the env
 
-Status: open
+Status: done
 Blocked by:
 Slice: Add the `GEMINI_` env prefix, `readAiConfig(env)` with model defaults, and a committed `.env.example`.
 Test seam: `readAiConfig(env)` in `src/ai/config.ts`
 Acceptance:
-- [ ] Unset or blank models fall back to `gemini-3.5-flash-lite` and `gemini-3.8-live`; set values are trimmed and used
-- [ ] A blank or missing key gives `apiKey: null`
-- [ ] `.env.example` lists all three variables with comments and no key
-Notes:
+- [x] Unset or blank models fall back to `gemini-3.5-flash-lite` and `gemini-3.8-live`; set values are trimmed and used
+- [x] A blank or missing key gives `apiKey: null`
+- [x] `.env.example` lists all three variables with comments and no key
+Notes: .gitignore now un-ignores .env.example (it matched .env.*). src/vite-env.d.ts types the GEMINI_ vars.
 
 ## T-002: Gemini client seam, fake and status
 
