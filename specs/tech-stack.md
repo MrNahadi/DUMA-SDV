@@ -31,6 +31,8 @@ Runtime dependencies are installed when the feature that needs them starts (see 
 |---|---|
 | 04 Charging (first chart) | uplot 1.6.32 |
 | 12 Offline and deployment | vite-plugin-pwa 1.3.0 (+ workbox peers) |
+| 15 Gemini setup (brief v1.3) | @google/genai 2.24.0 (Apache-2.0, official SDK; browser entry, Live API) |
+| 18 PDF vehicle report | jspdf 4.2.1 (MIT; loaded lazily when a report is exported) |
 
 Anything else needs an ADR and the human's approval before install.
 
@@ -38,6 +40,14 @@ Anything else needs an ADR and the human's approval before install.
 
 ```
 src/
+  ai/             Gemini co-pilot and report (brief v1.3). No React; may import src/sim types.
+    config.ts     Reads GEMINI_* env vars; model defaults
+    client.ts     GeminiClient interface + the real @google/genai implementation
+    fake.ts       FakeGeminiClient for tests (scripted replies and tool calls)
+    copilot/      Tool whitelist, HMI port, system prompts (en, sw), live session controller
+    audio/        Microphone capture to 16 kHz PCM, 24 kHz PCM playback, PCM helpers
+    proactive/    Deterministic triggers and cooldowns over snapshots
+    report/       Report model (pure) and the jsPDF renderer
   sim/            Sim core. Pure TypeScript: no React, DOM or three imports (lint-enforced).
     vehicle/      Parameters (from ADR 0001), longitudinal dynamics, drivetrain
     battery/      Pack model (OCV-SOC, internal resistance), SOC/SOH, contactors
@@ -97,6 +107,15 @@ docs/adr/         Decisions
 - Names follow `docs/glossary.md`. Say "MCU" for the motor controller, never "microcontroller".
 - Commits follow Conventional Commits: `feat(T-NNN): …`, `fix:`, `docs:`, `chore:`.
 - No emojis in code, UI, commits or docs.
+
+### AI (brief v1.3)
+
+- **Configuration.** `.env.local` (git-ignored by `*.local`) holds `GEMINI_API_KEY`, `GEMINI_MODEL` (text) and `GEMINI_LIVE_MODEL` (voice). Vite exposes the `GEMINI_` prefix (`envPrefix`). `.env.example` documents them with no real key. Code never logs, prints or displays the key. Defaults live in one place, `src/ai/config.ts` (ADR 0018).
+- **One seam.** All Gemini calls go through the `GeminiClient` interface. Tests, unit and e2e, use `FakeGeminiClient`; **no test calls the real API** and no test needs a key or network.
+- **The co-pilot never drives.** It acts only through the HMI port (the same commands the touchscreen sends) and a fixed tool whitelist (ADR 0019). No tool presses pedals, shifts gear, powers the car, plugs a cable or clears faults.
+- **Determinism stays in the sim.** `src/sim/` never imports `src/ai/`. Proactive triggers are pure functions of snapshots and sim time; Gemini only phrases what a trigger already decided (ADR 0020). Every AI text has a template fallback so the car works without AI.
+- **Availability.** AI features need a key and `navigator.onLine`. Without them the controls stay visible, disabled, with the reason in words. The service worker never caches Gemini requests.
+- **Language.** The co-pilot language is `en` or `sw`, chosen in the Co-pilot view and kept in localStorage.
 
 ## Feedback commands
 
