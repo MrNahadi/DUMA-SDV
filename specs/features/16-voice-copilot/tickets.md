@@ -14,15 +14,15 @@ Notes: Refusal sentences duplicate the Charge and Software panels' wording in En
 
 ## T-002: Prompts and PCM helpers
 
-Status: open
+Status: done
 Blocked by:
 Slice: The English and Kiswahili system prompts, and pure PCM conversion for 16 kHz input and 24 kHz output.
 Test seam: `systemPrompt(lang)` in `src/ai/copilot/prompts.ts`; `src/ai/audio/pcm.ts` functions
 Acceptance:
-- [ ] Both prompts name the reply language and carry the R7 rules
-- [ ] Resampling to 16 kHz gives the expected length and interpolated values; floats clip to 16-bit range
-- [ ] Base64 round trips PCM exactly
-Notes:
+- [x] Both prompts name the reply language and carry the R7 rules
+- [x] Resampling to 16 kHz gives the expected length and interpolated values; floats clip to 16-bit range
+- [x] Base64 round trips PCM exactly
+Notes: One prompt with a language line; the [car] prefix is reserved for feature 17 proactive messages.
 
 ## T-003: Session controller
 
