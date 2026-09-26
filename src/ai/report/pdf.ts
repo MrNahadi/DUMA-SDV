@@ -114,18 +114,20 @@ export async function renderReportPdf(model: ReportModel, ai: ReportAi, palette:
     for (let i = 0; i < half; i++) {
       const cells = [rows[i], rows[i + half]].map((item) => {
         if (!item) return null;
+        font(SMALL);
+        const labels = doc.splitTextToSize(item.label, colW * 0.45 - 3) as string[];
         font(SMALL, 'bold');
-        return { label: item.label, lines: doc.splitTextToSize(item.value, valueW) as string[] };
+        return { labels, lines: doc.splitTextToSize(item.value, valueW) as string[] };
       });
-      // Values wrap in full; the row is as tall as its longest value.
-      const h = Math.max(...cells.map((c) => c?.lines.length ?? 1)) * 3.8 + 1.4;
+      // Labels and values wrap in full; the row is as tall as its longest cell.
+      const h = Math.max(...cells.map((c) => Math.max(c?.lines.length ?? 1, c?.labels.length ?? 1))) * 3.8 + 1.4;
       space(h);
       cells.forEach((cell, k) => {
         if (!cell) return;
         const x = M + k * colW;
         font(SMALL);
         colour(palette.ink2);
-        doc.text(cell.label, x, y + 3.2);
+        cell.labels.forEach((line, j) => doc.text(line, x, y + 3.2 + j * 3.8));
         font(SMALL, 'bold');
         colour(palette.ink);
         cell.lines.forEach((line, j) => doc.text(line, x + colW * 0.45, y + 3.2 + j * 3.8));
