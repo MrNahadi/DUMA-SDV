@@ -36,7 +36,7 @@ describe('talking to the co-pilot', () => {
     useAiStore.setState({ config: { apiKey: null, textModel: 't', liveModel: 'l' }, client: null });
     render(<CopilotPanel />);
     expect((screen.getByRole('button', { name: 'Start talking' }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getAllByText(/No API key/).length).toBeGreaterThan(1);
+    expect(screen.getByRole('status').textContent).toMatch(/^No API key/);
   });
 
   it('goes live, lets the model switch the drive mode through the car, and stops', async () => {
@@ -83,7 +83,6 @@ describe('talking to the co-pilot', () => {
     await user.click(screen.getByRole('button', { name: 'Start talking' }));
     expect(screen.getByRole('alert').textContent).toBe('Could not connect: model not found.');
     expect(useAiStore.getState().error).toBe('model not found');
-    expect(screen.getByText('Co-pilot error: model not found')).toBeTruthy();
   });
 
   it('refuses act tools while the guided demo runs', async () => {

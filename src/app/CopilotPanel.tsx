@@ -3,7 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { LANGUAGE_NAMES, type CopilotLanguage } from '../ai/copilot/prompts';
 import type { ConversationEntry } from '../ai/copilot/session';
 import { Button } from '../ui/Button';
-import { AiStatusLine, aiStatusText } from './AiStatusLine';
+import { AiStatusLine } from './AiStatusLine';
 import { selectAiStatus, useAiStore } from './aiStore';
 import { useCopilotStore } from './copilotStore';
 import styles from './CopilotPanel.module.css';
@@ -35,21 +35,6 @@ export function CopilotPanel() {
 
   return (
     <div className={styles.content}>
-      <section className={styles.card} aria-labelledby="copilot-status">
-        <h2 id="copilot-status">Status</h2>
-        <AiStatusLine status={status} />
-        <dl className={styles.models}>
-          <div>
-            <dt>Live model</dt>
-            <dd>{liveModel}</dd>
-          </div>
-          <div>
-            <dt>Text model</dt>
-            <dd>{textModel}</dd>
-          </div>
-        </dl>
-      </section>
-
       <section className={styles.talk} aria-label="Talk to the car">
         <div className={styles.field}>
           <label htmlFor="copilot-language">Language</label>
@@ -65,7 +50,6 @@ export function CopilotPanel() {
         ) : (
           <Button variant="primary" large icon={<Mic />} disabled={!ready} onClick={() => void start()}>Start talking</Button>
         )}
-        {!ready && <p className={styles.reason}>{aiStatusText(status)}</p>}
         {state === 'connecting' && <p className={styles.live} role="status">Connecting</p>}
         {state === 'live' && (
           <p className={styles.live} data-live="true" role="status">
@@ -74,6 +58,7 @@ export function CopilotPanel() {
           </p>
         )}
         {state === 'error' && error && <p className={styles.error} role="alert">{error}</p>}
+        {!active && state !== 'error' && <AiStatusLine status={status} />}
       </section>
 
       <section className={styles.section} aria-labelledby="copilot-conversation">
@@ -85,6 +70,20 @@ export function CopilotPanel() {
             {entries.map((entry) => <Entry key={entry.id} entry={entry} />)}
           </ol>
         )}
+      </section>
+
+      <section className={styles.section} aria-labelledby="copilot-models">
+        <h2 id="copilot-models" className={styles.label}>Models</h2>
+        <dl className={styles.models}>
+          <div>
+            <dt>Live model</dt>
+            <dd>{liveModel}</dd>
+          </div>
+          <div>
+            <dt>Text model</dt>
+            <dd>{textModel}</dd>
+          </div>
+        </dl>
       </section>
     </div>
   );

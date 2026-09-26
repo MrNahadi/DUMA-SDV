@@ -17,7 +17,8 @@ function usePreview() {
     const records = snap.diagnostics.records;
     const km = snap.odometerM / 1000;
     return {
-      power: snap.powerState,
+      // The top bar's words for the power state.
+      power: snap.powerState === 'OFF' ? 'Off' : snap.powerState === 'ACCESSORY' ? 'Starting' : snap.powerState,
       soc: Math.round((snap.dashboard.soc ?? snap.pack.soc) * 100),
       faults: records.length,
       active: records.filter((r) => r.status === 'active').length,
@@ -50,18 +51,6 @@ export function ReportPanel() {
 
   return (
     <div className={styles.content}>
-      <section className={styles.card} aria-labelledby="report-contents">
-        <h2 id="report-contents">Contents</h2>
-        <ol className={styles.sections}>
-          {SECTION_TITLES.map((title, i) => (
-            <li key={title}>
-              <span className={styles.name}>{title.replace(/^\d\. /, '')}</span>
-              <span className={styles.figure}>{figures[i]}</span>
-            </li>
-          ))}
-        </ol>
-        <AiStatusLine status={status} />
-      </section>
       <Button variant="primary" large icon={busy ? <LoaderCircle /> : <FileText />} disabled={busy} onClick={() => void exportPdf()}>
         Export PDF
       </Button>
@@ -82,6 +71,18 @@ export function ReportPanel() {
           Could not export the report: {error}. Try again; if it keeps failing, export the CSV from Cycles instead.
         </p>
       )}
+      <AiStatusLine status={status} />
+      <section className={styles.card} aria-labelledby="report-contents">
+        <h2 id="report-contents">Contents</h2>
+        <ol className={styles.sections}>
+          {SECTION_TITLES.map((title, i) => (
+            <li key={title}>
+              <span className={styles.name}>{title}</span>
+              <span className={styles.figure}>{figures[i]}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
       {step === 'done' && <Toast>Report exported</Toast>}
     </div>
   );

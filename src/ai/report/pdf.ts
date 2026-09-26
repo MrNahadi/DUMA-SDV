@@ -20,9 +20,9 @@ export interface ReportPalette {
   dataSoc: string;
 }
 
-export const REPORT_TITLE = 'Duma SDV vehicle report';
+export const REPORT_TITLE = 'Duma SDV report';
 export const SECTION_TITLES = [
-  '1. Vehicle state and operating conditions',
+  '1. Car state and operating conditions',
   '2. Fault and DTC history',
   '3. Trip telemetry',
   '4. AI summary',
