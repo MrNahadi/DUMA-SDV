@@ -50,11 +50,11 @@ Notes: The view previews light per-frame figures; the full model (with the drive
 
 ## T-005: e2e and docs
 
-Status: open
+Status: done
 Blocked by: T-004
 Slice: e2e export in the keyless build; README section.
 Test seam: `e2e/report.spec.ts`; README
 Acceptance:
-- [ ] e2e: Export PDF downloads a `%PDF` file named from the run duration
-- [ ] README explains the report sections and the AI fallback
-Notes:
+- [x] e2e: Export PDF downloads a `%PDF` file named from the run duration
+- [x] README explains the report sections and the AI fallback
+Notes: README badges updated to 511 unit tests and 18 e2e spec files.

@@ -10,8 +10,8 @@ Built for the *Software-Defined Electric Vehicle Design Challenge* (Tech Week 20
 ![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-5.0-433E38)
 ![Node](https://img.shields.io/badge/Node-26.x-5FA04E?logo=nodedotjs&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-321%20tests%20passing-6E9F18?logo=vitest&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-16%20e2e%20specs%20passing-2EAD33)
+![Vitest](https://img.shields.io/badge/Vitest-511%20tests%20passing-6E9F18?logo=vitest&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-18%20e2e%20specs%20passing-2EAD33)
 ![Offline](https://img.shields.io/badge/runs-fully%20offline-17181A)
 
 ![Driving on the road with lift-off regen shown on the dashboard](docs/images/drive.png)
@@ -51,6 +51,8 @@ Most entries to an SDV design challenge are architecture diagrams and a basic GU
 | **Architecture** | How do the modules talk? | ECU diagram with live activity, a CAN trace you can filter and pause, signal-level detail for each frame |
 | **Cycles** | How efficient is it? | WLTC Urban and Highway drive cycles with a speed-tracking driver, speed / power / SOC chart and a Wh/km result |
 | **Guided demo** | (top bar) | **Start demo** plays Startup, Driving, Regen, AC and DC charging, Fault and OTA with captions; pick any scenario or skip ahead. A Start here card walks first-time users through five steps |
+| **Co-pilot** | What does the car have to say? | Talk to the car by voice in English or Kiswahili (Gemini Live API); it answers from live data and asks the car through the touchscreen's commands, which can refuse. Proactive suggestion cards on the stage |
+| **Report** | What would a service engineer need to know? | Export a PDF: vehicle state, fault history, telemetry charts, AI summary and tips |
 | **Software** | What version is running, and what is new? | Over-the-air update: check, download, verify, install into the VCU's inactive firmware bank and restart; ECU versions; the update unlocks Sport |
 
 | Fault view (X-ray) | Architecture and CAN trace |
@@ -122,6 +124,8 @@ To try another model, change `GEMINI_MODEL` or `GEMINI_LIVE_MODEL` and restart. 
 Every change goes through the same commands as the touchscreen, so the car can refuse, and the co-pilot tells you why ([ADR 0019](docs/adr/0019-copilot-acts-through-hmi-commands.md)). Try: "Switch to eco mode", "How far can I drive?", "Any faults?", "Set the charge target to 80 percent". In Kiswahili: "Badilisha hali iwe Eco", "Betri imebaki asilimia ngapi?", "Kuna hitilafu yoyote?", "Anza kuchaji".
 
 **Proactive suggestions.** The co-pilot also speaks up on its own, on a card at the top right of the car in every view (and out loud when a voice session is open): a new fault, reduced power or limp mode, a battery at 45 °C or more, charge falling to 20 % and 10 %, and a finished charging session. Each has a cooldown so it does not nag, and it stays quiet during the guided demo. **Nothing happens until you press Accept** or say yes ("ndiyo" in Kiswahili); Accept goes through the same commands as the touchscreen, so the car can still refuse. Without a key the cards still appear, with fixed wording ([ADR 0020](docs/adr/0020-proactive-triggers-and-cooldowns.md)).
+
+**Vehicle report.** The **Report** view exports a PDF (**Export PDF**) with five sections: vehicle state and operating conditions, fault and DTC history (with reduced-power and limp episodes), trip telemetry with speed, power, SOC and temperature charts, an AI summary, and suggestions and tips. The text model writes the summary and some tips in the co-pilot's language; without a key or network, or after 10 s, that section says why, and the car's rule-based tips are always there ([ADR 0021](docs/adr/0021-pdf-vehicle-report.md)).
 
 The key is bundled into the app you build locally. **Never publish a build made with a key.** Tests never use your key: unit tests ignore `.env.local`, and the e2e server runs with blank `GEMINI_*` variables. Details in [ADR 0018](docs/adr/0018-gemini-integration-and-model-settings.md).
 
@@ -266,6 +270,7 @@ src/
     faults/       Fault catalogue, DTC records, derate and safety responses
     scenarios/    Drive cycles (WLTC), cycle runner, scripted scenarios
     telemetry/    Recorder and CSV export
+  ai/             Gemini co-pilot and report: client seam and fake, tools, prompts, audio, proactive triggers, report model and PDF
   app/            React views, panels, stores, input and the frame loop
   three/          3D stage: procedural car (car/), road (road/)
   ui/             Design tokens and shared primitives
