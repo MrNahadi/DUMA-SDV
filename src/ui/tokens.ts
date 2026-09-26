@@ -1,5 +1,5 @@
 /**
- * Colour tokens for three.js materials, which cannot read CSS variables.
+ * Colour tokens for three.js materials and the PDF report, which cannot read CSS variables.
  * Must match tokens.css exactly; tokens.test.ts enforces it.
  */
 export const tokens = {
@@ -17,6 +17,9 @@ export const tokens = {
   roadSurface: '#cfcec8',
   roadMarking: '#ffffff',
   roadPost: '#8e9199',
+  dataSpeed: '#0072b2',
+  dataPower: '#c65300',
+  dataSoc: '#007a5e',
 } as const;
 
 export type TokenName = keyof typeof tokens;

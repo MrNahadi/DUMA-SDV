@@ -26,15 +26,15 @@ Notes:
 
 ## T-003: PDF renderer
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: Draw the five sections, tables and line charts with jsPDF, paginating cleanly.
 Test seam: `renderReportPdf(model, ai)` in `src/ai/report/pdf.ts`
 Acceptance:
-- [ ] Output is a PDF containing the title, author line and all five section titles
-- [ ] AI text or the unavailable reason appears in sections 4 and 5
-- [ ] A long log and many faults render across pages without error
-Notes:
+- [x] Output is a PDF containing the title, author line and all five section titles
+- [x] AI text or the unavailable reason appears in sections 4 and 5
+- [x] A long log and many faults render across pages without error
+Notes: Palette is passed in by the app (src/ai may not import src/ui); tokens.ts gained the three data colours. Temperature chart reuses data colours, recorded in design-rules.
 
 ## T-004: Report view and Export PDF
 
