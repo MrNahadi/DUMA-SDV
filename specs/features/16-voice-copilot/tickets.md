@@ -39,15 +39,15 @@ Notes: Read tools are not logged as action lines. Transcript fragments merge unt
 
 ## T-004: Browser microphone and player
 
-Status: open
+Status: done
 Blocked by: T-002
 Slice: Capture the microphone to 100 ms 16 kHz chunks through an inline AudioWorklet and play 24 kHz chunks gaplessly with flush.
 Test seam: `createMicrophone()` and `createPlayer()` in `src/ai/audio/`, tested with mocked Web Audio objects
 Acceptance:
-- [ ] Microphone start requests audio only, and stop ends every track and closes the context
-- [ ] Player schedules chunks back to back and flush stops scheduled sources
-- [ ] A denied permission rejects with a `microphoneBlocked` error
-Notes:
+- [x] Microphone start requests audio only, and stop ends every track and closes the context
+- [x] Player schedules chunks back to back and flush stops scheduled sources
+- [x] A denied permission rejects with a `microphoneBlocked` error
+Notes: Worklet is loaded from an inline Blob URL, so no extra file for the PWA precache. Real audio is checked by hand (validation manual 3, 4).
 
 ## T-005: Talk from the Co-pilot view
 
