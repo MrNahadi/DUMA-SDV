@@ -26,16 +26,16 @@ Notes: One prompt with a language line; the [car] prefix is reserved for feature
 
 ## T-003: Session controller
 
-Status: open
+Status: done
 Blocked by: T-001, T-002
 Slice: Connect a live session, stream audio both ways, answer tool calls, keep the conversation log and state.
 Test seam: `createCopilotSession(deps)` in `src/ai/copilot/session.ts` with `FakeGeminiClient` and fake audio input/output
 Acceptance:
-- [ ] Start connects with the prompt for the chosen language and the whitelist, then starts the microphone
-- [ ] Tool calls are answered with `runTool` results and logged as action lines
-- [ ] Transcripts are logged; interruption flushes playback; stop closes session, microphone and playback
-- [ ] Microphone blocked, connect failure and server drop end in error states with the R12 words
-Notes:
+- [x] Start connects with the prompt for the chosen language and the whitelist, then starts the microphone
+- [x] Tool calls are answered with `runTool` results and logged as action lines
+- [x] Transcripts are logged; interruption flushes playback; stop closes session, microphone and playback
+- [x] Microphone blocked, connect failure and server drop end in error states with the R12 words
+Notes: Read tools are not logged as action lines. Transcript fragments merge until turn end, interruption or a tool call.
 
 ## T-004: Browser microphone and player
 
