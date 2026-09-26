@@ -16,7 +16,7 @@ Question: How does the browser app reach Gemini, where do the key and model name
 | `GEMINI_MODEL` | Text model: report summary, tips, proactive phrasing | `gemini-3.5-flash-lite` |
 | `GEMINI_LIVE_MODEL` | Live API voice model | `gemini-3.8-live` |
 
-The defaults are the cheapest current text model and the default Live model as listed in Google's `gemini-skills` repository in September 2026. Google's own docs pages were unreachable from the build container, so the owner should confirm both IDs in AI Studio. Changing a model means editing `.env.local` and restarting `npm run dev` (Vite reads env files at start-up). The Co-pilot view shows the active models.
+The defaults are the cheapest current text model and the default Live model as listed in Google's `gemini-skills` repository in September 2026. Google's own docs pages were unreachable from the build container, so the owner should confirm both IDs in AI Studio. Changing a model means editing `.env.local` and restarting `npm run dev` (Vite reads env files at start-up). The UI does not label the models (owner, 2026-09-26); `.env.local` is the one place to see and change them.
 
 **One seam.** Every call goes through `GeminiClient`: `generateText()` for the text model and `connectLive()` for voice. `createGeminiClient(config)` wraps the SDK; `FakeGeminiClient` scripts replies, tool calls and failures for tests. No test needs a key or network.
 

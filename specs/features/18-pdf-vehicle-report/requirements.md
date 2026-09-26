@@ -24,5 +24,5 @@ Brief v1.3 scope item 14, goal "a report a service engineer could use", ADR 0021
 
 ## Report view
 
-- **R12.** A new view "Report" (`file-text`, "What would a service engineer need to know?") lists the five sections with their key figures, the AI status line, and one primary **Export PDF** (40 px). While exporting: the button is disabled and a status says "Writing the AI summary" then "Drawing the PDF". After: a tick and a toast "Report exported". Errors say what happened.
+- **R12.** A new view "Report" (`file-text`, "What would a service engineer need to know?") has one primary **Export PDF** (40 px) and the AI status line, with no contents list (owner, 2026-09-26). While exporting: the button is disabled and a status says "Writing the AI summary" then "Drawing the PDF". After: a tick and a toast "Report exported". Errors say what happened.
 - **R13.** Export finishes in under 15 s (the AI timeout bounds it).

@@ -25,7 +25,6 @@ function Entry({ entry }: { entry: ConversationEntry }) {
 
 export function CopilotPanel() {
   const status = useAiStore(useShallow(selectAiStatus));
-  const { textModel, liveModel } = useAiStore(useShallow((s) => ({ textModel: s.config.textModel, liveModel: s.config.liveModel })));
   const { state, error, entries, language, sessionLanguage, setLanguage, start, stop } = useCopilotStore(useShallow((s) => ({
     state: s.state, error: s.error, entries: s.entries, language: s.language, sessionLanguage: s.sessionLanguage,
     setLanguage: s.setLanguage, start: s.start, stop: s.stop,
@@ -70,20 +69,6 @@ export function CopilotPanel() {
             {entries.map((entry) => <Entry key={entry.id} entry={entry} />)}
           </ol>
         )}
-      </section>
-
-      <section className={styles.section} aria-labelledby="copilot-models">
-        <h2 id="copilot-models" className={styles.label}>Models</h2>
-        <dl className={styles.models}>
-          <div>
-            <dt>Live model</dt>
-            <dd>{liveModel}</dd>
-          </div>
-          <div>
-            <dt>Text model</dt>
-            <dd>{textModel}</dd>
-          </div>
-        </dl>
       </section>
     </div>
   );

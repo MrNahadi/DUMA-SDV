@@ -31,14 +31,11 @@ afterEach(() => {
 });
 
 describe('ReportPanel', () => {
-  it('lists the five sections with key figures and the AI status', () => {
+  it('shows Export PDF and the AI status, with no contents list', () => {
     render(<ReportPanel />);
-    for (const name of ['1. Car state and operating conditions', '2. Fault and DTC history', '3. Trip telemetry', '4. AI summary', '5. Suggestions and tips']) {
-      expect(screen.getByText(name)).toBeTruthy();
-    }
-    expect(screen.getByText('Off, 80 % charge')).toBeTruthy();
-    expect(screen.getByText('No faults recorded')).toBeTruthy();
-    expect(screen.getByText(/No API key/)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Export PDF' })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toMatch(/^No API key/);
+    expect(screen.queryByText('Contents')).toBeNull();
   });
 
   it('exports without AI: says why in the model it hands the renderer, and names the file', async () => {
@@ -61,7 +58,6 @@ describe('ReportPanel', () => {
     const fake = new FakeGeminiClient({ textModel: 'gemini-x' }).replyJson({ summary: 'Fine.', tips: ['Drive on.'] });
     useAiStore.setState({ config: { apiKey: 'k', textModel: 'gemini-x', liveModel: 'l' }, client: fake, online: true, error: null });
     render(<ReportPanel />);
-    expect(screen.getByText('Written by gemini-x')).toBeTruthy();
     await user.click(screen.getByRole('button', { name: 'Export PDF' }));
     await waitFor(() => expect(saved).toHaveLength(1));
     expect(calls[0]!.ai).toEqual({ kind: 'ok', summary: 'Fine.', tips: ['Drive on.'] });

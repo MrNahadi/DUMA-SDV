@@ -9,7 +9,6 @@ test('Export PDF downloads a vehicle report named from the run duration', async 
 
   await page.getByRole('button', { name: 'Report', exact: true }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Report');
-  await expect(page.getByText('Car state and operating conditions')).toBeVisible();
 
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Export PDF' }).click();
