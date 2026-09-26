@@ -26,15 +26,15 @@ Notes: Expiry counts from when a suggestion was shown, not raised.
 
 ## T-003: Suggestion words
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: English and Kiswahili templates, optional text-model rephrase with timeout, the [car] voice message, and yes/no recognition.
 Test seam: `suggestionText`, `rephrase`, `carMessage`, `spokenAnswer` in `src/ai/proactive/phrasing.ts`
 Acceptance:
-- [ ] Every trigger has both templates with its values
-- [ ] Rephrase returns the model's sentence within 3 s, else the template
-- [ ] Spoken yes and no are recognised in both languages; other text is neither
-Notes:
+- [x] Every trigger has both templates with its values
+- [x] Rephrase returns the model's sentence within 3 s, else the template
+- [x] Spoken yes and no are recognised in both languages; other text is neither
+Notes: Kiswahili templates are drafted by the builder; the owner should read them once (validation manual 2).
 
 ## T-004: Proactive store and suggestion card
 
