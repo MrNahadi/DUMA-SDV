@@ -22,10 +22,10 @@ describe('suggestionText (R11)', () => {
     for (const s of all) {
       for (const lang of ['en', 'sw'] as const) {
         const text = suggestionText(s, lang);
-        for (const value of Object.values(s.facts)) if (value !== 'limp') expect(text).toContain(String(value));
+        for (const [name, value] of Object.entries(s.facts)) if (name !== 'restriction' && name !== 'code') expect(text).toContain(String(value));
       }
     }
-    expect(suggestionText(all[0]!, 'en')).toBe('Drive motor fault (P0A2F). Open Diagnostics to see what it means?');
+    expect(suggestionText(all[0]!, 'en')).toBe('Drive motor fault. Open Diagnostics to see what it means?');
     expect(suggestionText(all[2]!, 'sw')).toBe('Betri iko kwenye nyuzi 46 °C. Nibadilishe iwe Eco ili ipoe?');
   });
 

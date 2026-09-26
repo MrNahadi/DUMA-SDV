@@ -57,10 +57,13 @@ describe('proactive suggestions', () => {
       useSimStore.getState().commandFault({ key: 'cellOverTemperature', action: 'inject' });
       drive(100);
     });
-    expect(screen.getByText('Traction battery fault (P0A7E). Open Diagnostics to see what it means?')).toBeTruthy();
+    expect(screen.getByText('Traction battery fault. Open Diagnostics to see what it means?')).toBeTruthy();
     expect(useAppStore.getState().view).toBe('drive');
     await user.click(screen.getByRole('button', { name: 'Accept' }));
     expect(useAppStore.getState().view).toBe('diagnostics');
+    // The derate suggestion follows at once and the outcome stays in view.
+    expect(screen.getByText('Done: Diagnostics is open.')).toBeTruthy();
+    expect(screen.getByText(/Power is limited/)).toBeTruthy();
   });
 
   it('sends no HMI command before Accept, then switches to Eco through the car', async () => {

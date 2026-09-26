@@ -46,7 +46,8 @@ export const useProactiveStore = create<ProactiveState>((set, get) => ({
     }
     queue.resolve(useSimStore.getState().snapshot.timeS);
     set({ result });
-    show();
+    // Keep the outcome in view even when the next suggestion follows at once.
+    show(true);
   },
   dismiss: () => {
     if (get().current === null) {
@@ -59,7 +60,7 @@ export const useProactiveStore = create<ProactiveState>((set, get) => ({
 }));
 
 /** Put the queue's current suggestion on the card, and say it if a voice session is open. */
-function show() {
+function show(keepResult = false) {
   const suggestion = queue.current();
   const store = useProactiveStore;
   if (suggestion === null) {
@@ -69,7 +70,7 @@ function show() {
   if (store.getState().current?.suggestion.key === suggestion.key) return;
   const copilot = useCopilotStore.getState();
   const language = copilot.language;
-  store.setState({ current: { suggestion, text: suggestionText(suggestion, language) }, result: null });
+  store.setState({ current: { suggestion, text: suggestionText(suggestion, language) }, ...(keepResult ? {} : { result: null }) });
   if (copilot.state === 'live') {
     copilot.sendCarText(carMessage(suggestion, language));
     return;
