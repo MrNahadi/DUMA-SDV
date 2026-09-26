@@ -2,15 +2,15 @@
 
 ## T-001: Co-pilot tools over an HMI port
 
-Status: open
+Status: done
 Blocked by:
 Slice: Declare the tool whitelist and run each tool through an HMI port, returning the car's own outcome or refusal.
 Test seam: `COPILOT_TOOLS`, `runTool(call, hmi)` and `HmiPort` in `src/ai/copilot/tools.ts`, tested with a real `createSim()`
 Acceptance:
-- [ ] Declared names equal the R1 list, and no declaration offers pedals, gear, power, plug, faults or install
-- [ ] Act tools return ok or the car's refusal (charging, OTA), `busy`, `modeUnavailable` or `invalidArgument`
-- [ ] Read tools return the R5 fields in display units
-Notes:
+- [x] Declared names equal the R1 list, and no declaration offers pedals, gear, power, plug, faults or install
+- [x] Act tools return ok or the car's refusal (charging, OTA), `busy`, `modeUnavailable` or `invalidArgument`
+- [x] Read tools return the R5 fields in display units
+Notes: Refusal sentences duplicate the Charge and Software panels' wording in English (src/ai cannot import app code); the model rephrases them.
 
 ## T-002: Prompts and PCM helpers
 
