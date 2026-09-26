@@ -50,14 +50,14 @@ Notes: Card sits top right: the stage's fault label owns the bottom centre. Acce
 
 ## T-005: Voice confirmation
 
-Status: open
+Status: done
 Blocked by: T-004
 Slice: Send suggestions to an open voice session as [car] messages and accept or dismiss on the driver's spoken answer.
 Test seam: `useProactiveStore` with `useCopilotStore` live on a `FakeGeminiClient`
 Acceptance:
-- [ ] A live session receives the [car] message for a new suggestion
-- [ ] "ndiyo" accepts, "hapana" dismisses, other speech leaves it pending
-Notes:
+- [x] A live session receives the [car] message for a new suggestion
+- [x] "ndiyo" accepts, "hapana" dismisses, other speech leaves it pending
+Notes: Built with T-004 (hearDriver + carMessage in show()); its tests live in SuggestionCard.test.tsx.
 
 ## T-006: e2e and docs
 
