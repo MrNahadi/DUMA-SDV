@@ -38,15 +38,15 @@ Notes: Palette is passed in by the app (src/ai may not import src/ui); tokens.ts
 
 ## T-004: Report view and Export PDF
 
-Status: open
+Status: done
 Blocked by: T-002, T-003
 Slice: Add the Report view with section previews, AI status and Export PDF, and run the episode tracker in the app.
 Test seam: `ReportPanel` with `useSimStore`, `useAiStore` and an injected renderer and download
 Acceptance:
-- [ ] The view lists the sections with key figures and the AI status
-- [ ] Export PDF shows progress, calls the renderer, downloads `duma-sdv-report-<n>s.pdf` and shows the toast
-- [ ] A renderer failure shows an error with what to do
-Notes:
+- [x] The view lists the sections with key figures and the AI status
+- [x] Export PDF shows progress, calls the renderer, downloads `duma-sdv-report-<n>s.pdf` and shows the toast
+- [x] A renderer failure shows an error with what to do
+Notes: The view previews light per-frame figures; the full model (with the drive log) is built only on export.
 
 ## T-005: e2e and docs
 

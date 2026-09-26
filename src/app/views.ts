@@ -2,6 +2,7 @@ import {
   Activity,
   AudioLines,
   CloudDownload,
+  FileText,
   Gauge,
   Network,
   PlugZap,
@@ -20,6 +21,7 @@ export const VIEW_IDS = [
   'cycles',
   'software',
   'copilot',
+  'report',
 ] as const;
 
 export type ViewId = (typeof VIEW_IDS)[number];
@@ -79,6 +81,12 @@ export const VIEWS: Record<ViewId, ViewDef> = {
     label: 'Co-pilot',
     icon: AudioLines,
     question: 'What does the car have to say?',
+  },
+  report: {
+    id: 'report',
+    label: 'Report',
+    icon: FileText,
+    question: 'What would a service engineer need to know?',
   },
 };
 
