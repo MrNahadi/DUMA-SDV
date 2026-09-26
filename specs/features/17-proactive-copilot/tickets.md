@@ -2,15 +2,15 @@
 
 ## T-001: Trigger monitor
 
-Status: open
+Status: done
 Blocked by:
 Slice: Observe consecutive snapshots and raise suggestions for the five triggers with arming and cooldowns in sim time.
 Test seam: `createTriggerMonitor().observe(prev, next)` in `src/ai/proactive/triggers.ts`
 Acceptance:
-- [ ] Each trigger raises exactly one suggestion at its condition, with its action
-- [ ] Cooldowns and re-arming hold (derate 120 s, packHot 300 s with 42 °C re-arm, lowSoc +5 points)
-- [ ] A cleared and re-activated DTC raises again
-Notes:
+- [x] Each trigger raises exactly one suggestion at its condition, with its action
+- [x] Cooldowns and re-arming hold (derate 120 s, packHot 300 s with 42 °C re-arm, lowSoc +5 points)
+- [x] A cleared and re-activated DTC raises again
+Notes: SOC follows the dashboard (bus) value, falling back to the plant. The first snapshot only sets the baseline.
 
 ## T-002: Suggestion queue
 
