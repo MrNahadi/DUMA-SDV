@@ -11,12 +11,12 @@ Question: When does the co-pilot speak up on its own, how often, and what may it
 | Trigger | Fires when | Suggested action (runs only after Accept) | Cooldown (sim time) |
 |---|---|---|---|
 | `newFault` | a DTC becomes active that was not active on the previous snapshot | open Diagnostics | none per DTC; each new DTC fires once |
-| `derate` | the dashboard's power limitation changes from normal to derate or limp | switch to Eco if not already | 120 s |
+| `derate` | `dashboard.diagnostics.driveStatus` changes from `normal` to `reducedPower` or `limp` | switch to Eco if not already | 120 s |
 | `packHot` | pack temperature rises through 45 °C (re-armed below 42 °C) | switch to Eco | 300 s |
 | `lowSoc` | SOC falls through 20 % and again through 10 % | open Charge | per threshold, once until SOC rises 5 points above it |
 | `chargeComplete` | the charge session becomes complete | Unplug is manual, so no action; the co-pilot just says so | per session |
 
-The 45 °C and 20 %/10 % thresholds are estimates chosen to sit below the fault thresholds in ADR 0011 and ADR 0012 so the co-pilot warns before the car has to act; they are not reference-car figures.
+The 45 °C and 20 %/10 % thresholds are estimates, not reference-car figures. Faults in this sim are injected (ADR 0011), so `packHot` watches the thermal model's real pack temperature (ADR 0012) independently of the cell over-temperature fault.
 
 **One at a time.** At most one suggestion is shown. A new one replaces a pending one only if it has higher priority (newFault > derate > packHot > lowSoc > chargeComplete); otherwise it queues (max 3, oldest dropped).
 
