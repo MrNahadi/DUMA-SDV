@@ -14,15 +14,15 @@ Notes: SOC follows the dashboard (bus) value, falling back to the plant. The fir
 
 ## T-002: Suggestion queue
 
-Status: open
+Status: done
 Blocked by: T-001
 Slice: One shown suggestion, priority replacement, three waiting, dismiss and 30 s expiry.
 Test seam: `createSuggestionQueue()` in `src/ai/proactive/queue.ts`
 Acceptance:
-- [ ] Higher priority replaces the shown one, which goes back to the front
-- [ ] At most three wait; the oldest is dropped
-- [ ] Dismiss and expiry show the next one
-Notes:
+- [x] Higher priority replaces the shown one, which goes back to the front
+- [x] At most three wait; the oldest is dropped
+- [x] Dismiss and expiry show the next one
+Notes: Expiry counts from when a suggestion was shown, not raised.
 
 ## T-003: Suggestion words
 
