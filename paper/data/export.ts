@@ -11,6 +11,13 @@ import { TICK_S, UPDATE_PACKAGE, createSim, faultCatalogue, type Frame, type Ota
 import { createCycleRunner, cruise, getCycle, powerOnToReady, shiftWithBrake, type CycleId } from '../../src/sim/scenarios';
 import { vehicleParams as p } from '../../src/sim/vehicle';
 import { OTA_TIMING } from '../../src/sim/ota';
+import { createRecorder } from '../../src/sim/telemetry';
+import { COPILOT_TOOLS, runTool, type HmiPort } from '../../src/ai/copilot/tools';
+import { createTriggerMonitor, TRIGGER_RULES, type Suggestion } from '../../src/ai/proactive/triggers';
+import { suggestionText } from '../../src/ai/proactive/phrasing';
+import { buildReportModel, createEpisodeTracker } from '../../src/ai/report/model';
+import { renderReportPdf } from '../../src/ai/report/pdf';
+import { tokens } from '../../src/ui/tokens';
 
 /** Run from the repository root (npm run paper:data). */
 const OUT = resolve('paper/data');
@@ -333,6 +340,109 @@ function charge(source: 'AC' | 'DC', sampleS: number) {
   });
   writeFileSync(join(OUT, 'catalogue.tex'), `${rows.join('\n')}\n`);
   console.log(`wrote catalogue.tex (${rows.length} rows)`);
+}
+
+// ---------------------------------------------------------------- co-pilot tools against the real car
+{
+  /** The co-pilot's HMI port straight over the sim, as the app's adapter does over its store (ADR 0019). */
+  const hmi = (sim: Sim): HmiPort => ({
+    snapshot: () => sim.snapshot(),
+    busy: () => null,
+    setDriveMode: (mode) => sim.setInputs({ driveMode: mode }),
+    setChargeTarget: (soc) => sim.setInputs({ chargeTargetSoc: soc }),
+    commandCharge: (command) => sim.setInputs({ chargeCommand: command }),
+    commandOta: (command) => sim.setInputs({ otaCommand: command }),
+    settle: () => sim.step(1),
+  });
+  const moving = ready();
+  shiftWithBrake(moving, 'D');
+  moving.setInputs({ brake: 0, accelerator: 0.3 });
+  moving.step(300);
+  moving.setInputs({ accelerator: 0.1 });
+  const parked = ready({ initialSoc: 0.5 });
+  const cases: [string, string, Sim, Record<string, unknown>][] = [
+    ['Switch to Eco', 'set_drive_mode', ready(), { mode: 'eco' }],
+    ['Switch to Sport before the update', 'set_drive_mode', ready(), { mode: 'sport' }],
+    ['Set the charge target to 85 percent', 'set_charge_target', parked, { percent: 85 }],
+    ['Start charging, no cable plugged in', 'start_charging', parked, {}],
+    ['Stop charging with no session running', 'stop_charging', parked, {}],
+    ['Check for updates while driving', 'check_for_updates', moving, {}],
+    ['Press the accelerator', 'press_accelerator', ready(), { value: 1 }],
+  ];
+  const esc = (t: string) => t.replace(/_/g, '\\_').replace(/%/g, '\\%');
+  const rows = cases.map(([ask, tool, sim, args]) => {
+    const r = runTool({ name: tool, args }, hmi(sim));
+    const outcome = r.ok ? 'done' : `refused: \\texttt{${esc(r.reason)}}`;
+    return `${ask} & \\texttt{${esc(tool)}} & ${outcome} & ${esc(r.message)} \\\\`;
+  });
+  writeFileSync(join(OUT, 'copilot_tools.tex'), `${rows.join('\n')}\n`);
+  console.log(`wrote copilot_tools.tex (${rows.length} rows)`);
+  macro('CopilotTools', COPILOT_TOOLS.length, 0);
+  macro('CopilotReadTools', COPILOT_TOOLS.filter((t) => t.name.startsWith('get_')).length, 0);
+}
+
+// ---------------------------------------------------------------- sample run: proactive suggestions and the vehicle report
+{
+  const sim = ready({ initialSoc: 0.55 });
+  const recorder = createRecorder();
+  const episodes = createEpisodeTracker();
+  const monitor = createTriggerMonitor();
+  const raised: Suggestion[] = [];
+  let prev: SimSnapshot | null = null;
+  const run = (seconds: number) => {
+    for (let i = 0; i < Math.round(seconds / TICK_S); i++) {
+      sim.step(1);
+      const s = sim.snapshot();
+      recorder.record(s);
+      episodes.observe(s);
+      raised.push(...monitor.observe(prev, s));
+      prev = s;
+    }
+  };
+  /** A calm driver: pedal proportional to the speed error. */
+  const drive = (targetKmh: number, seconds: number) => {
+    for (let i = 0; i < seconds * 10; i++) {
+      const err = targetKmh / 3.6 - sim.snapshot().speedMs;
+      sim.setInputs(err > 0 ? { accelerator: Math.min(0.35, 0.05 + err * 0.08), brake: 0 } : { accelerator: 0, brake: Math.min(0.3, -err * 0.05) });
+      run(0.1);
+    }
+  };
+  shiftWithBrake(sim, 'D');
+  sim.setInputs({ brake: 0 });
+  drive(50, 60);
+  drive(80, 90);
+  const faultAt = sim.snapshot().timeS;
+  sim.setInputs({ faultCommand: { key: 'cellOverTemperature', action: 'inject' } });
+  drive(80, 30);
+  sim.setInputs({ faultCommand: { key: 'cellOverTemperature', action: 'restore' } });
+  drive(50, 40);
+  sim.setInputs({ accelerator: 0, brake: 0 });
+  run(10);
+  sim.setInputs({ brake: 0.4 });
+  run(20);
+  sim.setInputs({ gearRequest: 'P' });
+  run(2);
+  sim.setInputs({ brake: 0, chargeSource: 'DC', chargeCommand: 'plugIn' });
+  run(1);
+  sim.setInputs({ chargeTargetSoc: 0.8, chargeCommand: 'start' });
+  run(180);
+
+  const esc = (t: string) => t.replace(/%/g, '\\%').replace(/_/g, '\\_');
+  const rows = raised.map((x) => `${(x.raisedAtS - faultAt).toFixed(2)} & \\texttt{${x.trigger}} & ${esc(suggestionText(x, 'en'))} & ${x.action === null ? '--' : x.action.kind === 'setDriveMode' ? 'switch to Eco' : `open ${x.action.view}`} \\\\`);
+  writeFileSync(join(OUT, 'proactive.tex'), `${rows.join('\n')}\n`);
+  console.log(`wrote proactive.tex (${rows.length} rows)`);
+  macro('ProactiveRaised', raised.length, 0);
+  macro('ProactivePackHotC', TRIGGER_RULES.packHotC, 0);
+  macro('ProactiveDerateCooldownS', TRIGGER_RULES.derateCooldownS, 0);
+  macro('ProactivePackCooldownS', TRIGGER_RULES.packHotCooldownS, 0);
+
+  const model = buildReportModel({ snapshot: sim.snapshot(), driveLog: recorder.samples(), episodes: episodes.episodes() });
+  const pdf = await renderReportPdf(model, { kind: 'unavailable', reason: 'no API key in the paper build' }, tokens);
+  writeFileSync(resolve('paper/figures/report-sample.pdf'), pdf);
+  console.log('wrote figures/report-sample.pdf');
+  macro('ReportRunMin', model.runDurationS / 60, 1);
+  macro('ReportWhKm', model.facts.whPerKm ?? 0, 0);
+  macro('ReportKm', model.facts.distanceKm, 2);
 }
 
 mkdirSync(OUT, { recursive: true });

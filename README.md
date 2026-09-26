@@ -38,7 +38,8 @@ Most entries to an SDV design challenge are architecture diagrams and a basic GU
 - Every required scenario (startup, driving, regenerative braking, charging, fault notification) and an over-the-air update run live, and **Start demo** plays them all with captions.
 - Each ECU is its own module, and they talk **only** through a simulated CAN bus with a message catalogue. The trace view shows every frame.
 - The physics is calibrated to a published reference car. Automated tests hold the key figures to ±10 %.
-- It runs fully offline from a laptop: the production build is a PWA whose service worker caches the whole app.
+- It runs fully offline from a laptop: the production build is a PWA whose service worker caches the whole app. The optional AI features are the one exception: they need a network and a Gemini key.
+- An optional **voice co-pilot** (English and Kiswahili, Gemini) talks to the car only through the touchscreen's own commands, so the car can still refuse it. It also raises proactive warnings and writes the summary of a **PDF vehicle report**.
 
 ## What you can do
 
@@ -154,13 +155,14 @@ The key is bundled into the app you build locally. **Never publish a build made 
 
 ### Layers
 
-The simulation core is plain TypeScript with no React, DOM, three.js, wall clock or randomness. A lint rule enforces this. The UI and the 3D stage only read snapshots from it and send inputs to it.
+The simulation core is plain TypeScript with no React, DOM, three.js, wall clock or randomness. A lint rule enforces this. The UI and the 3D stage only read snapshots from it and send inputs to it. The AI layer (`src/ai`) is also framework-free; the core never imports it, and it acts on the car only through the touchscreen's commands.
 
 ```mermaid
 flowchart LR
   subgraph Browser
     direction LR
-    UI["React views<br/>Drive · Charge · Energy · Diagnostics<br/>Architecture · Cycles · Software"]
+    UI["React views<br/>Drive · Charge · Energy · Diagnostics<br/>Architecture · Cycles · Software · Co-pilot · Report"]
+    AI["AI layer (src/ai)<br/>Gemini client · co-pilot tools<br/>proactive triggers · report + PDF"]
     Stage["3D stage<br/>react-three-fiber"]
     Store["Zustand stores<br/>sim + app state"]
     FrameLoop["Frame loop<br/>fixed 10 ms ticks × time scale"]
@@ -178,6 +180,9 @@ flowchart LR
   Core -- "snapshot()" --> Store
   Store -- "narrow selectors" --> UI
   Store -. "read each frame (useFrame)" .-> Stage
+  AI -- "HMI commands only (ADR 0019)" --> Store
+  Store -- "snapshots" --> AI
+  AI -. "text and Live API" .-> Gemini(["Gemini API (optional)"])
   ECUs <--> Bus
   ECUs <--> Plant
   Faults --> Plant
@@ -280,7 +285,9 @@ docs/adr/         Architecture decision records
 docs/images/      README screenshots
 docs/design-rules.md  The UI contract every view follows
 docs/glossary.md  Glossary
-paper/            LaTeX paper: main.tex, generated data/ and captured figures/
+paper/            LaTeX paper: main.tex, generated data/ and captured figures/ (incl. a sample report PDF)
+.ralph/           Token-aware Ralph build loop: PROMPT.md, ralph.sh, loop settings (spec-ralph)
+.claude/agents/   The answerer agent the loop asks when a ticket leaves a question open
 ```
 
 ## Testing
@@ -289,7 +296,8 @@ paper/            LaTeX paper: main.tex, generated data/ and captured figures/
 |---|---|---|
 | Simulation | Vitest (Node) | Bus timing, startup, interlocks, pedal maps, regen, AC/DC charging, faults and DTCs, thermal, drive cycles, telemetry, and the reference-figure tests |
 | UI and 3D | Vitest + Testing Library (jsdom) | Every panel, the car model's parts and budgets, X-ray fault view, road motion helpers |
-| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update, each scenario played from the guided demo, and an offline reload |
+| AI layer | Vitest with a scripted fake Gemini client | Co-pilot tool whitelist and every tool against the real sim, prompts, PCM audio, the voice session controller, proactive triggers, cooldowns and queue, report model, AI summary fallback and the PDF. No test calls the real API or needs a key |
+| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update, each scenario played from the guided demo, an offline reload, the co-pilot without a key, a proactive suggestion accepted, and a PDF export |
 
 The simulation runs in fixed 10 ms ticks with no wall clock or randomness, so every test is deterministic. Vitest runs with at most four workers because the long reference runs are CPU-bound.
 
@@ -316,6 +324,10 @@ Every non-obvious choice is written down in `docs/adr/`:
 | [0015](docs/adr/0015-ota-software-update.md) | Over-the-air software update |
 | [0016](docs/adr/0016-guided-demo-scripts.md) | Guided demo scripts |
 | [0017](docs/adr/0017-bms-discharge-limit-at-the-battery.md) | The BMS discharge limit applies at the battery |
+| [0018](docs/adr/0018-gemini-integration-and-model-settings.md) | Gemini integration and model settings |
+| [0019](docs/adr/0019-copilot-acts-through-hmi-commands.md) | The co-pilot acts only through HMI commands |
+| [0020](docs/adr/0020-proactive-triggers-and-cooldowns.md) | Proactive triggers and cooldowns |
+| [0021](docs/adr/0021-pdf-vehicle-report.md) | PDF vehicle report |
 
 The UI follows [`docs/design-rules.md`](docs/design-rules.md): a light, restrained interface where each view answers one question, colour is used only for data and status, and every control is keyboard reachable.
 
@@ -337,6 +349,10 @@ The UI follows [`docs/design-rules.md`](docs/design-rules.md): a light, restrain
 | 12 | Offline (PWA); public hosting deferred | Done |
 | 13 | LaTeX paper | Done |
 | 14 | Stretch: open-world drive | Optional |
+| 15 | Gemini setup and model settings | Done |
+| 16 | Voice co-pilot, English and Kiswahili | Done |
+| 17 | Proactive co-pilot | Done |
+| 18 | PDF vehicle report | Done |
 
 The full plan is in [`specs/roadmap.md`](specs/roadmap.md).
 

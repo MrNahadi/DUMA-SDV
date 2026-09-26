@@ -48,6 +48,14 @@ async function finishOnboarding(page: Page) {
   await page.keyboard.up('s');
   await expect(page.getByText('Start here')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: 'Take a drive' })).toHaveCount(0);
+  await dismissSuggestions(page);
+}
+
+/** Clear the co-pilot's suggestion cards the onboarding fault raised, so they stay out of the screenshots. */
+async function dismissSuggestions(page: Page) {
+  const card = page.getByRole('region', { name: 'Co-pilot suggestion' });
+  for (let i = 0; i < 6 && (await card.count()) > 0; i++) await card.getByRole('button', { name: 'Dismiss' }).click();
+  await expect(card).toHaveCount(0);
 }
 
 /** Orbit the camera by dragging across the stage. */
@@ -143,4 +151,22 @@ test('OTA update and guided demo', async ({ page }) => {
   await expect(page.getByRole('status', { name: 'Demo caption' })).toContainText('Lift off', { timeout: 20_000 });
   await page.waitForTimeout(2000);
   await page.screenshot({ path: shot('ui-demo') });
+});
+
+test('co-pilot view and a proactive suggestion', async ({ page }) => {
+  await open(page, 'drive');
+  await powerOn(page);
+  await finishOnboarding(page);
+  await page.getByRole('button', { name: 'Co-pilot', exact: true }).click();
+  await page.mouse.move(700, 300);
+  await page.waitForTimeout(500);
+  await page.screenshot({ path: shot('ui-copilot') });
+  await page.getByRole('button', { name: 'Report', exact: true }).click();
+  await page.getByRole('button', { name: 'Diagnostics', exact: true }).click();
+  await page.getByRole('button', { name: 'Inject fault' }).click();
+  await page.getByRole('button', { name: 'Drive', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Co-pilot suggestion' })).toBeVisible();
+  await page.mouse.move(700, 300);
+  await page.waitForTimeout(800);
+  await page.screenshot({ path: shot('ui-suggestion') });
 });
