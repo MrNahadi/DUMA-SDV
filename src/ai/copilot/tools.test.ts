@@ -55,6 +55,14 @@ describe('read tools (R5)', () => {
     expect(outcome.temperaturesC).toMatchObject({ ambient: 23 });
   });
 
+  it('reports the SOC the dashboard shows, not the plant value', () => {
+    const sim = readyCar({ initialSoc: 0.62 });
+    const shown = sim.snapshot().dashboard.soc!;
+    const hmi = { ...hmiFor(sim), snapshot: () => ({ ...sim.snapshot(), dashboard: { ...sim.snapshot().dashboard, soc: shown - 0.05 }, pack: { ...sim.snapshot().pack, soc: 0.99 } }) };
+    const r = runTool({ name: 'get_vehicle_status', args: {} }, hmi) as unknown as { outcome: { socPercent: number } };
+    expect(r.outcome.socPercent).toBe(Math.round((shown - 0.05) * 100));
+  });
+
   it('lists active faults with the warning and restriction', () => {
     const sim = readyCar();
     sim.setInputs({ faultCommand: { key: 'cellOverTemperature', action: 'inject' } });

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createSim, type Sim } from '../../sim';
 import { powerOnToReady } from '../../sim/scenarios';
 import { FakeGeminiClient } from '../fake';
@@ -161,5 +161,37 @@ describe('createCopilotSession', () => {
     const entries = session.view().entries;
     expect(entries).toHaveLength(MAX_ENTRIES);
     expect(entries.at(-1)!.text).toBe('a59');
+  });
+
+  it('stays stopped when Stop talking comes while connecting', async () => {
+    const { client, audio, session } = setup();
+    const starting = session.start();
+    session.stop();
+    await starting;
+    expect(session.view().state).toBe('idle');
+    expect(client.live!.closed).toBe(true);
+    expect(audio.log).not.toContain('mic:start');
+  });
+
+  it('turns the microphone off again when stopped while it was starting', async () => {
+    const { client, session } = setup();
+    let release!: () => void;
+    const log: string[] = [];
+    const s2 = createCopilotSession({
+      client,
+      hmi: hmiFor(createSim()),
+      language: 'en',
+      input: { start: () => new Promise<void>((r) => { release = () => { log.push('mic:start'); r(); }; }), stop: () => log.push('mic:stop') },
+      output: { play: () => {}, flush: () => {}, close: () => {} },
+      onChange: () => {},
+    });
+    const starting = s2.start();
+    await vi.waitFor(() => expect(release).toBeTypeOf('function'));
+    s2.stop();
+    release();
+    await starting;
+    expect(s2.view().state).toBe('idle');
+    expect(log.at(-1)).toBe('mic:stop');
+    void session;
   });
 });

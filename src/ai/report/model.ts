@@ -108,6 +108,24 @@ export function downsample<T>(items: readonly T[], max = MAX_POINTS): T[] {
   return out;
 }
 
+/**
+ * Energy at the pack terminals and distance while a drive gear is engaged, from
+ * the drive log (0.1 s samples, trapezoidal). Charging needs P, so it is excluded.
+ */
+export function drivingEnergy(log: readonly TelemetrySample[]): { energyJ: number; distanceM: number } {
+  let energyJ = 0;
+  let distanceM = 0;
+  for (let i = 1; i < log.length; i++) {
+    const a = log[i - 1]!;
+    const b = log[i]!;
+    if ((a.gear !== 'D' && a.gear !== 'R') || (b.gear !== 'D' && b.gear !== 'R')) continue;
+    const dt = b.timeS - a.timeS;
+    energyJ += ((a.batteryPowerW + b.batteryPowerW) / 2) * dt;
+    distanceM += ((Math.abs(a.speedMs) + Math.abs(b.speedMs)) / 2) * dt;
+  }
+  return { energyJ, distanceM };
+}
+
 export interface ReportInput {
   snapshot: Readonly<SimSnapshot>;
   driveLog: readonly TelemetrySample[];
@@ -120,7 +138,9 @@ export function buildReportModel({ snapshot: s, driveLog, episodes }: ReportInpu
   const last = driveLog[driveLog.length - 1];
   const runDurationS = first && last ? last.timeS - first.timeS : 0;
   const distanceKm = s.odometerM / 1000;
-  const whPerKm = distanceKm >= RULES.minDistanceKm ? jPerMToWhPerKm(s.tripEnergyJ / s.odometerM) : null;
+  const driving = drivingEnergy(driveLog);
+  // Consumption counts only energy while in D or R, so charging never offsets it.
+  const whPerKm = driving.distanceM / 1000 >= RULES.minDistanceKm ? jPerMToWhPerKm(driving.energyJ / driving.distanceM) : null;
   const maxPackTempC = Math.max(s.thermal.packC, ...driveLog.map((x) => x.packTempC));
   const on = (closed: boolean) => (closed ? 'closed' : 'open');
 
@@ -156,7 +176,8 @@ export function buildReportModel({ snapshot: s, driveLog, episodes }: ReportInpu
   const trip: Row[] = [
     { label: 'Distance', value: `${fmt(distanceKm, 2)} km` },
     { label: 'Run time (drive log)', value: `${fmt(runDurationS / 60, 1)} min` },
-    { label: 'Net energy at the pack', value: `${fmt(jToKwh(s.tripEnergyJ), 2)} kWh` },
+    { label: 'Driving energy at the pack', value: `${fmt(jToKwh(driving.energyJ), 2)} kWh` },
+    { label: 'Net energy since start (incl. charging)', value: `${fmt(jToKwh(s.tripEnergyJ), 2)} kWh` },
     { label: 'Energy recovered', value: s.dashboard.recoveredEnergyJ === null ? 'Unavailable' : `${fmt(jToKwh(s.dashboard.recoveredEnergyJ), 2)} kWh` },
     { label: 'Consumption', value: whPerKm === null ? 'Not enough distance' : `${fmt(whPerKm)} Wh/km` },
     { label: 'Maximum speed', value: `${fmt(Math.max(0, ...driveLog.map((x) => msToKmh(Math.abs(x.speedMs)))))} km/h` },

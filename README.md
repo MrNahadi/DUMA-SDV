@@ -10,7 +10,7 @@ Built for the *Software-Defined Electric Vehicle Design Challenge* (Tech Week 20
 ![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-5.0-433E38)
 ![Node](https://img.shields.io/badge/Node-26.x-5FA04E?logo=nodedotjs&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-511%20tests%20passing-6E9F18?logo=vitest&logoColor=white)
+![Vitest](https://img.shields.io/badge/Vitest-516%20tests%20passing-6E9F18?logo=vitest&logoColor=white)
 ![Playwright](https://img.shields.io/badge/Playwright-18%20e2e%20specs%20passing-2EAD33)
 ![Offline](https://img.shields.io/badge/runs-fully%20offline-17181A)
 
