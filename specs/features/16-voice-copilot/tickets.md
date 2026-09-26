@@ -64,11 +64,11 @@ Notes: Conversation is kept across sessions on the page (entry ids offset per se
 
 ## T-006: e2e and docs
 
-Status: open
+Status: done
 Blocked by: T-005
 Slice: e2e for the no-key state of the talk button; README section on using the co-pilot.
 Test seam: `e2e/copilot.spec.ts`; README
 Acceptance:
-- [ ] e2e: Start talking is disabled and the reason is shown with the blank-key server
-- [ ] README lists what the co-pilot can and cannot do, in both languages' example phrases
+- [x] e2e: Start talking is disabled and the reason is shown with the blank-key server
+- [x] README lists what the co-pilot can and cannot do, in both languages' example phrases
 Notes:

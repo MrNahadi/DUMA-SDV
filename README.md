@@ -110,6 +110,17 @@ The co-pilot and the vehicle report's AI summary use the Gemini API. Everything 
 
 To try another model, change `GEMINI_MODEL` or `GEMINI_LIVE_MODEL` and restart. Check model names in AI Studio: they change often.
 
+**Using the co-pilot.** Open the **Co-pilot** view, pick English or Kiswahili, press **Start talking** and allow the microphone. Speak normally; you can talk over it. Press **Stop talking** to end the session.
+
+| It can | It cannot |
+|---|---|
+| Tell you speed, charge, range, temperatures, faults and the software version | Press pedals or change gear |
+| Switch drive mode (Sport only after the update) | Power the car on or off |
+| Set the charge target, start and stop charging | Plug in or unplug the cable |
+| Check for updates | Inject or clear faults, or install an update |
+
+Every change goes through the same commands as the touchscreen, so the car can refuse, and the co-pilot tells you why ([ADR 0019](docs/adr/0019-copilot-acts-through-hmi-commands.md)). Try: "Switch to eco mode", "How far can I drive?", "Any faults?", "Set the charge target to 80 percent". In Kiswahili: "Badilisha hali iwe Eco", "Betri imebaki asilimia ngapi?", "Kuna hitilafu yoyote?", "Anza kuchaji".
+
 The key is bundled into the app you build locally. **Never publish a build made with a key.** Tests never use your key: unit tests ignore `.env.local`, and the e2e server runs with blank `GEMINI_*` variables. Details in [ADR 0018](docs/adr/0018-gemini-integration-and-model-settings.md).
 
 | Script | What it does |
