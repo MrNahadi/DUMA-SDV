@@ -36,6 +36,8 @@ export default defineConfig({
     }),
   ],
   base: './',
+  // Gemini settings from .env.local (ADR 0018); VITE_ stays for Vite's own use.
+  envPrefix: ['VITE_', 'GEMINI_'],
   server: { port: 5173, strictPort: true },
   preview: { port: 4173, strictPort: true },
   // three.js + drei live in the lazily loaded Stage chunk (~0.9 MB raw); the shell stays small.

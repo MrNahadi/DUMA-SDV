@@ -11,6 +11,7 @@ test-results/
 *.log
 .env
 .env.*
+!.env.example
 *.local
 
 # Editor and OS files
