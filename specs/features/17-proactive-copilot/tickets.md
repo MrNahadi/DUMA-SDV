@@ -38,15 +38,15 @@ Notes: Kiswahili templates are drafted by the builder; the owner should read the
 
 ## T-004: Proactive store and suggestion card
 
-Status: open
+Status: done
 Blocked by: T-002, T-003
 Slice: Run the monitor on every snapshot, show the card on the stage, and carry out Accept through the HMI port or the view switch.
 Test seam: `useProactiveStore`, `SuggestionCard` with the sim store
 Acceptance:
-- [ ] Injecting a fault shows the card; no HMI command is sent before Accept
-- [ ] Accept on a derate suggestion switches to Eco through the car; a refusal shows "Not done"
-- [ ] Silent during the guided demo; a reset clears history
-Notes:
+- [x] Injecting a fault shows the card; no HMI command is sent before Accept
+- [x] Accept on a derate suggestion switches to Eco through the car; a refusal shows "Not done"
+- [x] Silent during the guided demo; a reset clears history
+Notes: Card sits top right: the stage's fault label owns the bottom centre. Accept on Eco runs the co-pilot set_drive_mode tool so refusals match.
 
 ## T-005: Voice confirmation
 
