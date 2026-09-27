@@ -51,3 +51,18 @@ Words used in specs, code, UI and paper. Use them exactly. If code names differ 
 | View | One page of the app. Each view answers one question (see `docs/design-rules.md`). |
 | Telemetry | The recorded time series of signals from a run. It can be exported as CSV. |
 | Design rules | `docs/design-rules.md`: the one-page UI contract every view must pass. |
+
+## AI co-pilot (brief v1.3)
+
+| Term | Meaning in this project |
+|---|---|
+| Co-pilot | The AI assistant in the car, built on the Gemini API. It listens and talks through the Live API and acts only through HMI commands. |
+| HMI command | A command the car's touchscreen sends into the sim: drive mode, charge target, start or stop charging, check for updates. The co-pilot uses the same commands and gets the same refusals. |
+| HMI port | The interface (`src/ai/copilot/`) through which the co-pilot sends HMI commands and reads snapshots. |
+| Tool | A function the co-pilot may call. The whitelist is fixed in code (ADR 0019). |
+| Voice session | One Live API connection, from Start talking to Stop talking. |
+| Proactive suggestion | Something the co-pilot says without being asked, raised by a trigger, with an optional action the driver must accept. |
+| Trigger | A deterministic rule over snapshots that raises a proactive suggestion (ADR 0020). |
+| Cooldown | The minimum sim time before the same trigger may raise another suggestion. |
+| Vehicle report | The exported PDF: state and operating conditions, fault and DTC history, telemetry charts, AI summary, tips. |
+| Text model / live model | `GEMINI_MODEL` (summaries, suggestions) and `GEMINI_LIVE_MODEL` (real-time voice), set in `.env.local`. |

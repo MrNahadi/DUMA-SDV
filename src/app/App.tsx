@@ -9,6 +9,10 @@ import { useDriveInput } from './useDriveInput';
 import { useAppStore } from './store';
 import { DashboardStrip } from './DashboardStrip';
 import { DemoBar } from './DemoBar';
+import { useAiOnlineWatch } from './aiStore';
+import { useProactiveMonitor } from './proactiveStore';
+import { SuggestionCard } from './SuggestionCard';
+import { useReportTracker } from './reportStore';
 
 // The 3D stage is split out so the shell paints before three.js loads.
 const Stage = lazy(() => import('../three/Stage'));
@@ -16,6 +20,9 @@ const Stage = lazy(() => import('../three/Stage'));
 export function App() {
   useSimLoop();
   useDriveInput();
+  useAiOnlineWatch();
+  useProactiveMonitor();
+  useReportTracker();
   const view = useAppStore((s) => s.view);
 
   return (
@@ -27,6 +34,7 @@ export function App() {
           <Stage />
         </Suspense>
         <DemoBar />
+        <SuggestionCard />
       </main>
       {view === 'drive' && <DashboardStrip />}
       <ViewPanel />

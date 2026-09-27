@@ -10,8 +10,8 @@ Built for the *Software-Defined Electric Vehicle Design Challenge* (Tech Week 20
 ![Vite](https://img.shields.io/badge/Vite-8.3-646CFF?logo=vite&logoColor=white)
 ![Zustand](https://img.shields.io/badge/Zustand-5.0-433E38)
 ![Node](https://img.shields.io/badge/Node-26.x-5FA04E?logo=nodedotjs&logoColor=white)
-![Vitest](https://img.shields.io/badge/Vitest-321%20tests%20passing-6E9F18?logo=vitest&logoColor=white)
-![Playwright](https://img.shields.io/badge/Playwright-16%20e2e%20specs%20passing-2EAD33)
+![Vitest](https://img.shields.io/badge/Vitest-516%20tests%20passing-6E9F18?logo=vitest&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-18%20e2e%20specs%20passing-2EAD33)
 ![Offline](https://img.shields.io/badge/runs-fully%20offline-17181A)
 
 ![Driving on the road with lift-off regen shown on the dashboard](docs/images/drive.png)
@@ -38,7 +38,8 @@ Most entries to an SDV design challenge are architecture diagrams and a basic GU
 - Every required scenario (startup, driving, regenerative braking, charging, fault notification) and an over-the-air update run live, and **Start demo** plays them all with captions.
 - Each ECU is its own module, and they talk **only** through a simulated CAN bus with a message catalogue. The trace view shows every frame.
 - The physics is calibrated to a published reference car. Automated tests hold the key figures to ±10 %.
-- It runs fully offline from a laptop: the production build is a PWA whose service worker caches the whole app.
+- It runs fully offline from a laptop: the production build is a PWA whose service worker caches the whole app. The optional AI features are the one exception: they need a network and a Gemini key.
+- An optional **voice co-pilot** (English and Kiswahili, Gemini) talks to the car only through the touchscreen's own commands, so the car can still refuse it. It also raises proactive warnings and writes the summary of a **PDF vehicle report**.
 
 ## What you can do
 
@@ -51,6 +52,8 @@ Most entries to an SDV design challenge are architecture diagrams and a basic GU
 | **Architecture** | How do the modules talk? | ECU diagram with live activity, a CAN trace you can filter and pause, signal-level detail for each frame |
 | **Cycles** | How efficient is it? | WLTC Urban and Highway drive cycles with a speed-tracking driver, speed / power / SOC chart and a Wh/km result |
 | **Guided demo** | (top bar) | **Start demo** plays Startup, Driving, Regen, AC and DC charging, Fault and OTA with captions; pick any scenario or skip ahead. A Start here card walks first-time users through five steps |
+| **Co-pilot** | What does the car have to say? | Talk to the car by voice in English or Kiswahili (Gemini Live API); it answers from live data and asks the car through the touchscreen's commands, which can refuse. Proactive suggestion cards on the stage |
+| **Report** | What would a service engineer need to know? | Export a PDF: vehicle state, fault history, telemetry charts, AI summary and tips |
 | **Software** | What version is running, and what is new? | Over-the-air update: check, download, verify, install into the VCU's inactive firmware bank and restart; ECU versions; the update unlocks Sport |
 
 | Fault view (X-ray) | Architecture and CAN trace |
@@ -93,6 +96,40 @@ Offline check, on the laptop you will present from:
 
 The build output in `dist/` uses relative paths, so the same folder can be served from any static host later. Public hosting is not set up yet.
 
+### Gemini co-pilot setup
+
+The co-pilot and the vehicle report's AI summary use the Gemini API. Everything else runs without it.
+
+1. Get an API key from Google AI Studio.
+2. Copy `.env.example` to `.env.local` (git-ignored) and set the key:
+
+   ```bash
+   GEMINI_API_KEY=your-key
+   GEMINI_MODEL=            # text model; empty means gemini-3.5-flash-lite
+   GEMINI_LIVE_MODEL=       # voice model; empty means gemini-3.8-live
+   ```
+
+3. Restart `npm run dev`. Vite reads env files only at start-up, so restart after every change. The **Co-pilot** view shows whether the co-pilot is ready.
+
+To try another model, change `GEMINI_MODEL` or `GEMINI_LIVE_MODEL` and restart. Check model names in AI Studio: they change often.
+
+**Using the co-pilot.** Open the **Co-pilot** view, pick English or Kiswahili, press **Start talking** and allow the microphone. Speak normally; you can talk over it. Press **Stop talking** to end the session.
+
+| It can | It cannot |
+|---|---|
+| Tell you speed, charge, range, temperatures, faults and the software version | Press pedals or change gear |
+| Switch drive mode (Sport only after the update) | Power the car on or off |
+| Set the charge target, start and stop charging | Plug in or unplug the cable |
+| Check for updates | Inject or clear faults, or install an update |
+
+Every change goes through the same commands as the touchscreen, so the car can refuse, and the co-pilot tells you why ([ADR 0019](docs/adr/0019-copilot-acts-through-hmi-commands.md)). Try: "Switch to eco mode", "How far can I drive?", "Any faults?", "Set the charge target to 80 percent". In Kiswahili: "Badilisha hali iwe Eco", "Betri imebaki asilimia ngapi?", "Kuna hitilafu yoyote?", "Anza kuchaji".
+
+**Proactive suggestions.** The co-pilot also speaks up on its own, on a card at the top right of the car in every view (and out loud when a voice session is open): a new fault, reduced power or limp mode, a battery at 45 °C or more, charge falling to 20 % and 10 %, and a finished charging session. Each has a cooldown so it does not nag, and it stays quiet during the guided demo. **Nothing happens until you press Accept** or say yes ("ndiyo" in Kiswahili); Accept goes through the same commands as the touchscreen, so the car can still refuse. Without a key the cards still appear, with fixed wording ([ADR 0020](docs/adr/0020-proactive-triggers-and-cooldowns.md)).
+
+**Vehicle report.** The **Report** view exports a PDF (**Export PDF**) with five sections: vehicle state and operating conditions, fault and DTC history (with reduced-power and limp episodes), trip telemetry with speed, power, SOC and temperature charts, an AI summary, and suggestions and tips. The text model writes the summary and some tips in the co-pilot's language; without a key or network, or after 10 s, that section says why, and the car's rule-based tips are always there ([ADR 0021](docs/adr/0021-pdf-vehicle-report.md)).
+
+The key is bundled into the app you build locally. **Never publish a build made with a key.** Tests never use your key: unit tests ignore `.env.local`, and the e2e server runs with blank `GEMINI_*` variables. Details in [ADR 0018](docs/adr/0018-gemini-integration-and-model-settings.md).
+
 | Script | What it does |
 |---|---|
 | `npm run dev` | Vite dev server with hot reload |
@@ -118,13 +155,14 @@ The build output in `dist/` uses relative paths, so the same folder can be serve
 
 ### Layers
 
-The simulation core is plain TypeScript with no React, DOM, three.js, wall clock or randomness. A lint rule enforces this. The UI and the 3D stage only read snapshots from it and send inputs to it.
+The simulation core is plain TypeScript with no React, DOM, three.js, wall clock or randomness. A lint rule enforces this. The UI and the 3D stage only read snapshots from it and send inputs to it. The AI layer (`src/ai`) is also framework-free; the core never imports it, and it acts on the car only through the touchscreen's commands.
 
 ```mermaid
 flowchart LR
   subgraph Browser
     direction LR
-    UI["React views<br/>Drive · Charge · Energy · Diagnostics<br/>Architecture · Cycles · Software"]
+    UI["React views<br/>Drive · Charge · Energy · Diagnostics<br/>Architecture · Cycles · Software · Co-pilot · Report"]
+    AI["AI layer (src/ai)<br/>Gemini client · co-pilot tools<br/>proactive triggers · report + PDF"]
     Stage["3D stage<br/>react-three-fiber"]
     Store["Zustand stores<br/>sim + app state"]
     FrameLoop["Frame loop<br/>fixed 10 ms ticks × time scale"]
@@ -142,6 +180,9 @@ flowchart LR
   Core -- "snapshot()" --> Store
   Store -- "narrow selectors" --> UI
   Store -. "read each frame (useFrame)" .-> Stage
+  AI -- "HMI commands only (ADR 0019)" --> Store
+  Store -- "snapshots" --> AI
+  AI -. "text and Live API" .-> Gemini(["Gemini API (optional)"])
   ECUs <--> Bus
   ECUs <--> Plant
   Faults --> Plant
@@ -234,6 +275,7 @@ src/
     faults/       Fault catalogue, DTC records, derate and safety responses
     scenarios/    Drive cycles (WLTC), cycle runner, scripted scenarios
     telemetry/    Recorder and CSV export
+  ai/             Gemini co-pilot and report: client seam and fake, tools, prompts, audio, proactive triggers, report model and PDF
   app/            React views, panels, stores, input and the frame loop
   three/          3D stage: procedural car (car/), road (road/)
   ui/             Design tokens and shared primitives
@@ -243,7 +285,9 @@ docs/adr/         Architecture decision records
 docs/images/      README screenshots
 docs/design-rules.md  The UI contract every view follows
 docs/glossary.md  Glossary
-paper/            LaTeX paper: main.tex, generated data/ and captured figures/
+paper/            LaTeX paper: main.tex, generated data/ and captured figures/ (incl. a sample report PDF)
+.ralph/           Token-aware Ralph build loop: PROMPT.md, ralph.sh, loop settings (spec-ralph)
+.claude/agents/   The answerer agent the loop asks when a ticket leaves a question open
 ```
 
 ## Testing
@@ -252,7 +296,8 @@ paper/            LaTeX paper: main.tex, generated data/ and captured figures/
 |---|---|---|
 | Simulation | Vitest (Node) | Bus timing, startup, interlocks, pedal maps, regen, AC/DC charging, faults and DTCs, thermal, drive cycles, telemetry, and the reference-figure tests |
 | UI and 3D | Vitest + Testing Library (jsdom) | Every panel, the car model's parts and budgets, X-ray fault view, road motion helpers |
-| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update, each scenario played from the guided demo, and an offline reload |
+| AI layer | Vitest with a scripted fake Gemini client | Co-pilot tool whitelist and every tool against the real sim, prompts, PCM audio, the voice session controller, proactive triggers, cooldowns and queue, report model, AI summary fallback and the PDF. No test calls the real API or needs a key |
+| End to end | Playwright (Chromium, 1366×768) | Power on, drive, regen, AC and DC charging, faults, architecture trace, energy, cycles with CSV export, OTA update, each scenario played from the guided demo, an offline reload, the co-pilot without a key, a proactive suggestion accepted, and a PDF export |
 
 The simulation runs in fixed 10 ms ticks with no wall clock or randomness, so every test is deterministic. Vitest runs with at most four workers because the long reference runs are CPU-bound.
 
@@ -279,6 +324,10 @@ Every non-obvious choice is written down in `docs/adr/`:
 | [0015](docs/adr/0015-ota-software-update.md) | Over-the-air software update |
 | [0016](docs/adr/0016-guided-demo-scripts.md) | Guided demo scripts |
 | [0017](docs/adr/0017-bms-discharge-limit-at-the-battery.md) | The BMS discharge limit applies at the battery |
+| [0018](docs/adr/0018-gemini-integration-and-model-settings.md) | Gemini integration and model settings |
+| [0019](docs/adr/0019-copilot-acts-through-hmi-commands.md) | The co-pilot acts only through HMI commands |
+| [0020](docs/adr/0020-proactive-triggers-and-cooldowns.md) | Proactive triggers and cooldowns |
+| [0021](docs/adr/0021-pdf-vehicle-report.md) | PDF vehicle report |
 
 The UI follows [`docs/design-rules.md`](docs/design-rules.md): a light, restrained interface where each view answers one question, colour is used only for data and status, and every control is keyboard reachable.
 
@@ -300,6 +349,10 @@ The UI follows [`docs/design-rules.md`](docs/design-rules.md): a light, restrain
 | 12 | Offline (PWA); public hosting deferred | Done |
 | 13 | LaTeX paper | Done |
 | 14 | Stretch: open-world drive | Optional |
+| 15 | Gemini setup and model settings | Done |
+| 16 | Voice co-pilot, English and Kiswahili | Done |
+| 17 | Proactive co-pilot | Done |
+| 18 | PDF vehicle report | Done |
 
 The full plan is in [`specs/roadmap.md`](specs/roadmap.md).
 

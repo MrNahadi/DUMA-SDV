@@ -62,7 +62,7 @@
 \maketitle
 
 \begin{abstract}
-A software-defined vehicle (SDV) is a car whose behaviour is decided, and can be changed, by software. Its design is hard to judge from diagrams alone, because the interesting part is how the software modules coordinate. We present \sdv{}, a digital twin of a fictional rear-drive electric sedan that runs in a web browser, online or fully offline. Six electronic control units (ECUs) are separate software modules that exchange only messages on a simulated CAN bus: a vehicle control unit, battery management, motor control, an on-board charger, an instrument cluster and a telematics unit. They sit on physical plant models of the vehicle, battery, high-voltage circuit and thermal masses, advanced in deterministic \ParTickMs\,ms steps. A judge can power the car on, drive it, charge it on AC or DC, inject faults and install an over-the-air (OTA) update, while a 3D model, a driver dashboard and a live bus trace show every step. Automated tests hold the physics to the published figures of a production reference car: 0--100\,km/h in \ResZeroHundred\,s (target 5.9\,s), \ResRange\,km at a steady 100\,km/h (510\,km) and \ResDcMin\,min for a 10--80\,\% DC charge (37\,min), all within the $\pm 10\,\%$ goal. Under a cell over-temperature fault the battery management unit halves its discharge allowance within \FaultLimitMs\,ms and the drive power follows it. The OTA update downloads, verifies and installs into an inactive firmware bank, restarts the car and unlocks a drive mode in \OtaReadyS\,s. Every figure in this paper is generated from the simulator.
+A software-defined vehicle (SDV) is a car whose behaviour is decided, and can be changed, by software. Its design is hard to judge from diagrams alone, because the interesting part is how the software modules coordinate. We present \sdv{}, a digital twin of a fictional rear-drive electric sedan that runs in a web browser, online or fully offline. Six electronic control units (ECUs) are separate software modules that exchange only messages on a simulated CAN bus: a vehicle control unit, battery management, motor control, an on-board charger, an instrument cluster and a telematics unit. They sit on physical plant models of the vehicle, battery, high-voltage circuit and thermal masses, advanced in deterministic \ParTickMs\,ms steps. A judge can power the car on, drive it, charge it on AC or DC, inject faults and install an over-the-air (OTA) update, while a 3D model, a driver dashboard and a live bus trace show every step. Automated tests hold the physics to the published figures of a production reference car: 0--100\,km/h in \ResZeroHundred\,s (target 5.9\,s), \ResRange\,km at a steady 100\,km/h (510\,km) and \ResDcMin\,min for a 10--80\,\% DC charge (37\,min), all within the $\pm 10\,\%$ goal. Under a cell over-temperature fault the battery management unit halves its discharge allowance within \FaultLimitMs\,ms and the drive power follows it. The OTA update downloads, verifies and installs into an inactive firmware bank, restarts the car and unlocks a drive mode in \OtaReadyS\,s. An optional co-pilot built on the Gemini API lets the driver talk to the car in English or Kiswahili, speaks up on its own when a trigger fires, and writes the summary of an exportable PDF vehicle report. It acts only through the commands the touchscreen sends, so the car's own interlocks decide. Every figure in this paper is generated from the simulator.
 \end{abstract}
 
 % ==============================================================================
@@ -79,6 +79,7 @@ A design challenge for such a vehicle asks for its software ecosystem without a 
   \item A \textbf{deterministic, framework-free simulation core} that runs the same code headlessly in tests and behind a 60\,fps browser view.
   \item Physics calibrated to a published reference car and \textbf{held within $\pm 10\,\%$} by automated tests.
   \item Complete software flows for \textbf{startup, driving, regenerative braking, AC and DC charging, fault diagnosis and OTA update}, each playable from a one-button guided demo and each verified by an end-to-end browser test.
+  \item A \textbf{voice co-pilot that cannot override the car}: a large language model that reaches the vehicle only through a fixed whitelist of the touchscreen's own commands, plus deterministic proactive warnings and a PDF service report (Section~\ref{sec:copilot}).
 \end{itemize}
 
 \begin{figure}[!htbp]
@@ -123,7 +124,7 @@ OTA update & Check, download, verify, install, restart; a new drive mode appears
 \end{tabularx}
 \end{table}
 
-Out of scope are real hardware, autonomous driving, any backend, and an open road network: the car drives on a rolling-road stage. The vehicle is fictional. It takes its specifications from a production mid-size rear-drive sedan with a lithium iron phosphate (LFP) pack, which we call the \emph{reference car} and never name.
+Out of scope are real hardware, autonomous driving, any backend, and an open road network: the car drives on a rolling-road stage. The one cloud service is the Gemini API~\cite{gemini_api}, called from the browser for the co-pilot and the report summary; everything else, including the report itself, runs with no network, and the AI controls say why they are unavailable when there is no key or connection. The vehicle is fictional. It takes its specifications from a production mid-size rear-drive sedan with a lithium iron phosphate (LFP) pack, which we call the \emph{reference car} and never name.
 
 % ==============================================================================
 \section{System architecture}
@@ -131,7 +132,7 @@ Out of scope are real hardware, autonomous driving, any backend, and an open roa
 
 \subsection{Layers}
 
-The application has three layers (Figure~\ref{fig:layers}). The \emph{simulation core} is plain TypeScript with no user-interface, 3D or browser dependencies; a lint rule rejects imports of React or three.js, the wall clock and unseeded random numbers. The \emph{stores} hold the current simulation and the user-interface state. The \emph{views} and the 3D stage only read snapshots and send inputs. A frame loop converts wall time into a whole number of simulation steps, scaled by a user-selectable time scale of 1$\times$ to 120$\times$, so a 35-minute charge can be watched in seconds.
+The application has three layers (Figure~\ref{fig:layers}). The \emph{simulation core} is plain TypeScript with no user-interface, 3D or browser dependencies; a lint rule rejects imports of React or three.js, the wall clock and unseeded random numbers. The \emph{stores} hold the current simulation and the user-interface state. The \emph{views} and the 3D stage only read snapshots and send inputs. A frame loop converts wall time into a whole number of simulation steps, scaled by a user-selectable time scale of 1$\times$ to 120$\times$, so a 35-minute charge can be watched in seconds. Beside the stores sits an optional \emph{AI layer} (Section~\ref{sec:copilot}); it reaches the car only through the same commands the touchscreen sends.
 
 \begin{figure}[!htbp]
 \centering
@@ -141,16 +142,18 @@ The application has three layers (Figure~\ref{fig:layers}). The \emph{simulation
   lab/.style={font=\scriptsize\bfseries, text=accent, anchor=north west},
   arr/.style={-{Stealth[length=1.8mm]}, draw=ink2, line width=0.6pt},
 ]
-\node[box, minimum width=3.6cm] (views) at (0,0) {Views: Drive, Charge, Energy,\\Diagnostics, Architecture,\\Cycles, Software};
+\node[box, minimum width=3.6cm] (views) at (0,0) {Views: Drive, Charge, Energy,\\Diagnostics, Architecture, Cycles,\\Software, Co-pilot, Report};
 \node[box, minimum width=2.4cm, right=0.4cm of views] (stage) {3D stage\\(three.js)};
 \node[box, minimum width=2.4cm, right=0.4cm of stage] (demo) {Guided demo\\runner};
 \node[box, minimum width=4.2cm, below=1.1cm of stage] (store) {Stores: snapshot, inputs, view,\\time scale; frame loop};
+\node[box, minimum width=3.0cm, right=1.9cm of store, draw=accent] (ai) {AI layer: Gemini client,\\co-pilot tools, triggers,\\report model and PDF};
 \node[box, minimum width=2.6cm, below=1.5cm of store, xshift=-3.2cm] (ecus) {ECUs\\VCU $\cdot$ BMS $\cdot$ MCU\\OBC $\cdot$ IC $\cdot$ TCU};
 \node[box, minimum width=2.2cm, right=0.5cm of ecus] (bus) {CAN bus\\message catalogue};
 \node[box, minimum width=3.0cm, right=0.5cm of bus] (plant) {Plants: dynamics, battery,\\HV circuit, thermal,\\chargers, update server};
 \begin{scope}[on background layer]
 \node[layer, fit=(views)(stage)(demo)] (ui) {};
 \node[layer, fit=(store)] (st) {};
+\node[layer, fit=(ai)] (aiL) {};
 \node[layer, fit=(ecus)(bus)(plant)] (core) {};
 \end{scope}
 \node[lab, anchor=south west] at (ui.north west) {User interface (React)};
@@ -162,8 +165,9 @@ The application has three layers (Figure~\ref{fig:layers}). The \emph{simulation
 \draw[arr] ($(core.north)+(0.6,0)$) -- node[right, font=\tiny, text=ink2] {snapshot()} ($(store.south)+(0.6,0)$);
 \draw[{Stealth[length=1.6mm]}-{Stealth[length=1.6mm]}, draw=ink2] (ecus) -- (bus);
 \draw[{Stealth[length=1.6mm]}-{Stealth[length=1.6mm]}, draw=ink2] (bus) -- (plant);
+\draw[arr] ($(aiL.west)$) -- node[above, font=\tiny, text=ink2, fill=white, inner sep=1pt] {HMI commands} ($(st.east)$);
 \end{tikzpicture}
-\caption{\textbf{Layers.} The simulation core has no user-interface or browser dependencies. The views, the 3D stage and the guided demo drive it only through inputs and read it only through snapshots.}
+\caption{\textbf{Layers.} The simulation core has no user-interface or browser dependencies. The views, the 3D stage, the guided demo and the AI layer drive it only through inputs and read it only through snapshots; the core never imports the AI layer (a lint rule enforces both directions).}
 \label{fig:layers}
 \end{figure}
 
@@ -342,7 +346,7 @@ Car READY again with Sport available & \OtaReadyS \\
 
 \subsection{User interface and guided demo}
 
-Seven views each answer one question: what the car is doing (Drive), how full it is (Charge), where the energy goes (Energy), whether anything is wrong (Diagnostics), how the modules talk (Architecture), how efficient it is over a standard trip (Cycles) and what software it runs (Software). A one-page design contract fixes the type scale, spacing, colours and action verbs, and colour is used only for data and status, never alone. The 3D car is built in code, has named parts for fault highlighting and energy flow, and stays within 30\,000 triangles.
+Nine views each answer one question: what the car is doing (Drive), how full it is (Charge), where the energy goes (Energy), whether anything is wrong (Diagnostics), how the modules talk (Architecture), how efficient it is over a standard trip (Cycles), what software it runs (Software), what the car has to say (Co-pilot) and what a service engineer would need to know (Report). A one-page design contract fixes the type scale, spacing, colours and action verbs, and colour is used only for data and status, never alone. The 3D car is built in code, has named parts for fault highlighting and energy flow, and stays within 30\,000 triangles.
 
 Figure~\ref{fig:ui} shows five of the views and the guided demo.
 
@@ -377,6 +381,84 @@ Figure~\ref{fig:ui} shows five of the views and the guided demo.
 \end{figure}
 
 The guided demo plays all six scenarios from one button. Each scenario is a script of steps with a caption, a view, a time scale, the inputs to apply and the condition that ends the step. The demo drives the car only through the same inputs a driver uses. Each scenario starts from a fresh simulation prepared headlessly, so any scenario can be played on its own, and a step that does not finish within its timeout stops the demo with an error instead of hanging. The production build is a progressive web app whose service worker caches the whole application, so it runs at a venue with no network.
+
+% ==============================================================================
+\section{AI co-pilot and vehicle report}
+\label{sec:copilot}
+% ==============================================================================
+
+An SDV is also the platform for software that talks to the driver. We added three features on the Gemini API~\cite{gemini_api}: a voice co-pilot, proactive warnings, and a PDF report with an AI summary. The design question is the same as for any other module: what may it do to the car, and through which interface?
+
+\subsection{Integration and model choice}
+
+All AI calls go through one client interface with two operations: a text request that can demand JSON matching a schema, and a live voice session. A browser implementation wraps Google's SDK; a scripted fake stands in for it in every test, so no test needs a key or a network. The owner sets the key and two models, a text model and a live voice model, in a local, git-ignored environment file, so switching models is an edit and a restart, not a code change. The key is bundled into local builds only, and a build that contains one is never published. Without a key or a connection the car works exactly as before.
+
+\subsection{A touchscreen with a voice}
+
+In a production SDV a voice assistant runs on the infotainment unit and sends the same requests as the touchscreen. The co-pilot follows that pattern. It streams microphone audio to the Gemini Live API~\cite{gemini_live} and plays the spoken reply, in English or Kiswahili. The model may call only \CopilotTools{} tools: \CopilotReadTools{} read the vehicle status and the fault records, and the rest set the drive mode, set the charge target, start or stop charging, and check for updates. Each act tool goes through an \emph{HMI port} that calls exactly the store actions the touchscreen calls, advances the car one step, and reads the result back from the snapshot. The VCU, the charge path and the TCU therefore apply their own interlocks, and a refusal comes back with the car's reason for the model to say. No tool presses a pedal, changes gear, powers the car, plugs a cable, clears a fault or installs an update; a test checks the whitelist. Table~\ref{tab:copilot} shows tool calls answered by the real car. We considered a separate infotainment ECU that forwards requests over the bus; it would add catalogue messages and duplicate arbitration the VCU already does for touchscreen input, so the co-pilot stays outside the bus.
+
+\begin{table}[!htbp]
+\caption{\textbf{Co-pilot tool calls answered by the car}, generated by running each tool against the simulator. The message is what the model is given to say.}
+\label{tab:copilot}
+\centering\scriptsize
+\begin{tabularx}{\textwidth}{@{}llp{2.6cm}X@{}}
+\toprule
+Driver asks & Tool & Outcome & Message \\
+\midrule
+\inputrows{data/copilot_tools.tex}
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\subsection{Proactive warnings}
+
+The co-pilot also speaks up on its own, but rules decide when. Five triggers observe consecutive snapshots in sim time: a new DTC, the drive restriction starting, the pack reaching \ProactivePackHotC\,$^\circ$C, SOC falling to 20\,\% and to 10\,\%, and a finished charge. Each has a cooldown (\ProactiveDerateCooldownS\,s for a derate, \ProactivePackCooldownS\,s for a hot pack), so the triggers are deterministic and tested like the rest of the core. One suggestion shows at a time, by priority. The language model only phrases it: a card on the stage shows a fixed English or Kiswahili sentence at once, which the text model may reword within 3\,s, and an open voice session says it aloud. Nothing happens until the driver presses Accept or says yes, and Accept goes through the same HMI port. Table~\ref{tab:proactive} lists what the sample run of Section~\ref{sec:report} raised; Figure~\ref{fig:copilot} shows the card.
+
+\begin{table}[!htbp]
+\caption{\textbf{Suggestions raised in the sample run}, times after the cell over-temperature fault is injected. The derate suggestion waits behind the fault suggestion.}
+\label{tab:proactive}
+\centering\scriptsize
+\begin{tabularx}{\textwidth}{@{}rlXl@{}}
+\toprule
+Time (s) & Trigger & Words on the card & Action on Accept \\
+\midrule
+\inputrows{data/proactive.tex}
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{figure}[!htbp]
+\centering
+\begin{subfigure}[t]{0.49\textwidth}\centering
+\includegraphics[width=\linewidth]{ui-copilot}
+\caption{Co-pilot view without a key: language, Start talking, and why it is unavailable.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\textwidth}\centering
+\includegraphics[width=\linewidth]{ui-suggestion}
+\caption{A proactive suggestion after a cell over-temperature fault, waiting for Accept.}
+\end{subfigure}
+\caption{\textbf{The co-pilot in the app}, captured from the production build at 1366$\times$768.}
+\label{fig:copilot}
+\end{figure}
+
+\subsection{Vehicle report}
+\label{sec:report}
+
+The Report view exports a PDF in five sections: car state and operating conditions, fault and DTC history with each reduced-power or limp episode, trip telemetry with charts of speed, battery power, SOC and temperatures, an AI summary, and suggestions and tips. A pure function builds every figure and table from the snapshot, the drive log and the tracked episodes; the renderer only draws. Consumption counts energy only while a drive gear is engaged, so a charge in the same run cannot offset it. The text model receives the report data as compact JSON and must return a summary and up to five tips matching a schema, within 10\,s; otherwise the section says why, and rule-based tips (active faults, a hot pack, low charge, high consumption, stored faults) always appear. Figure~\ref{fig:report} is the report of a \ReportRunMin-minute sample run: \ReportKm\,km at up to 80\,km/h with the fault from Table~\ref{tab:proactive}, then a DC charge, built without a key.
+
+\begin{figure}[!htbp]
+\centering
+\begin{subfigure}[t]{0.49\textwidth}\centering
+\fbox{\includegraphics[width=0.96\linewidth, page=1]{report-sample.pdf}}
+\caption{Page 1: state, faults and episode, trip figures and charts.}
+\end{subfigure}\hfill
+\begin{subfigure}[t]{0.49\textwidth}\centering
+\fbox{\includegraphics[width=0.96\linewidth, page=2]{report-sample.pdf}}
+\caption{Page 2: charts, and the AI sections saying why they are empty.}
+\end{subfigure}
+\caption{\textbf{The vehicle report} of the sample run, generated by the simulator with no API key.}
+\label{fig:report}
+\end{figure}
 
 % ==============================================================================
 \section{Vehicle model and calibration}
@@ -541,27 +623,27 @@ Table~\ref{tab:reference} shows the three reference tests. Consumption at a stea
 \section{Verification}
 % ==============================================================================
 
-The project was built in phases from a written brief. Each phase had requirements, validation checks and small tickets, and each ticket had to pass typecheck, lint, the unit tests, the production build and the browser tests before it was committed. Decisions that the brief did not settle are recorded in seventeen decision records.
+The project was built in phases from a written brief. Each phase had requirements, validation checks and small tickets, and each ticket had to pass typecheck, lint, the unit tests, the production build and the browser tests before it was committed. Decisions that the brief did not settle are recorded in twenty-one decision records.
 
 \begin{itemize}
-  \item \textbf{Unit and simulation tests} (Vitest, 380 tests): bus timing, startup and its failure paths, gear interlocks, pedal maps and mode ramps, regen blending, AC and DC charging, faults and DTCs, thermal balance, drive cycles, telemetry, the OTA client and firmware banks, the guided demo scripts played headlessly, every view, and the reference tests of Table~\ref{tab:reference}.
-  \item \textbf{Browser tests} (Playwright, 27 tests at 1366$\times$768): every scenario unaided and again from the guided demo, the architecture trace, CSV export, and an offline reload served by the service worker.
+  \item \textbf{Unit and simulation tests} (Vitest, 516 tests): bus timing, startup and its failure paths, gear interlocks, pedal maps and mode ramps, regen blending, AC and DC charging, faults and DTCs, thermal balance, drive cycles, telemetry, the OTA client and firmware banks, the guided demo scripts played headlessly, every view, and the reference tests of Table~\ref{tab:reference}. The co-pilot's tools run against the real simulator, and its sessions, proactive triggers, report model and PDF against the scripted fake client.
+  \item \textbf{Browser tests} (Playwright, 31 tests at 1366$\times$768): every scenario unaided and again from the guided demo, the architecture trace, CSV export, an offline reload served by the service worker, a proactive suggestion accepted from the stage, and a PDF export. The browser tests run with a blank key, so they cover the co-pilot's unavailable state, not a live session.
   \item \textbf{Determinism}: identical inputs give identical snapshots and bus traces.
 \end{itemize}
 
-Of the brief's definition of done, the scenario, physics, offline and paper items are met and verified by the tests above. The public link is deferred by decision, and the build is ready for any static host. The review of every view against the design contract is a manual check.
+Of the brief's definition of done, the scenario, physics, offline and paper items are met and verified by the tests above. The public link is deferred by decision, and the build is ready for any static host. The review of every view against the design contract is a manual check. So are the live voice sessions: the co-pilot's usefulness by voice, in English and in Kiswahili, is measured by hand with a key, not by the automated suite.
 
 % ==============================================================================
 \section{Limitations}
 % ==============================================================================
 
-The model is a teaching and review tool, not a validated engineering simulation. The thermal model has one mass per component and two coolant loops. The battery has one resistance and no transient dynamics. The bus has no bit timing, arbitration or error frames. Many parameters are estimates, marked as such. The OTA verification step always passes; a real one would check a signature chain and roll back after a failed boot. The car drives on a rolling road with no steering or lateral dynamics.
+The model is a teaching and review tool, not a validated engineering simulation. The thermal model has one mass per component and two coolant loops. The battery has one resistance and no transient dynamics. The bus has no bit timing, arbitration or error frames. Many parameters are estimates, marked as such. The OTA verification step always passes; a real one would check a signature chain and roll back after a failed boot. The car drives on a rolling road with no steering or lateral dynamics. The co-pilot's replies come from a language model and are neither deterministic nor covered by the automated tests; its safety rests on the tool whitelist and the car's interlocks, not on the model following its instructions. Kiswahili speech quality depends on the live model, whose published language list we could not confirm includes Kiswahili. The API key sits in the local bundle, which is acceptable only because the build is not published.
 
 % ==============================================================================
 \section{Conclusion}
 % ==============================================================================
 
-\sdv{} turns an SDV software architecture into something a judge can operate. Six ECUs coordinate only through a catalogued bus, over physics that reproduces the reference car's acceleration, range and charge time within $\pm 10\,\%$. The fault, charging and update flows can be traced message by message. Because the core is deterministic and free of the user interface, the same code serves the live demo, the automated tests and every figure in this paper. Making the paper's figures from the simulator also exposed a real defect, the discharge limit applied at the shaft instead of the battery, which is now fixed and guarded by a test.
+\sdv{} turns an SDV software architecture into something a judge can operate. Six ECUs coordinate only through a catalogued bus, over physics that reproduces the reference car's acceleration, range and charge time within $\pm 10\,\%$. The fault, charging and update flows can be traced message by message. Because the core is deterministic and free of the user interface, the same code serves the live demo, the automated tests and every figure in this paper. Making the paper's figures from the simulator also exposed a real defect, the discharge limit applied at the shaft instead of the battery, which is now fixed and guarded by a test. The AI co-pilot follows the same rule as every ECU: it reaches the car only through a declared interface, so a language model can make the car easier to talk to without being able to override it.
 
 \bibliographystyle{plainnat}
 \bibliography{references}

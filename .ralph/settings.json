@@ -1,0 +1,58 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Agent",
+      "WebSearch",
+      "WebFetch",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git stash:*)",
+      "Bash(git branch --show-current)",
+      "Bash(cat .ralph/current-feature)",
+      "Bash(grep:*)",
+      "Bash(sed -n:*)",
+      "Bash(tail:*)",
+      "Bash(head:*)",
+      "Bash(wc:*)",
+      "Bash(npm run typecheck:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npm test:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run e2e:*)",
+      "Bash(npx vitest run:*)",
+      "Bash(npx playwright test:*)"
+    ],
+    "ask": [
+      "Bash(git switch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)"
+    ],
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)",
+      "Bash(git clean:*)",
+      "Bash(npm install:*)",
+      "Bash(npm ci:*)",
+      "Bash(rm -rf:*)",
+      "Bash(sudo:*)",
+      "Bash(curl:*)",
+      "Bash(wget:*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./package-lock.json)",
+      "Read(./dist/**)",
+      "Read(./node_modules/**)",
+      "Read(./paper/main.pdf)"
+    ]
+  }
+}
